@@ -18,10 +18,12 @@ interface FormData {
 }
 
 const DURATION_LIMITS = {
-  '30s': { label: '30 seconds', limit: 100 },
-  '1min': { label: '1 minute', limit: 300 },
-  '1.5min': { label: '1:30 minutes', limit: 600 },
+  '30s': { label: '30 seconds', limit: 100 }, // Example limit
+  '1min': { label: '1 minute', limit: 300 },   // Example limit
+  '1.5min': { label: '1:30 minutes', limit: 600 },// Example limit
 };
+
+type DurationKey = keyof typeof DURATION_LIMITS;
 
 export default function Home() {
   const [formData, setFormData] = useState<FormData>({
@@ -32,7 +34,7 @@ export default function Home() {
   });
   const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<keyof typeof DURATION_LIMITS>('30s');
+  const [activeTab, setActiveTab] = useState<DurationKey>('30s');
 
   const charLimit = DURATION_LIMITS[activeTab].limit;
 
@@ -60,7 +62,7 @@ export default function Home() {
       const res = await fetch('/api/send-to-sheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, description: descriptionToSend }),
+        body: JSON.stringify({ ...formData, description: descriptionToSend, topic: formData.topic, avatarId: formData.avatarId, videoTitle: formData.videoTitle }),
       });
 
       const result = await res.json();
@@ -69,7 +71,8 @@ export default function Home() {
         setStatus('Video idea submitted successfully!');
         setFormData({ videoTitle: '', description: '', topic: '', avatarId: '' });
       } else {
-        setStatus(`Error submitting: ${result.error || JSON.stringify(result)}`);
+        const errorMessage = result.error || (typeof result.rawResponse === 'string' ? result.rawResponse : JSON.stringify(result));
+        setStatus(`Error submitting: ${errorMessage}`);
       }
     } catch (error: any) {
       setStatus(`Connection error: ${error.message}`);
@@ -82,10 +85,10 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center space-x-2">
-            <PlaySquare className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-lg">Video Platform</span>
+        <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-3">
+            <PlaySquare className="h-7 w-7 text-primary" />
+            <span className="font-semibold text-xl">Video Platform</span>
           </div>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <a href="#" className="text-foreground/70 hover:text-foreground transition-colors">Home</a>
@@ -93,12 +96,12 @@ export default function Home() {
             <a href="#" className="text-primary font-semibold hover:text-primary/90 transition-colors">Create</a>
           </nav>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="hover:bg-accent/50">
-              <Bell className="h-5 w-5 text-foreground/70 hover:text-foreground" />
+            <Button variant="ghost" size="icon" className="text-foreground/70 hover:text-foreground hover:bg-accent/50">
+              <Bell className="h-5 w-5" />
             </Button>
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="profile woman"/>
-              <AvatarFallback><User size={16}/></AvatarFallback>
+            <Avatar className="h-9 w-9">
+              <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="profile woman" />
+              <AvatarFallback><User size={18}/></AvatarFallback>
             </Avatar>
           </div>
         </div>
@@ -106,28 +109,28 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12 flex justify-center">
-        <div className="w-full max-w-2xl bg-card p-6 sm:p-8 rounded-xl shadow-2xl"> {/* Added bg-card, padding, rounded, shadow */}
+        <div className="w-full max-w-2xl bg-card p-6 sm:p-8 rounded-xl shadow-2xl">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Submit a Video</h1>
-            <p className="text-muted-foreground mt-2">
-              Share your story with the world. Fill out the form below to submit your video for review.
+            <p className="text-muted-foreground mt-2 text-base">
+              Share your story with the world. Fill out the form below to submit your video idea.
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as keyof typeof DURATION_LIMITS)} className="w-full mb-6">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DurationKey)} className="w-full mb-6">
             <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 mb-6">
-              {Object.entries(DURATION_LIMITS).map(([key, { label, limit }]) => (
+              {(Object.keys(DURATION_LIMITS) as DurationKey[]).map((key) => (
                 <TabsTrigger
                   key={key}
                   value={key}
-                  // className is now mostly handled by the component itself for active/inactive states
                 >
-                  {label} <span className="hidden sm:inline text-xs ml-1">({limit} chars)</span>
+                  {DURATION_LIMITS[key].label} 
+                  <span className="hidden sm:inline text-xs ml-1 text-muted-foreground/80">({DURATION_LIMITS[key].limit} chars)</span>
                 </TabsTrigger>
               ))}
             </TabsList>
             
-            <TabsContent value={activeTab} className="pt-2">
+            <TabsContent value={activeTab} className="pt-2"> {/* Added pt-2 for spacing after underline from TabsTrigger */}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <Label htmlFor="videoTitle" className="text-sm font-medium mb-2 block text-foreground/90">Video Title</Label>
@@ -191,7 +194,7 @@ export default function Home() {
                   <Button 
                     type="submit" 
                     disabled={isLoading} 
-                    className="min-w-[160px] bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-base py-3 px-6 shadow-md hover:shadow-lg transition-shadow"
+                    className="min-w-[180px] text-base py-3 px-6 shadow-md hover:shadow-lg transition-shadow duration-150 ease-in-out"
                     size="lg"
                   >
                     {isLoading ? 'Submitting...' : 'Submit Video'}
@@ -202,7 +205,7 @@ export default function Home() {
           </Tabs>
 
           {status && (
-            <p className={`mt-6 text-sm p-4 rounded-lg ${status.startsWith('Error') || status.startsWith('Connection error') ? 'bg-destructive/10 text-destructive' : 'bg-green-500/10 text-green-400'} border ${status.startsWith('Error') || status.startsWith('Connection error') ? 'border-destructive/30' : 'border-green-500/30'}`}>
+            <p className={`mt-6 text-sm p-4 rounded-lg ${status.startsWith('Error') || status.startsWith('Connection error') ? 'bg-destructive/10 text-destructive' : 'bg-green-600/10 text-green-400'} border ${status.startsWith('Error') || status.startsWith('Connection error') ? 'border-destructive/30' : 'border-green-600/30'}`}>
               {status}
             </p>
           )}

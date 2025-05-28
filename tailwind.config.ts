@@ -1,18 +1,24 @@
 import type { Config } from "tailwindcss"
 
 const config = {
-  darkMode: ["class"],
+  darkMode: ["class"], // or 'media' or 'class'
   content: [
-    './pages/**/*.{ts,tsx}',
+    './pages/**/*.{ts,tsx}', // For Next.js pages directory (if any)
     './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',    // For Next.js app directory
+    './src/**/*.{ts,tsx}',    // More general path for all ts/tsx files in src
 	],
   prefix: "",
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: {
+        DEFAULT: "1rem", // Default padding for containers
+        sm: "2rem",
+        lg: "4rem",
+        xl: "5rem",
+        "2xl": "6rem",
+      },
       screens: {
         "2xl": "1400px",
       },
@@ -57,6 +63,9 @@ const config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", "sans-serif", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"],
       },
       keyframes: {
         "accordion-down": {
