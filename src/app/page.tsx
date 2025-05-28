@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, type FormEvent, type ChangeEvent } from 'react';
@@ -52,7 +53,7 @@ export default function Home() {
     setStatus('Submitting...');
 
     // Truncate description just in case it somehow exceeds limit
-    const descriptionToSend = formData.description.length > charLimit 
+    const descriptionToSend = formData.description.length > charLimit
       ? formData.description.substring(0, charLimit)
       : formData.description;
 
@@ -117,8 +118,8 @@ export default function Home() {
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as keyof typeof DURATION_LIMITS)} className="w-full mb-8">
             <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 border-b-0 mb-2">
               {Object.entries(DURATION_LIMITS).map(([key, { label, limit }]) => (
-                <TabsTrigger 
-                  key={key} 
+                <TabsTrigger
+                  key={key}
                   value={key}
                   className="pb-3 data-[state=active]:border-primary data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground hover:text-foreground"
                 >
@@ -126,74 +127,74 @@ export default function Home() {
                 </TabsTrigger>
               ))}
             </TabsList>
+
+            {/* Ensure TabsContent is a direct child of Tabs */}
+            <TabsContent value={activeTab} >
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <Label htmlFor="videoTitle" className="text-sm font-medium">Video Title</Label>
+                  <Input
+                    id="videoTitle"
+                    name="videoTitle"
+                    placeholder="Enter the title of your video"
+                    value={formData.videoTitle}
+                    onChange={handleChange}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="description" className="text-sm font-medium">Video Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    placeholder="Describe your video in detail"
+                    value={formData.description}
+                    onChange={handleChange}
+                    maxLength={charLimit}
+                    required
+                    className="mt-1 min-h-[150px]"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1 text-right">
+                    {formData.description.length}/{charLimit} characters
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="topic" className="text-sm font-medium">Main Topic</Label>
+                  <Input
+                    id="topic"
+                    name="topic"
+                    placeholder="Enter the main topic of your video"
+                    value={formData.topic}
+                    onChange={handleChange}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="avatarId" className="text-sm font-medium">Avatar ID</Label>
+                  <Input
+                    id="avatarId"
+                    name="avatarId"
+                    placeholder="Enter your avatar ID"
+                    value={formData.avatarId}
+                    onChange={handleChange}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <Button type="submit" disabled={isLoading} className="min-w-[150px] rounded-lg text-base py-3 px-6">
+                    {isLoading ? 'Submitting...' : 'Submit Video'}
+                  </Button>
+                </div>
+              </form>
+            </TabsContent>
           </Tabs>
-          
-          {/* This TabsContent is not strictly necessary if form is always visible, but kept for structure */}
-          <TabsContent value={activeTab} > 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <Label htmlFor="videoTitle" className="text-sm font-medium">Video Title</Label>
-                <Input
-                  id="videoTitle"
-                  name="videoTitle"
-                  placeholder="Enter the title of your video"
-                  value={formData.videoTitle}
-                  onChange={handleChange}
-                  required
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="description" className="text-sm font-medium">Video Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  placeholder="Describe your video in detail"
-                  value={formData.description}
-                  onChange={handleChange}
-                  maxLength={charLimit} 
-                  required
-                  className="mt-1 min-h-[150px]"
-                />
-                <p className="text-xs text-muted-foreground mt-1 text-right">
-                  {formData.description.length}/{charLimit} characters
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="topic" className="text-sm font-medium">Main Topic</Label>
-                <Input
-                  id="topic"
-                  name="topic"
-                  placeholder="Enter the main topic of your video"
-                  value={formData.topic}
-                  onChange={handleChange}
-                  required
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="avatarId" className="text-sm font-medium">Avatar ID</Label>
-                <Input
-                  id="avatarId"
-                  name="avatarId"
-                  placeholder="Enter your avatar ID"
-                  value={formData.avatarId}
-                  onChange={handleChange}
-                  required
-                  className="mt-1"
-                />
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button type="submit" disabled={isLoading} className="min-w-[150px] rounded-lg text-base py-3 px-6">
-                  {isLoading ? 'Submitting...' : 'Submit Video'}
-                </Button>
-              </div>
-            </form>
-          </TabsContent>
 
           {status && (
             <p className={`mt-6 text-sm p-3 rounded-md ${status.startsWith('Error') || status.startsWith('Connection error') ? 'bg-destructive/20 text-destructive' : 'bg-green-500/20 text-green-300'}`}>
