@@ -36,8 +36,6 @@
     --radius: 0.75rem; /* More rounded elements */
   }
 
-  /* Apply dark theme by default without needing a class on html/body */
-  /* The variables defined in :root will be used directly */
 }
 
 @layer base {
@@ -45,8 +43,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-geist-sans);
+    @apply bg-background text-foreground font-sans; /* Ensure font-sans is applied */
   }
   html,
   body {
