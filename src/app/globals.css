@@ -7,28 +7,28 @@
     --background: 225 20% 14%; /* #1A1F2C */
     --foreground: 0 0% 98%; /* #FAFAFA */
 
-    --card: 225 20% 16%; /* #1F2430 - For input backgrounds */
+    --card: 225 20% 16%; /* #1F2430 - For input backgrounds, form elements */
     --card-foreground: 0 0% 98%;
 
     --popover: 225 20% 12%; /* Slightly darker than bg for popovers */
     --popover-foreground: 0 0% 98%;
 
-    --primary: 220 13% 75%; /* #ABB5C4 - Light blue/gray for button */
-    --primary-foreground: 225 20% 14%; /* Dark text for primary button */
+    --primary: 220 13% 75%; /* #ABB5C4 - Light blue/gray for button text, active nav link, active tab line */
+    --primary-foreground: 225 20% 14%; /* Dark text for primary button background */
 
     --secondary: 225 20% 20%; /* #293040 */
     --secondary-foreground: 0 0% 98%;
 
     --muted: 225 20% 25%; /* #333C50 */
-    --muted-foreground: 0 0% 60%; /* #999999 */
+    --muted-foreground: 0 0% 60%; /* #999999 - For placeholder text, inactive tabs */
 
-    --accent: 220 15% 85%; /* #CAD1DC - Lighter accent for hover, active tab line */
+    --accent: 220 15% 85%; /* #CAD1DC - Lighter accent for hover states */
     --accent-foreground: 225 20% 10%; /* #12161F - Dark text for accent elements */
 
     --destructive: 0 63% 31%; /* #9F2121 */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 225 20% 22%; /* #2E3648 - For input borders, slightly lighter than input bg */
+    --border: 225 20% 22%; /* #2E3648 - For input borders, header border */
     --input: 225 20% 16%; /* #1F2430 - Same as card for input background fields */
     
     --ring: 220 13% 65%; /* #9AA6B8 - Focus ring, slightly darker than primary */
@@ -36,6 +36,10 @@
     --radius: 0.75rem; /* More rounded elements */
   }
 
+  .dark {
+    /* If you ever add a dark mode toggle, define dark mode variables here */
+    /* For now, the root variables are already for a dark theme */
+  }
 }
 
 @layer base {
@@ -43,7 +47,9 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans; /* Ensure font-sans is applied */
+    @apply bg-background text-foreground font-sans; /* Apply background, text color, and sans-serif font */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   html,
   body {

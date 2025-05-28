@@ -52,7 +52,6 @@ export default function Home() {
     setIsLoading(true);
     setStatus('Submitting...');
 
-    // Truncate description just in case it somehow exceeds limit
     const descriptionToSend = formData.description.length > charLimit
       ? formData.description.substring(0, charLimit)
       : formData.description;
@@ -83,7 +82,7 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-6">
+        <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-2">
             <PlaySquare className="h-6 w-6 text-primary" />
             <span className="font-semibold text-lg">Video Platform</span>
@@ -94,44 +93,44 @@ export default function Home() {
             <a href="#" className="text-primary font-semibold hover:text-primary/90 transition-colors">Create</a>
           </nav>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="hover:bg-accent/50">
               <Bell className="h-5 w-5 text-foreground/70 hover:text-foreground" />
             </Button>
-            <Avatar>
-              <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="profile woman" />
-              <AvatarFallback><User size={20}/></AvatarFallback>
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="profile woman"/>
+              <AvatarFallback><User size={16}/></AvatarFallback>
             </Avatar>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 flex justify-center">
-        <div className="w-full max-w-2xl">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">Submit a Video</h1>
-            <p className="text-muted-foreground mt-1">
+      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12 flex justify-center">
+        <div className="w-full max-w-2xl bg-card p-6 sm:p-8 rounded-xl shadow-2xl"> {/* Added bg-card, padding, rounded, shadow */}
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Submit a Video</h1>
+            <p className="text-muted-foreground mt-2">
               Share your story with the world. Fill out the form below to submit your video for review.
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as keyof typeof DURATION_LIMITS)} className="w-full mb-8">
-            <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 mb-6"> {/* Removed border-b-0, adjusted mb */}
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as keyof typeof DURATION_LIMITS)} className="w-full mb-6">
+            <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 mb-6">
               {Object.entries(DURATION_LIMITS).map(([key, { label, limit }]) => (
                 <TabsTrigger
                   key={key}
                   value={key}
-                  className="pb-3 data-[state=inactive]:text-muted-foreground" // Simplified, base component handles active state
+                  // className is now mostly handled by the component itself for active/inactive states
                 >
-                  {label} ({limit} character limit)
+                  {label} <span className="hidden sm:inline text-xs ml-1">({limit} chars)</span>
                 </TabsTrigger>
               ))}
             </TabsList>
             
-            <TabsContent value={activeTab} className="pt-2"> {/* Added pt-2 for spacing after tabs */}
+            <TabsContent value={activeTab} className="pt-2">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <Label htmlFor="videoTitle" className="text-sm font-medium mb-1 block">Video Title</Label>
+                  <Label htmlFor="videoTitle" className="text-sm font-medium mb-2 block text-foreground/90">Video Title</Label>
                   <Input
                     id="videoTitle"
                     name="videoTitle"
@@ -139,52 +138,62 @@ export default function Home() {
                     value={formData.videoTitle}
                     onChange={handleChange}
                     required
+                    className="bg-input border-border placeholder:text-muted-foreground"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="description" className="text-sm font-medium mb-1 block">Video Description</Label>
+                  <Label htmlFor="description" className="text-sm font-medium mb-2 block text-foreground/90">Video Description</Label>
                   <Textarea
                     id="description"
                     name="description"
-                    placeholder="Describe your video in detail"
+                    placeholder="Describe your video in detail..."
                     value={formData.description}
                     onChange={handleChange}
                     maxLength={charLimit}
                     required
-                    className="min-h-[150px]"
+                    className="min-h-[150px] bg-input border-border placeholder:text-muted-foreground"
                   />
-                  <p className="text-xs text-muted-foreground mt-1 text-right">
+                  <p className="text-xs text-muted-foreground mt-1.5 text-right">
                     {formData.description.length}/{charLimit} characters
                   </p>
                 </div>
 
-                <div>
-                  <Label htmlFor="topic" className="text-sm font-medium mb-1 block">Main Topic</Label>
-                  <Input
-                    id="topic"
-                    name="topic"
-                    placeholder="Enter the main topic of your video"
-                    value={formData.topic}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="topic" className="text-sm font-medium mb-2 block text-foreground/90">Main Topic</Label>
+                    <Input
+                      id="topic"
+                      name="topic"
+                      placeholder="e.g., Technology, Cooking"
+                      value={formData.topic}
+                      onChange={handleChange}
+                      required
+                      className="bg-input border-border placeholder:text-muted-foreground"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="avatarId" className="text-sm font-medium mb-1 block">Avatar ID</Label>
-                  <Input
-                    id="avatarId"
-                    name="avatarId"
-                    placeholder="Enter your avatar ID"
-                    value={formData.avatarId}
-                    onChange={handleChange}
-                    required
-                  />
+                  <div>
+                    <Label htmlFor="avatarId" className="text-sm font-medium mb-2 block text-foreground/90">Avatar ID</Label>
+                    <Input
+                      id="avatarId"
+                      name="avatarId"
+                      placeholder="Enter your avatar ID"
+                      value={formData.avatarId}
+                      onChange={handleChange}
+                      required
+                      className="bg-input border-border placeholder:text-muted-foreground"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-end pt-4">
-                  <Button type="submit" disabled={isLoading} className="min-w-[150px] rounded-lg text-base py-3 px-6">
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading} 
+                    className="min-w-[160px] bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-base py-3 px-6 shadow-md hover:shadow-lg transition-shadow"
+                    size="lg"
+                  >
                     {isLoading ? 'Submitting...' : 'Submit Video'}
                   </Button>
                 </div>
@@ -193,7 +202,7 @@ export default function Home() {
           </Tabs>
 
           {status && (
-            <p className={`mt-6 text-sm p-3 rounded-md ${status.startsWith('Error') || status.startsWith('Connection error') ? 'bg-destructive/20 text-destructive-foreground' : 'bg-green-500/20 text-green-300'}`}>
+            <p className={`mt-6 text-sm p-4 rounded-lg ${status.startsWith('Error') || status.startsWith('Connection error') ? 'bg-destructive/10 text-destructive' : 'bg-green-500/10 text-green-400'} border ${status.startsWith('Error') || status.startsWith('Connection error') ? 'border-destructive/30' : 'border-green-500/30'}`}>
               {status}
             </p>
           )}

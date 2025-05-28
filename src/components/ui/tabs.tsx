@@ -14,8 +14,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-auto items-center justify-center bg-transparent p-0 text-muted-foreground", // Adjusted: h-auto, bg-transparent, p-0
-      // "border-b border-border", // Optional: if you want a line under the whole tab list area
+      "inline-flex h-auto items-center justify-center rounded-none bg-transparent p-0 text-muted-foreground", // Key changes: rounded-none, bg-transparent
       className
     )}
     {...props}
@@ -30,11 +29,12 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-none px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
       "data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:bg-transparent", // Active state: primary text, no shadow, transparent bg
-      "data-[state=active]:border-b-2 data-[state=active]:border-primary", // Active state: bottom border
-      "text-muted-foreground hover:text-foreground", // Default and hover state
-      "pb-2.5", // Consistent padding for underline space
+      "data-[state=active]:border-b-2 data-[state=active]:border-primary", // Active state: bottom border with primary color
+      "border-b-2 border-transparent", // Inactive state: transparent bottom border for consistent height
+      "text-muted-foreground hover:text-foreground data-[state=inactive]:hover:border-muted-foreground/50", // Default and hover state for inactive tabs
+      "pb-3 pt-2", // Adjusted padding for better visual balance with the underline
       className
     )}
     {...props}
@@ -50,7 +50,7 @@ const TabsContent = React.forwardRef<
     ref={ref}
     className={cn(
       "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-      className
+      className // Keep existing mt-2 for spacing after tabs
     )}
     {...props}
   />
