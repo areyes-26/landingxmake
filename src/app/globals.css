@@ -1,42 +1,56 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 225 20% 14%; /* #1A1F2C */
+    --foreground: 0 0% 98%; /* #FAFAFA */
+
+    --card: 225 20% 16%; /* #1F2430 - For input backgrounds */
+    --card-foreground: 0 0% 98%;
+
+    --popover: 225 20% 12%; /* Slightly darker than bg for popovers */
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 220 13% 75%; /* #ABB5C4 - Light blue/gray for button */
+    --primary-foreground: 225 20% 14%; /* Dark text for primary button */
+
+    --secondary: 225 20% 20%; /* #293040 */
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 225 20% 25%; /* #333C50 */
+    --muted-foreground: 0 0% 60%; /* #999999 */
+
+    --accent: 220 15% 85%; /* #CAD1DC - Lighter accent for hover, active tab line */
+    --accent-foreground: 225 20% 10%; /* #12161F - Dark text for accent elements */
+
+    --destructive: 0 63% 31%; /* #9F2121 */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 225 20% 22%; /* #2E3648 - For input borders, slightly lighter than input bg */
+    --input: 225 20% 16%; /* #1F2430 - Same as card for input background fields */
+    
+    --ring: 220 13% 65%; /* #9AA6B8 - Focus ring, slightly darker than primary */
+
+    --radius: 0.75rem; /* More rounded elements */
   }
+
+  /* Apply dark theme by default without needing a class on html/body */
+  /* The variables defined in :root will be used directly */
 }
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-geist-sans);
+  }
+  html,
+  body {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
