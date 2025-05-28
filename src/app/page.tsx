@@ -116,23 +116,22 @@ export default function Home() {
           </div>
 
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as keyof typeof DURATION_LIMITS)} className="w-full mb-8">
-            <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 border-b-0 mb-2">
+            <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 mb-6"> {/* Removed border-b-0, adjusted mb */}
               {Object.entries(DURATION_LIMITS).map(([key, { label, limit }]) => (
                 <TabsTrigger
                   key={key}
                   value={key}
-                  className="pb-3 data-[state=active]:border-primary data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground hover:text-foreground"
+                  className="pb-3 data-[state=inactive]:text-muted-foreground" // Simplified, base component handles active state
                 >
                   {label} ({limit} character limit)
                 </TabsTrigger>
               ))}
             </TabsList>
-
-            {/* Ensure TabsContent is a direct child of Tabs */}
-            <TabsContent value={activeTab} >
+            
+            <TabsContent value={activeTab} className="pt-2"> {/* Added pt-2 for spacing after tabs */}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <Label htmlFor="videoTitle" className="text-sm font-medium">Video Title</Label>
+                  <Label htmlFor="videoTitle" className="text-sm font-medium mb-1 block">Video Title</Label>
                   <Input
                     id="videoTitle"
                     name="videoTitle"
@@ -140,12 +139,11 @@ export default function Home() {
                     value={formData.videoTitle}
                     onChange={handleChange}
                     required
-                    className="mt-1"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="description" className="text-sm font-medium">Video Description</Label>
+                  <Label htmlFor="description" className="text-sm font-medium mb-1 block">Video Description</Label>
                   <Textarea
                     id="description"
                     name="description"
@@ -154,7 +152,7 @@ export default function Home() {
                     onChange={handleChange}
                     maxLength={charLimit}
                     required
-                    className="mt-1 min-h-[150px]"
+                    className="min-h-[150px]"
                   />
                   <p className="text-xs text-muted-foreground mt-1 text-right">
                     {formData.description.length}/{charLimit} characters
@@ -162,7 +160,7 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <Label htmlFor="topic" className="text-sm font-medium">Main Topic</Label>
+                  <Label htmlFor="topic" className="text-sm font-medium mb-1 block">Main Topic</Label>
                   <Input
                     id="topic"
                     name="topic"
@@ -170,12 +168,11 @@ export default function Home() {
                     value={formData.topic}
                     onChange={handleChange}
                     required
-                    className="mt-1"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="avatarId" className="text-sm font-medium">Avatar ID</Label>
+                  <Label htmlFor="avatarId" className="text-sm font-medium mb-1 block">Avatar ID</Label>
                   <Input
                     id="avatarId"
                     name="avatarId"
@@ -183,7 +180,6 @@ export default function Home() {
                     value={formData.avatarId}
                     onChange={handleChange}
                     required
-                    className="mt-1"
                   />
                 </div>
 
@@ -197,7 +193,7 @@ export default function Home() {
           </Tabs>
 
           {status && (
-            <p className={`mt-6 text-sm p-3 rounded-md ${status.startsWith('Error') || status.startsWith('Connection error') ? 'bg-destructive/20 text-destructive' : 'bg-green-500/20 text-green-300'}`}>
+            <p className={`mt-6 text-sm p-3 rounded-md ${status.startsWith('Error') || status.startsWith('Connection error') ? 'bg-destructive/20 text-destructive-foreground' : 'bg-green-500/20 text-green-300'}`}>
               {status}
             </p>
           )}
