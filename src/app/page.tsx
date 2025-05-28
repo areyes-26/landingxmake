@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useState, type FormEvent, type ChangeEvent } from 'react';
+import { useState, type FormEvent, type ChangeEvent, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Bell, PlaySquare, User } from "lucide-react";
+import { Bell, PlaySquare, User, ChevronDown, Check } from "lucide-react";
 
 interface FormData {
   videoTitle: string;
@@ -25,16 +25,29 @@ const DURATION_LIMITS = {
 
 type DurationKey = keyof typeof DURATION_LIMITS;
 
+const AVATAR_OPTIONS = [
+  { id: 'sofia_01', name: 'Sofía', imageUrl: 'https://placehold.co/40x40/E6A4B4/FFFFFF.png', dataAiHint: 'woman face' },
+  { id: 'luis_02', name: 'Luis', imageUrl: 'https://placehold.co/40x40/A4B4E6/FFFFFF.png', dataAiHint: 'man face' },
+  { id: 'ana_03', name: 'Ana', imageUrl: 'https://placehold.co/40x40/B4E6A4/FFFFFF.png', dataAiHint: 'woman portrait' },
+  { id: 'carlos_04', name: 'Carlos', imageUrl: 'https://placehold.co/40x40/E6DCA4/FFFFFF.png', dataAiHint: 'man portrait' },
+];
+
+type AvatarOption = typeof AVATAR_OPTIONS[number];
+
 export default function Home() {
   const [formData, setFormData] = useState<FormData>({
     videoTitle: '',
     description: '',
     topic: '',
-    avatarId: ''
+    avatarId: '' // Este será el ID que se envíe
   });
   const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<DurationKey>('1.5min'); // Default to 1:30 to match image
+  const [activeTab, setActiveTab] = useState<DurationKey>('1.5min');
+
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarOption | null>(null);
+  const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
+  const avatarDropdownRef = useRef<HTMLDivElement>(null);
 
   const charLimit = DURATION_LIMITS[activeTab].limit;
 
@@ -49,10 +62,34 @@ export default function Home() {
     }
   };
 
+  const handleAvatarSelect = (avatar: AvatarOption) => {
+    setSelectedAvatar(avatar);
+    setFormData(prev => ({ ...prev, avatarId: avatar.id }));
+    setIsAvatarDropdownOpen(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (avatarDropdownRef.current && !avatarDropdownRef.current.contains(event.target as Node)) {
+        setIsAvatarDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setStatus('Enviando...');
+
+    if (!formData.avatarId) {
+      setStatus('Error: Debes seleccionar un avatar.');
+      setIsLoading(false);
+      return;
+    }
 
     const descriptionToSend = formData.description.length > charLimit
       ? formData.description.substring(0, charLimit)
@@ -62,7 +99,7 @@ export default function Home() {
       const res = await fetch('/api/send-to-sheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, description: descriptionToSend, topic: formData.topic, avatarId: formData.avatarId, videoTitle: formData.videoTitle }),
+        body: JSON.stringify({ ...formData, description: descriptionToSend }), // avatarId ya está en formData
       });
 
       const result = await res.json();
@@ -70,6 +107,7 @@ export default function Home() {
       if (res.ok && (result.success || result.response || result.rawResponse)) {
         setStatus('Idea de video enviada correctamente!');
         setFormData({ videoTitle: '', description: '', topic: '', avatarId: '' });
+        setSelectedAvatar(null); // Resetear avatar seleccionado
       } else {
         const errorMessage = result.error || (typeof result.rawResponse === 'string' ? result.rawResponse : JSON.stringify(result));
         setStatus(`Error al enviar: ${errorMessage}`);
@@ -83,7 +121,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-3">
@@ -107,7 +144,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12 flex justify-center">
         <div className="w-full max-w-2xl bg-card p-6 sm:p-8 rounded-xl shadow-2xl">
           <div className="mb-8 text-center">
@@ -124,12 +160,12 @@ export default function Home() {
                   key={key}
                   value={key}
                 >
-                  {DURATION_LIMITS[key].label} 
+                  {DURATION_LIMITS[key].label}
                   <span className="text-xs ml-1 text-muted-foreground/80">({DURATION_LIMITS[key].limit} caract.)</span>
                 </TabsTrigger>
               ))}
             </TabsList>
-            
+
             <TabsContent value={activeTab} className="pt-2">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
@@ -176,24 +212,62 @@ export default function Home() {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="avatarId" className="text-sm font-medium mb-2 block text-foreground/90">ID de Avatar</Label>
-                    <Input
-                      id="avatarId"
-                      name="avatarId"
-                      placeholder="Introduce tu ID de avatar"
-                      value={formData.avatarId}
-                      onChange={handleChange}
-                      required
-                      className="bg-input border-border placeholder:text-muted-foreground"
-                    />
+                  <div className="relative" ref={avatarDropdownRef}>
+                    <Label className="text-sm font-medium mb-2 block text-foreground/90">Avatar</Label>
+                    <button
+                      type="button"
+                      onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)}
+                      className="flex items-center justify-between w-full h-12 rounded-md border border-input bg-input px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-left"
+                      aria-haspopup="listbox"
+                      aria-expanded={isAvatarDropdownOpen}
+                    >
+                      {selectedAvatar ? (
+                        <div className="flex items-center space-x-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={selectedAvatar.imageUrl} alt={selectedAvatar.name} data-ai-hint={selectedAvatar.dataAiHint} />
+                            <AvatarFallback>{selectedAvatar.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-foreground">{selectedAvatar.name}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Seleccionar Avatar</span>
+                      )}
+                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isAvatarDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isAvatarDropdownOpen && (
+                      <div className="absolute z-10 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                        <ul role="listbox">
+                          {AVATAR_OPTIONS.map((avatar) => (
+                            <li
+                              key={avatar.id}
+                              onClick={() => handleAvatarSelect(avatar)}
+                              className="flex items-center justify-between p-3 hover:bg-accent cursor-pointer text-sm text-foreground"
+                              role="option"
+                              aria-selected={selectedAvatar?.id === avatar.id}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={avatar.imageUrl} alt={avatar.name} data-ai-hint={avatar.dataAiHint} />
+                                  <AvatarFallback>{avatar.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span>{avatar.name}</span>
+                              </div>
+                              {selectedAvatar?.id === avatar.id && <Check className="h-4 w-4 text-primary" />}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                     {!formData.avatarId && !isLoading && status?.includes("Debes seleccionar un avatar") && (
+                       <p className="text-xs text-destructive mt-1">Este campo es requerido.</p>
+                     )}
                   </div>
                 </div>
 
                 <div className="flex justify-end pt-4">
-                  <Button 
-                    type="submit" 
-                    disabled={isLoading} 
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
                     className="min-w-[180px] text-base py-3 px-6 shadow-md hover:shadow-lg transition-shadow duration-150 ease-in-out"
                     size="lg"
                   >
