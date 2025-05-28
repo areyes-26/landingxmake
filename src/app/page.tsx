@@ -25,21 +25,49 @@ const DURATION_LIMITS = {
 
 type DurationKey = keyof typeof DURATION_LIMITS;
 
-const AVATAR_OPTIONS = [
-  { id: 'sofia_01', name: 'Sofía', imageUrl: 'https://placehold.co/40x40/E6A4B4/FFFFFF.png', dataAiHint: 'woman face' },
-  { id: 'luis_02', name: 'Luis', imageUrl: 'https://placehold.co/40x40/A4B4E6/FFFFFF.png', dataAiHint: 'man face' },
-  { id: 'ana_03', name: 'Ana', imageUrl: 'https://placehold.co/40x40/B4E6A4/FFFFFF.png', dataAiHint: 'woman portrait' },
-  { id: 'carlos_04', name: 'Carlos', imageUrl: 'https://placehold.co/40x40/E6DCA4/FFFFFF.png', dataAiHint: 'man portrait' },
+interface AvatarOption {
+  id: string;
+  name: string;
+  imageUrl: string;
+  dataAiHint: string;
+}
+
+interface AvatarGroup {
+  title: string;
+  options: AvatarOption[];
+}
+
+const AVATAR_GROUPS: AvatarGroup[] = [
+  {
+    title: 'Avatares Femeninos',
+    options: [
+      { id: 'sofia_01', name: 'Sofía', imageUrl: 'https://placehold.co/40x40/E6A4B4/FFFFFF.png', dataAiHint: 'woman face' },
+      { id: 'ana_03', name: 'Ana', imageUrl: 'https://placehold.co/40x40/B4E6A4/FFFFFF.png', dataAiHint: 'woman portrait' },
+    ]
+  },
+  {
+    title: 'Avatares Masculinos',
+    options: [
+      { id: 'luis_02', name: 'Luis', imageUrl: 'https://placehold.co/40x40/A4B4E6/FFFFFF.png', dataAiHint: 'man face' },
+      { id: 'carlos_04', name: 'Carlos', imageUrl: 'https://placehold.co/40x40/E6DCA4/FFFFFF.png', dataAiHint: 'man portrait' },
+    ]
+  },
+  {
+    title: 'Avatares Adicionales',
+    options: [
+      { id: 'elena_05', name: 'Elena', imageUrl: 'https://placehold.co/40x40/D8BFD8/000000.png', dataAiHint: 'woman cartoon' },
+      { id: 'miguel_06', name: 'Miguel', imageUrl: 'https://placehold.co/40x40/ADD8E6/000000.png', dataAiHint: 'man cartoon' },
+    ]
+  }
 ];
 
-type AvatarOption = typeof AVATAR_OPTIONS[number];
 
 export default function Home() {
   const [formData, setFormData] = useState<FormData>({
     videoTitle: '',
     description: '',
     topic: '',
-    avatarId: '' // Este será el ID que se envíe
+    avatarId: ''
   });
   const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -99,15 +127,15 @@ export default function Home() {
       const res = await fetch('/api/send-to-sheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, description: descriptionToSend }), // avatarId ya está en formData
+        body: JSON.stringify({ ...formData, description: descriptionToSend, topic: formData.topic, videoTitle: formData.videoTitle }),
       });
 
       const result = await res.json();
 
       if (res.ok && (result.success || result.response || result.rawResponse)) {
-        setStatus('Idea de video enviada correctamente!');
+        setStatus('¡Idea de video enviada correctamente!');
         setFormData({ videoTitle: '', description: '', topic: '', avatarId: '' });
-        setSelectedAvatar(null); // Resetear avatar seleccionado
+        setSelectedAvatar(null);
       } else {
         const errorMessage = result.error || (typeof result.rawResponse === 'string' ? result.rawResponse : JSON.stringify(result));
         setStatus(`Error al enviar: ${errorMessage}`);
@@ -237,23 +265,30 @@ export default function Home() {
                     {isAvatarDropdownOpen && (
                       <div className="absolute z-10 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                         <ul role="listbox">
-                          {AVATAR_OPTIONS.map((avatar) => (
-                            <li
-                              key={avatar.id}
-                              onClick={() => handleAvatarSelect(avatar)}
-                              className="flex items-center justify-between p-3 hover:bg-accent cursor-pointer text-sm text-foreground"
-                              role="option"
-                              aria-selected={selectedAvatar?.id === avatar.id}
-                            >
-                              <div className="flex items-center space-x-3">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarImage src={avatar.imageUrl} alt={avatar.name} data-ai-hint={avatar.dataAiHint} />
-                                  <AvatarFallback>{avatar.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <span>{avatar.name}</span>
-                              </div>
-                              {selectedAvatar?.id === avatar.id && <Check className="h-4 w-4 text-primary" />}
-                            </li>
+                          {AVATAR_GROUPS.map((group) => (
+                            <React.Fragment key={group.title}>
+                              <li className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                {group.title}
+                              </li>
+                              {group.options.map((avatar) => (
+                                <li
+                                  key={avatar.id}
+                                  onClick={() => handleAvatarSelect(avatar)}
+                                  className="flex items-center justify-between p-3 hover:bg-accent cursor-pointer text-sm text-foreground"
+                                  role="option"
+                                  aria-selected={selectedAvatar?.id === avatar.id}
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarImage src={avatar.imageUrl} alt={avatar.name} data-ai-hint={avatar.dataAiHint} />
+                                      <AvatarFallback>{avatar.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <span>{avatar.name}</span>
+                                  </div>
+                                  {selectedAvatar?.id === avatar.id && <Check className="h-4 w-4 text-primary" />}
+                                </li>
+                              ))}
+                            </React.Fragment>
                           ))}
                         </ul>
                       </div>
