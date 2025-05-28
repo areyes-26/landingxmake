@@ -1,19 +1,17 @@
-import type { Config } from "tailwindcss"
-
-const config = {
-  darkMode: ["class"], // or 'media' or 'class'
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
   content: [
-    './pages/**/*.{ts,tsx}', // For Next.js pages directory (if any)
+    './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',    // For Next.js app directory
-    './src/**/*.{ts,tsx}',    // More general path for all ts/tsx files in src
-	],
-  prefix: "",
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
+  ],
   theme: {
     container: {
       center: true,
       padding: {
-        DEFAULT: "1rem", // Default padding for containers
+        DEFAULT: "1rem",
         sm: "2rem",
         lg: "4rem",
         xl: "5rem",
@@ -65,7 +63,22 @@ const config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", "sans-serif", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"],
+        sans: [
+          "var(--font-sans)",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "Noto Sans",
+          "sans-serif",
+          "Apple Color Emoji",
+          "Segoe UI Emoji",
+          "Segoe UI Symbol",
+          "Noto Color Emoji"
+        ],
       },
       keyframes: {
         "accordion-down": {
@@ -84,6 +97,4 @@ const config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config
-
-export default config
+};

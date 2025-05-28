@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 @layer base {
   :root {
     --background: 225 20% 14%; /* #1A1F2C - Deep Dark Blue/Gray */

@@ -18,9 +18,9 @@ interface FormData {
 }
 
 const DURATION_LIMITS = {
-  '30s': { label: '30 seconds', limit: 100 }, // Example limit
-  '1min': { label: '1 minute', limit: 300 },   // Example limit
-  '1.5min': { label: '1:30 minutes', limit: 600 },// Example limit
+  '30s': { label: '30 segundos', limit: 100 },
+  '1min': { label: '1 minuto', limit: 300 },
+  '1.5min': { label: '1:30 minutos', limit: 600 },
 };
 
 type DurationKey = keyof typeof DURATION_LIMITS;
@@ -34,7 +34,7 @@ export default function Home() {
   });
   const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<DurationKey>('30s');
+  const [activeTab, setActiveTab] = useState<DurationKey>('1.5min'); // Default to 1:30 to match image
 
   const charLimit = DURATION_LIMITS[activeTab].limit;
 
@@ -52,7 +52,7 @@ export default function Home() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setStatus('Submitting...');
+    setStatus('Enviando...');
 
     const descriptionToSend = formData.description.length > charLimit
       ? formData.description.substring(0, charLimit)
@@ -68,14 +68,14 @@ export default function Home() {
       const result = await res.json();
 
       if (res.ok && (result.success || result.response || result.rawResponse)) {
-        setStatus('Video idea submitted successfully!');
+        setStatus('Idea de video enviada correctamente!');
         setFormData({ videoTitle: '', description: '', topic: '', avatarId: '' });
       } else {
         const errorMessage = result.error || (typeof result.rawResponse === 'string' ? result.rawResponse : JSON.stringify(result));
-        setStatus(`Error submitting: ${errorMessage}`);
+        setStatus(`Error al enviar: ${errorMessage}`);
       }
     } catch (error: any) {
-      setStatus(`Connection error: ${error.message}`);
+      setStatus(`Error de conexión: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -88,19 +88,19 @@ export default function Home() {
         <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-3">
             <PlaySquare className="h-7 w-7 text-primary" />
-            <span className="font-semibold text-xl">Video Platform</span>
+            <span className="font-semibold text-xl">Plataforma de Video</span>
           </div>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            <a href="#" className="text-foreground/70 hover:text-foreground transition-colors">Home</a>
-            <a href="#" className="text-foreground/70 hover:text-foreground transition-colors">Explore</a>
-            <a href="#" className="text-primary font-semibold hover:text-primary/90 transition-colors">Create</a>
+            <a href="#" className="text-foreground/70 hover:text-foreground transition-colors">Inicio</a>
+            <a href="#" className="text-foreground/70 hover:text-foreground transition-colors">Explorar</a>
+            <a href="#" className="text-primary font-semibold hover:text-primary/90 transition-colors">Crear</a>
           </nav>
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="icon" className="text-foreground/70 hover:text-foreground hover:bg-accent/50">
               <Bell className="h-5 w-5" />
             </Button>
             <Avatar className="h-9 w-9">
-              <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="profile woman" />
+              <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar de Usuario" data-ai-hint="profile woman" />
               <AvatarFallback><User size={18}/></AvatarFallback>
             </Avatar>
           </div>
@@ -111,9 +111,9 @@ export default function Home() {
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12 flex justify-center">
         <div className="w-full max-w-2xl bg-card p-6 sm:p-8 rounded-xl shadow-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Submit a Video</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Enviar un Video</h1>
             <p className="text-muted-foreground mt-2 text-base">
-              Share your story with the world. Fill out the form below to submit your video idea.
+              Comparte tu historia con el mundo. Completa el formulario para enviar tu idea de video.
             </p>
           </div>
 
@@ -125,19 +125,19 @@ export default function Home() {
                   value={key}
                 >
                   {DURATION_LIMITS[key].label} 
-                  <span className="hidden sm:inline text-xs ml-1 text-muted-foreground/80">({DURATION_LIMITS[key].limit} chars)</span>
+                  <span className="text-xs ml-1 text-muted-foreground/80">({DURATION_LIMITS[key].limit} caract.)</span>
                 </TabsTrigger>
               ))}
             </TabsList>
             
-            <TabsContent value={activeTab} className="pt-2"> {/* Added pt-2 for spacing after underline from TabsTrigger */}
+            <TabsContent value={activeTab} className="pt-2">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <Label htmlFor="videoTitle" className="text-sm font-medium mb-2 block text-foreground/90">Video Title</Label>
+                  <Label htmlFor="videoTitle" className="text-sm font-medium mb-2 block text-foreground/90">Título del Video</Label>
                   <Input
                     id="videoTitle"
                     name="videoTitle"
-                    placeholder="Enter the title of your video"
+                    placeholder="Introduce el título de tu video"
                     value={formData.videoTitle}
                     onChange={handleChange}
                     required
@@ -146,11 +146,11 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <Label htmlFor="description" className="text-sm font-medium mb-2 block text-foreground/90">Video Description</Label>
+                  <Label htmlFor="description" className="text-sm font-medium mb-2 block text-foreground/90">Descripción del Video</Label>
                   <Textarea
                     id="description"
                     name="description"
-                    placeholder="Describe your video in detail..."
+                    placeholder="Describe tu video en detalle..."
                     value={formData.description}
                     onChange={handleChange}
                     maxLength={charLimit}
@@ -158,17 +158,17 @@ export default function Home() {
                     className="min-h-[150px] bg-input border-border placeholder:text-muted-foreground"
                   />
                   <p className="text-xs text-muted-foreground mt-1.5 text-right">
-                    {formData.description.length}/{charLimit} characters
+                    {formData.description.length}/{charLimit} caracteres
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="topic" className="text-sm font-medium mb-2 block text-foreground/90">Main Topic</Label>
+                    <Label htmlFor="topic" className="text-sm font-medium mb-2 block text-foreground/90">Tema Principal</Label>
                     <Input
                       id="topic"
                       name="topic"
-                      placeholder="e.g., Technology, Cooking"
+                      placeholder="Ej: Tecnología, Cocina"
                       value={formData.topic}
                       onChange={handleChange}
                       required
@@ -177,11 +177,11 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <Label htmlFor="avatarId" className="text-sm font-medium mb-2 block text-foreground/90">Avatar ID</Label>
+                    <Label htmlFor="avatarId" className="text-sm font-medium mb-2 block text-foreground/90">ID de Avatar</Label>
                     <Input
                       id="avatarId"
                       name="avatarId"
-                      placeholder="Enter your avatar ID"
+                      placeholder="Introduce tu ID de avatar"
                       value={formData.avatarId}
                       onChange={handleChange}
                       required
@@ -197,7 +197,7 @@ export default function Home() {
                     className="min-w-[180px] text-base py-3 px-6 shadow-md hover:shadow-lg transition-shadow duration-150 ease-in-out"
                     size="lg"
                   >
-                    {isLoading ? 'Submitting...' : 'Submit Video'}
+                    {isLoading ? 'Enviando...' : 'Enviar Video'}
                   </Button>
                 </div>
               </form>
@@ -205,7 +205,7 @@ export default function Home() {
           </Tabs>
 
           {status && (
-            <p className={`mt-6 text-sm p-4 rounded-lg ${status.startsWith('Error') || status.startsWith('Connection error') ? 'bg-destructive/10 text-destructive' : 'bg-green-600/10 text-green-400'} border ${status.startsWith('Error') || status.startsWith('Connection error') ? 'border-destructive/30' : 'border-green-600/30'}`}>
+            <p className={`mt-6 text-sm p-4 rounded-lg ${status.startsWith('Error') || status.startsWith('Error de conexión') ? 'bg-destructive/10 text-destructive' : 'bg-green-600/10 text-green-400'} border ${status.startsWith('Error') || status.startsWith('Error de conexión') ? 'border-destructive/30' : 'border-green-600/30'}`}>
               {status}
             </p>
           )}

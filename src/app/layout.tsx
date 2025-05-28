@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css"; // Ensures global styles are loaded
 
 export const metadata: Metadata = {
-  title: "Video Platform",
-  description: "Submit your video content.",
+  title: "Plataforma de Video",
+  description: "Envía tu contenido de video.",
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       {/* Applies base background, text color, and font from globals.css */}
       <body className="font-sans antialiased bg-background text-foreground">
         {children}
