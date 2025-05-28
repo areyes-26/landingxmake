@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, type FormEvent, type ChangeEvent, useEffect, useRef } from 'react';
+import { useState, type FormEvent, type ChangeEvent, useEffect, useRef, Fragment } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -266,7 +266,7 @@ export default function Home() {
                       <div className="absolute z-10 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                         <ul role="listbox">
                           {AVATAR_GROUPS.map((group) => (
-                            <React.Fragment key={group.title}>
+                            <Fragment key={group.title}>
                               <li className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 {group.title}
                               </li>
@@ -288,7 +288,7 @@ export default function Home() {
                                   {selectedAvatar?.id === avatar.id && <Check className="h-4 w-4 text-primary" />}
                                 </li>
                               ))}
-                            </React.Fragment>
+                            </Fragment>
                           ))}
                         </ul>
                       </div>
@@ -323,3 +323,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
