@@ -10,6 +10,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Bell, PlaySquare, User, ChevronDown, Check } from "lucide-react";
 
+interface AvatarOption {
+  id: string;
+  name: string;
+  imageUrl: string;
+  dataAiHint: string;
+}
+
+interface AvatarGroup {
+  title: string;
+  options: AvatarOption[];
+}
+
+
 interface FormData {
   videoTitle: string;
   description: string;
@@ -37,29 +50,8 @@ interface AvatarGroup {
   options: AvatarOption[];
 }
 
-const AVATAR_GROUPS: AvatarGroup[] = [
-  {
-    title: 'Avatares Femeninos',
-    options: [
-      { id: 'sofia_01', name: 'Sofía', imageUrl: 'https://placehold.co/40x40/E6A4B4/FFFFFF.png', dataAiHint: 'woman face' },
-      { id: 'ana_03', name: 'Ana', imageUrl: 'https://placehold.co/40x40/B4E6A4/FFFFFF.png', dataAiHint: 'woman portrait' },
-    ]
-  },
-  {
-    title: 'Avatares Masculinos',
-    options: [
-      { id: 'luis_02', name: 'Luis', imageUrl: 'https://placehold.co/40x40/A4B4E6/FFFFFF.png', dataAiHint: 'man face' },
-      { id: 'carlos_04', name: 'Carlos', imageUrl: 'https://placehold.co/40x40/E6DCA4/FFFFFF.png', dataAiHint: 'man portrait' },
-    ]
-  },
-  {
-    title: 'Avatares Adicionales',
-    options: [
-      { id: 'elena_05', name: 'Elena', imageUrl: 'https://placehold.co/40x40/D8BFD8/000000.png', dataAiHint: 'woman cartoon' },
-      { id: 'miguel_06', name: 'Miguel', imageUrl: 'https://placehold.co/40x40/ADD8E6/000000.png', dataAiHint: 'man cartoon' },
-    ]
-  }
-];
+
+
 
 
 export default function Home() {
@@ -76,6 +68,10 @@ export default function Home() {
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarOption | null>(null);
   const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
   const avatarDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [avatarGroups, setAvatarGroups] = useState<AvatarGroup[]>([]);
+  const [loadingAvatars, setLoadingAvatars] = useState(true);
+
 
   const charLimit = DURATION_LIMITS[activeTab].limit;
 
@@ -97,16 +93,46 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (avatarDropdownRef.current && !avatarDropdownRef.current.contains(event.target as Node)) {
-        setIsAvatarDropdownOpen(false);
+    const fetchAvatars = async () => {
+      setLoadingAvatars(true); // ⬅️ empezamos la carga
+      try {
+        const res = await fetch('/api/avatars');
+        const data = await res.json();
+  
+        if (!res.ok) throw new Error(data.error || 'Error al obtener avatares');
+  
+        const avatars: AvatarOption[] = data.data.avatars.map((avatar: any) => ({
+          id: avatar.avatar_id,
+          name: avatar.avatar_name,
+          imageUrl: avatar.preview_image_url,
+          dataAiHint: avatar.gender + ' face',
+        }));
+  
+        const photos: AvatarOption[] = data.data.talking_photos.map((photo: any) => ({
+          id: photo.talking_photo_id,
+          name: photo.talking_photo_name,
+          imageUrl: photo.preview_image_url,
+          dataAiHint: 'photo avatar',
+        }));
+  
+        const groupedAvatars: AvatarGroup[] = [
+          { title: 'Avatares Normales', options: avatars },
+          { title: 'Fotos Parlantes', options: photos },
+        ];
+  
+        setAvatarGroups(groupedAvatars);
+      } catch (error: any) {
+        console.error('Error al cargar avatares:', error.message);
+      } finally {
+        setLoadingAvatars(false); // ⬅️ terminamos la carga
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+  
+    fetchAvatars();
   }, []);
+  
+  
+  
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -265,7 +291,11 @@ export default function Home() {
                     {isAvatarDropdownOpen && (
                       <div className="absolute z-10 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                         <ul role="listbox">
-                          {AVATAR_GROUPS.map((group) => (
+                        {loadingAvatars && (
+                          <li className="p-3 text-sm text-muted-foreground">Cargando avatares...</li>
+                        )}
+
+                        {avatarGroups.map((group) => (
                             <Fragment key={group.title}>
                               <li className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 {group.title}
