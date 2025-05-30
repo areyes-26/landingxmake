@@ -2,22 +2,19 @@
 # See https://firebase.google.com/docs/app-hosting/configure#cloud-run
 runConfig:
   minInstances: 0
-  # maxInstances: 100
-  # concurrency: 80
-  # cpu: 1
-  # memoryMiB: 512
 
 # Environment variables and secrets.
-# env:
-  # Configure environment variables.
-  # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
-  # - variable: MESSAGE
-  #   value: Hello world!
-  #   availability:
-  #     - BUILD
-  #     - RUNTIME
+env:
+  # ✅ Clave de Heygen
+  - variable: HEYGEN_API_KEY
+    value: "ZmIzOGQ2NzhiMmQ2NGM1YzkzNzhiMWFlZWFlMGI0NjgtMTY5MTAwNjQxMA=="
+    availability:
+      - BUILD
+      - RUNTIME
 
-  # Grant access to secrets in Cloud Secret Manager.
-  # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
-  # - variable: MY_SECRET
-  #   secret: mySecretRef
+  # ✅ Clave de Google Sheets
+  - variable: GOOGLE_SCRIPT_URL
+    value: "https://script.google.com/macros/s/AKfycbydTxZSMPhxChk5DHF-_YWT7sBHSXsIqovLy-8JVPuA9c2EJIYdif80S0JvICiBCPfO/exec"
+    availability:
+      - BUILD
+      - RUNTIME
