@@ -72,6 +72,33 @@ export default function Home() {
   const [avatarGroups, setAvatarGroups] = useState<AvatarGroup[]>([]);
   const [loadingAvatars, setLoadingAvatars] = useState(true);
 
+  // ——— Estados para el nuevo dropdown ———
+  const [avatarGroupList, setAvatarGroupList] = useState<{id:string,name:string}[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+  const [avatarsByGroup, setAvatarsByGroup] = useState<AvatarOption[]>([]);
+
+
+// 1) Traer la lista de grupos una sola vez:
+useEffect(() => {
+  fetch('/api/avatar-groups')
+    .then(r => r.json())
+    .then(json => setAvatarGroupList(json.data || []))
+    .catch(console.error);
+}, []);
+
+// 2) Cada vez que cambie selectedGroupId, traer sólo esos avatares
+useEffect(() => {
+  if (!selectedGroupId) {
+    setAvatarsByGroup([]);
+    return;
+  }
+  fetch(`/api/avatars-by-group?groupId=${selectedGroupId}`)
+    .then(r => r.json())
+    .then(json => setAvatarsByGroup(json.data || []))
+    .catch(console.error);
+}, [selectedGroupId]);
+
+
 
   const charLimit = DURATION_LIMITS[activeTab].limit;
 
@@ -328,6 +355,49 @@ export default function Home() {
                      )}
                   </div>
                 </div>
+                
+                              {/* —— Nuevo selector de GRUPOS —— */}
+                <div className="mt-6">
+                  <Label className="text-sm font-medium mb-2 block text-foreground/90">
+                    Grupo de Avatares
+                  </Label>
+                  <select
+                    className="w-full border border-border rounded-md p-2 bg-input text-foreground"
+                    value={selectedGroupId}
+                    onChange={e => setSelectedGroupId(e.target.value)}
+                  >
+                    <option value="">Seleccionar grupo</option>
+                    {avatarGroupList.map(g => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* —— Muestra los avatares de ese grupo —— */}
+                {avatarsByGroup.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                    {avatarsByGroup.map(av => (
+                      <div
+                        key={av.id}
+                        className="flex flex-col items-center p-3 border border-border rounded-md hover:bg-accent cursor-pointer"
+                        onClick={() => handleAvatarSelect(av)}
+                      >
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={av.imageUrl} alt={av.name} />
+                          <AvatarFallback>{av.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="mt-2 text-sm">{av.name}</span>
+                        {selectedAvatar?.id === av.id && (
+                          <Check className="h-4 w-4 text-primary mt-1" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+
 
                 <div className="flex justify-end pt-4">
                   <Button
