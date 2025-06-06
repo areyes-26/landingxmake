@@ -32,7 +32,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push('/'); // Redirect to home after successful login
+      router.push('/');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -101,9 +101,17 @@ export default function LoginPage() {
         </Button>
       </form>
       <div className="text-center">
-        <Link href="/auth/signup" className="text-muted-foreground hover:text-primary">
-          ¿No tienes cuenta? Regístrate aquí
-        </Link>
+        <p className="text-sm text-center text-muted-foreground">
+          ¿No tienes cuenta?{' '}
+          <Link href="/auth/signup" className="text-primary hover:underline">
+            Regístrate
+          </Link>
+        </p>
+        <p className="text-sm text-center text-muted-foreground">
+          <Link href="/auth/forgot-password" className="text-primary hover:underline">
+            Olvidé mi contraseña
+          </Link>
+        </p>
       </div>
     </div>
   );

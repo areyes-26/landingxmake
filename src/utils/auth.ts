@@ -1,4 +1,3 @@
-import { auth } from '../firebase/client';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -7,8 +6,10 @@ import {
   updateProfile,
   User,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  sendPasswordResetEmail
 } from 'firebase/auth';
+import { auth } from '../firebase/client';
 
 export async function login(email: string, password: string) {
   try {
@@ -69,32 +70,45 @@ export async function register(email: string, password: string) {
   }
 }
 
-export async function logout() {
+export async function sendPasswordReset(email: string) {
   try {
-    await signOut(auth);
-  } catch (error) {
+    console.log('Sending password reset email to:', email);
+    await sendPasswordResetEmail(auth, email);
+    console.log('Password reset email sent successfully');
+    return true;
+  } catch (error: any) {
+    console.error('Error sending password reset email:', error);
+    
+    if (error.code === 'auth/user-not-found') {
+      throw new Error('No se encontró ningún usuario con este correo electrónico');
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error('Correo electrónico inválido');
+    }
     throw error;
   }
 }
 
-// Optional: Add profile update functionality
 export async function updateUserProfile(name: string) {
   try {
-    await updateProfile(auth.currentUser!, {
+    if (!auth.currentUser) {
+      throw new Error('No hay usuario autenticado');
+    }
+    
+    await updateProfile(auth.currentUser, {
       displayName: name
     });
   } catch (error) {
+    console.error('Error al actualizar perfil:', error);
     throw error;
   }
 }
 
-export async function signInWithGoogle() {
+export async function logout() {
   try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    return result.user;
-  } catch (error: any) {
-    console.error('Google Sign-In error:', error);
-    throw new Error('Error al iniciar sesión con Google');
+    await signOut(auth);
+    console.log('Usuario deslogueado exitosamente');
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+    throw error;
   }
 }
