@@ -1,6 +1,8 @@
 // src/app/api/send-to-sheet/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
+import { dbInstance } from '@/firebase/client';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,9 +10,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log("📦 Body recibido:", body);
 
-    // 2) Desestructuramos exactamente las propiedades que esperamos:
-    //    (antes solamente teníamos videoTitle, description, topic, avatarId, callToAction, tone, requestDate,
-    //     pero ahora añadimos `email`)
+    // 2) Desestructuramos exactamente las propiedades que esperamos
     const {
       videoTitle,
       description,
@@ -18,13 +18,13 @@ export async function POST(req: NextRequest) {
       avatarId,
       callToAction,
       tone,
-      email,        // <--- aquí capturamos el campo email
-      requestDate,  // (puede venir vacía o undefined; de todos modos la sobreescribimos con la fecha actual)
+      email,
+      requestDate,
       specificCallToAction,
       duration,
     } = body;
 
-    // 3) Validación básica: asegurarnos de que los 4 campos principales no estén vacíos
+    // 3) Validación básica
     if (!videoTitle || !description || !topic || !avatarId) {
       return NextResponse.json(
         {
@@ -34,61 +34,99 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4) URL de tu Apps Script (puedes poner esto en una variable de entorno si lo prefieres)
+    let firestoreDocId = null;
+
+    // 4) Guardar en Firestore
+    try {
+      console.log("💾 Guardando en Firestore...");
+      const videoDoc = await addDoc(collection(dbInstance, 'videos'), {
+        videoTitle,
+        description,
+        topic,
+        avatarId,
+        callToAction,
+        specificCallToAction,
+        tone,
+        email,
+        duration,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      firestoreDocId = videoDoc.id;
+      console.log("✅ Documento creado en Firestore con ID:", firestoreDocId);
+    } catch (firestoreError) {
+      console.error("❌ Error al guardar en Firestore:", firestoreError);
+      return NextResponse.json(
+        {
+          error: "Error al guardar en Firestore",
+          details: firestoreError instanceof Error ? firestoreError.message : String(firestoreError)
+        },
+        { status: 500 }
+      );
+    }
+
+    // 5) URL de tu Apps Script
     const googleScriptUrl =
       'https://script.google.com/macros/s/AKfycbydTxZSMPhxChk5DHF-_YWT7sBHSXsIqovLy-8JVPuA9c2EJIYdif80S0JvICiBCPfO/exec';
     console.log("🔗 Using Google Script URL:", googleScriptUrl);
 
-    // 5) Construimos el payload EXACTO que tu Apps Script espera
-    //    - requestDate: lo forzamos a la fecha actual (`new Date().toISOString()`)
-    //    - userEmail: tomamos el `email` que llegó del cliente
-    //    - id, videoCategory, nombreEmpresa, specificCallToAction: como en tu script original
-    //      no los usas, los dejamos en cadena vacía.
+    // 6) Construimos el payload para Google Sheets
     const payload = {
       requestDate: new Date().toISOString(),
       videoTitle,
       description,
       topic,
       avatarId,
-      id: '',                        // no lo tienes en el formulario → cadena vacía
-      userEmail: email || '',        // <— aquí pasamos el email desde el cliente
+      id: '',
+      userEmail: email || '',
       tone: tone || '',
-      videoCategory: '',             // no lo tienes en el formulario → cadena vacía
-      nombreEmpresa: '',             // no lo tienes en el formulario → cadena vacía
+      videoCategory: '',
+      nombreEmpresa: '',
       callToAction: callToAction || '',
       specificCallToAction: specificCallToAction || '',
-      duration:'',      // no lo tienes en el formulario → cadena vacía
+      duration: duration || '',
     };
 
-    console.log("📦 Data to send:", payload);
+    console.log("📦 Data to send to Google Sheets:", payload);
 
-    // 6) Hacemos POST al endpoint de Google Apps Script
+    // 7) Hacemos POST al endpoint de Google Apps Script
     const response = await fetch(googleScriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
-    // 7) Leemos la respuesta (puede ser JSON o texto plano)
+    // 8) Leemos la respuesta
     const text = await response.text();
     console.log("📥 RESPONSE FROM GOOGLE SHEETS:", text);
 
-    // 8) Intentamos parsear la respuesta como JSON. Si falla, devolvemos el texto “rawResponse”.
+    // 9) Intentamos parsear la respuesta como JSON
     try {
       const json = JSON.parse(text);
-      return NextResponse.json(json, { status: response.ok ? 200 : 500 });
+      return NextResponse.json({
+        success: true,
+        message: "Datos guardados correctamente",
+        firestoreId: firestoreDocId,
+        ...json
+      }, { status: 200 });
     } catch (parseError) {
       console.error("⚠️ ERROR PARSING RESPONSE:", parseError);
-      return NextResponse.json({ rawResponse: text }, { status: response.ok ? 200 : 500 });
+      return NextResponse.json({ 
+        success: true,
+        message: "Datos guardados correctamente",
+        firestoreId: firestoreDocId,
+        rawResponse: text
+      }, { status: 200 });
     }
 
-  } catch (err: unknown) {
-    let message = 'Error inesperado en el servidor.';
-    if (err instanceof Error) message = err.message;
-    else if (typeof err === 'string') message = err;
-    console.error("❌ Error en /api/send-to-sheet:", err);
+  } catch (error) {
+    console.error("❌ Error general:", error);
     return NextResponse.json(
-      { error: message },
+      { 
+        error: "Error procesando la solicitud",
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

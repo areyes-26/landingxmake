@@ -14,9 +14,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-auto items-center justify-center rounded-none bg-transparent p-0 text-muted-foreground",
-      // Ensure it doesn't have its own bottom border if children will handle it
-      "border-b-0", 
+      "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
       className
     )}
     {...props}
@@ -31,13 +29,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-none px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-      "data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:bg-transparent",
-      "data-[state=active]:border-b-2 data-[state=active]:border-primary", // Active state: bottom border with primary color
-      "border-b-2 border-transparent", // Inactive state: transparent bottom border for consistent height and alignment
-      "text-muted-foreground hover:text-foreground data-[state=inactive]:hover:border-muted-foreground/30", // Default and hover state for inactive tabs
-      "pb-3 pt-2", // Adjusted padding for better visual balance with the underline
-      "flex-1", // Make tabs take equal width if in a grid
+      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
       className
     )}
     {...props}

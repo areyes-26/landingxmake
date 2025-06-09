@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Button } from './button';
 
 export function Navigation() {
   const pathname = usePathname();
@@ -26,6 +27,11 @@ export function Navigation() {
                 Iniciar sesión
               </Link>
             )}
+            <Link href="/admin/avatar-test">
+              <Button variant="outline" size="sm">
+                Pruebas de Avatar
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

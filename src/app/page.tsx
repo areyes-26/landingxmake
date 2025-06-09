@@ -209,6 +209,31 @@ export default function Home() {
     fetchAvatars();
   }, []);
 
+  const handleNext = () => {
+    // Validar campos según el paso actual
+    const currentStepFields = STEPS[currentStep].fields;
+    const missingFields = currentStepFields.filter(field => !formData[field as keyof FormData]);
+    
+    if (missingFields.length > 0) {
+      let errorMessage = 'Por favor completa todos los campos requeridos: ';
+      if (currentStep === 0) {
+        errorMessage = 'Por favor completa el título, descripción y duración del video.';
+      } else if (currentStep === 1) {
+        errorMessage = 'Por favor selecciona un llamado a la acción.';
+      } else if (currentStep === 2) {
+        errorMessage = 'Por favor selecciona un avatar y completa los campos restantes.';
+      }
+      setStatus(errorMessage);
+      return;
+    }
+
+    if (currentStep === STEPS.length - 1) {
+      handleSubmit(new Event('submit') as any);
+    } else {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -248,13 +273,25 @@ export default function Home() {
 
       if (res.ok && (result.success || result.response || result.rawResponse)) {
         setStatus('¡Idea de video enviada correctamente!');
-        setFormData({ videoTitle: '', description: '', topic: '', avatarId: '', callToAction: '', specificCallToAction: '', tone: '', email: '', duration: '' });
+        setFormData({
+          videoTitle: '',
+          description: '',
+          topic: '',
+          avatarId: '',
+          callToAction: '',
+          specificCallToAction: '',
+          tone: '',
+          email: '',
+          duration: ''
+        });
         setSelectedAvatar(null);
+        setCurrentStep(0); // Resetear al primer paso
       } else {
         const errorMessage = result.error || (typeof result.rawResponse === 'string' ? result.rawResponse : JSON.stringify(result));
         setStatus(`Error al enviar: ${errorMessage}`);
       }
     } catch (error: any) {
+      console.error('Error submitting form:', error);
       setStatus(`Error de conexión: ${error.message}`);
     } finally {
       setIsLoading(false);
@@ -458,27 +495,6 @@ export default function Home() {
 
   const handleBack = () => {
     setCurrentStep(currentStep - 1);
-  };
-
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      // Show validation error message or highlight required fields
-      setStatus('Por favor, completa todos los campos requeridos en este paso');
-    }
-  };
-
-  const validateStep = (step: number) => {
-    const fields = STEPS[step].fields as (keyof FormData)[];
-    return fields.every((field) => {
-      const value = formData[field];
-      // For duration, we need to check if it's a valid key from DURATION_LIMITS
-      if (field === 'duration') {
-        return Object.keys(DURATION_LIMITS).includes(value as string);
-      }
-      return value !== '';
-    });
   };
 
   const renderStepContent = () => {

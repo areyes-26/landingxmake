@@ -2,6 +2,7 @@ import { Inter } from 'next/font/google';
 import type { Metadata } from "next";
 import "./globals.css"; // Ensures global styles are loaded
 import { Navigation } from '@/components/ui/navigation';
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ['latin'],
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-background text-foreground">
         <Navigation />
         {children}
+        <Toaster />
       </body>
     </html>
   );
