@@ -1,0 +1,20 @@
+[REDES_SOCIALES]
+
+Generá un copy para promocionar este video en redes sociales:
+
+**Copy corto (para TikTok, Reels, Shorts):**  
+   - Máximo 140–200 caracteres.  
+   - Estilo atrapante y directo.  
+   - Incluir algunos emojis relevantes al tema (no más de 2 o 3).  
+   - Incluir hasta 3 hashtags eficaces, sin repetir palabras clave evidentes.
+   - Los hashtags deben ubicarse al final del copy.  
+   - Ideal para atraer visualmente y generar interacción orgánica.
+
+El copy generado debe mantener coherencia con el **tono de voz elegido por el usuario: {{tone}}**.
+
+Otros datos útiles para el contenido:
+- Tema del video: {{topic}}
+- Descripción del video: {{description}}
+- Título sugerido: {{videoTitle}}
+
+Evitá repetir las palabras clave como hashtags. No incluyas ningún tipo de explicación o encabezado, solo el texto final directamente utilizable para redes.

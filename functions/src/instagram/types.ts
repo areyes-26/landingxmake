@@ -140,14 +140,14 @@ export interface InstagramInsights {
 }
 
 // Firestore collection paths
-export const COLLECTIONS = {
-  TOKENS: 'instagram_tokens',
-  MEDIA: 'instagram_media',
-  PROFILES: 'instagram_profiles',
-  COMMENTS: 'instagram_comments',
-  STORIES: 'instagram_stories',
-  INSIGHTS: 'instagram_insights'
-} as const;
+// export const COLLECTIONS = {
+//   TOKENS: 'instagram_tokens',
+//   MEDIA: 'instagram_media',
+//   PROFILES: 'instagram_profiles',
+//   COMMENTS: 'instagram_comments',
+//   STORIES: 'instagram_stories',
+//   INSIGHTS: 'instagram_insights'
+// } as const;
 
 // Firestore indexes
 export const INDEXES = {

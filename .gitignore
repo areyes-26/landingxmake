@@ -46,6 +46,7 @@ firebase-debug.log
 firebaseConfig.js
 firebase-config.js
 secrets.js
+.runtimeconfig.json
 
 # Firebase Functions build
 functions/lib/

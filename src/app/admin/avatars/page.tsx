@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { dbInstance } from '@/firebase/client';
+import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatFirestoreDate } from '@/utils/date';
 
 interface Avatar {
   id: string;
@@ -21,7 +22,7 @@ export default function AvatarsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(dbInstance, 'avatars'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'avatars'), orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const avatarList: Avatar[] = [];
@@ -65,7 +66,7 @@ export default function AvatarsPage() {
                   <p><strong>Estilo:</strong> {avatar.style}</p>
                   <p><strong>Estado:</strong> {avatar.status}</p>
                   <p><strong>Fuente:</strong> {avatar.source}</p>
-                  <p><strong>Creado:</strong> {avatar.createdAt?.toDate().toLocaleString()}</p>
+                  <p><strong>Creado:</strong> {formatFirestoreDate(avatar.createdAt)}</p>
                 </div>
               </div>
             </CardContent>

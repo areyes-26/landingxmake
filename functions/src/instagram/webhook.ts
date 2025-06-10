@@ -74,7 +74,7 @@ async function processMedia(mediaData: InstagramWebhookRequest['entry'][number][
     logWebhookEvent('media_processed', mediaData);
   } catch (error) {
     console.error('Error processing media:', error);
-    logWebhookEvent('media_processing_error', mediaData, error);
+    logWebhookEvent('media_processing_error', mediaData, error instanceof Error ? error : undefined);
   }
 }
 
@@ -205,7 +205,7 @@ export const instagramWebhook = functions.https.onRequest(async (req, res) => {
         }
       } catch (error) {
         console.error('Error processing webhook events:', error);
-        logWebhookEvent('processing_error', body, error);
+        logWebhookEvent('processing_error', body, error instanceof Error ? error : undefined);
       }
     } else {
       // Handle unsupported methods

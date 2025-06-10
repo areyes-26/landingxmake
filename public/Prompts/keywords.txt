@@ -1,0 +1,8 @@
+[KEYWORDS]
+
+Generá una lista de **exactamente 4 palabras clave** (keywords) relevantes para el siguiente contenido. Estas palabras deben estar optimizadas para buscar videos o imágenes en bancos de contenido gratuito como Pexels, Pixabay o Unsplash. 
+
+No incluyas hashtags, emojis ni símbolos. Usá términos amplios pero bien enfocados que representen visualmente el tema del video.
+
+Tema principal: {{tema}}
+Descripción del video: {{descripcion}}

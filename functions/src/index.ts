@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import * as instagram from './instagram/callback';
 import * as crypto from 'crypto'; // Para verificar la firma de Meta
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 
 // Export functions and admin instances for other modules
 export { functions, admin };
@@ -101,3 +102,69 @@ export const facebookWebhook = functions.https.onRequest(async (req, res) => {
 });
 
 export const instagramCallback = instagram.instagramCallback;
+
+// Inicializar Firebase Admin
+admin.initializeApp();
+
+// Función que se dispara cuando se crea un nuevo documento en la colección 'videos'
+export const onVideoCreated = onDocumentCreated('videos/{videoId}', async (event) => {
+  try {
+    const videoData = event.data?.data();
+    if (!videoData) {
+      console.error('No data in document');
+      return;
+    }
+
+    // Actualizar el estado a 'processing'
+    await event.data?.ref.update({
+      status: 'processing',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Preparar los datos para OpenAI
+    const openAIData = {
+      titulo: videoData.videoTitle,
+      descripcion: videoData.description,
+      tono: videoData.tone,
+      duration: videoData.duration,
+      tema: videoData.topic,
+      keyPoints: videoData.specificCallToAction ? [videoData.specificCallToAction] : undefined,
+      targetAudience: videoData.email
+    };
+
+    // Generar el script usando OpenAI
+    const scriptResponse = await fetch(`${process.env.API_URL}/api/openai/generate-script`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.API_KEY}`
+      },
+      body: JSON.stringify({
+        videoData: openAIData,
+        generationId: event.data?.id
+      })
+    });
+
+    if (!scriptResponse.ok) {
+      throw new Error('Failed to generate script');
+    }
+
+    const scriptResult = await scriptResponse.json();
+
+    // Actualizar el documento con el script generado
+    await event.data?.ref.update({
+      status: 'completed',
+      script: scriptResult.script,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+  } catch (error) {
+    console.error('Error processing video:', error);
+    // Actualizar el estado a 'failed' en caso de error
+    await event.data?.ref.update({
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  }
+});

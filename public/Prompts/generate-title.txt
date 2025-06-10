@@ -1,0 +1,24 @@
+Genera un título optimizado para un video basado en la siguiente información:
+
+Título original: "{{originalTitle}}"
+Tema: "{{topic}}"
+Descripción: "{{description}}"
+Tono deseado: "{{tone}}"
+
+{{#if script}}Guion generado:
+{{script}}{{/if}}
+
+{{#if socialCopy}}Copys sociales generados:
+{{socialCopy}}{{/if}}
+
+El título debe:
+1. Ser atractivo y llamativo
+2. Mantener el tono {{tone}}
+3. Ser conciso (máximo 60 caracteres)
+4. Incluir palabras clave relevantes del guion y los copys sociales
+5. Ser optimizado para SEO
+6. Ser diferente al título original pero mantener su esencia
+7. Reflejar el contenido real del video según el guion generado
+8. Ser coherente con los copys sociales generados
+
+Genera SOLO el título, sin explicaciones adicionales. 

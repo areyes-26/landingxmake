@@ -19,7 +19,7 @@ export const checkVideoStatus = onDocumentCreated(
   `/${COLLECTIONS.VIDEO_PUBLISH}/{statusId}`,
   async (event) => {
     const statusDoc = event.data;
-    if (!statusDoc.exists) return;
+    if (!statusDoc || !statusDoc.exists) return;
 
     const status = statusDoc.data() as VideoPublishStatus;
     if (!status.creationId) return;

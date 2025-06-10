@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getHeyGenClient } from '@/lib/heygen';
-import { dbInstance } from '@/firebase/client';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export async function POST(request: Request) {
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     console.log('Guardando en Firestore...');
     // Guardar en Firestore
-    const avatarDoc = await addDoc(collection(dbInstance, 'avatars'), {
+    const avatarDoc = await addDoc(collection(db, 'avatars'), {
       prompt,
       gender,
       style,

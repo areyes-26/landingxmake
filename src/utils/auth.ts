@@ -112,3 +112,14 @@ export async function logout() {
     throw error;
   }
 }
+
+export async function signInWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (error) {
+    console.error('Google sign-in error:', error);
+    throw error;
+  }
+}
