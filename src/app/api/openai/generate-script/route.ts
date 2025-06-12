@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
-import type { ScriptResponse, ApiError } from '../../../../types/openai';
 
 export async function POST(req: Request) {
   try {
@@ -14,12 +13,10 @@ export async function POST(req: Request) {
     const { videoData, generationId } = body as { videoData: any; generationId: string };
 
     if (!videoData || !generationId) {
-      const error: ApiError = {
+      return NextResponse.json({
         error: 'Video data and generation ID are required',
         status: 400
-      };
-      console.error('[generate-script] Error:', error);
-      return NextResponse.json(error, { status: 400 });
+      }, { status: 400 });
     }
 
     // Generar script
@@ -34,28 +31,33 @@ export async function POST(req: Request) {
 
     console.log('[generate-script] Prompt generado:', prompt);
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini-2024-07-18",
-      messages: [
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 1000
-    });
-
-    const script = completion.choices[0].message.content;
-    console.log('[generate-script] Script generado:', script);
+    let script = null;
+    let openaiError = null;
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini-2024-07-18",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000
+      });
+      script = completion.choices[0].message.content;
+      console.log('[generate-script] Script generado:', script);
+    } catch (err) {
+      openaiError = err instanceof Error ? err.message : String(err);
+      console.error('[generate-script] Error de OpenAI:', openaiError);
+    }
 
     if (!script) {
-      const error: ApiError = {
+      return NextResponse.json({
         error: 'Failed to generate script',
+        details: openaiError,
         status: 500
-      };
-      console.error('[generate-script] Error:', error);
-      return NextResponse.json(error, { status: 500 });
+      }, { status: 500 });
     }
 
     // Guardar script en completion_results_videos
@@ -73,10 +75,10 @@ export async function POST(req: Request) {
     }, { merge: true });
 
     // Generar copys sociales
+    let socialCopyErrors = [];
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-      
-      // Generar short copy
+      const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+      console.log('[generate-script] Intentando generar short copy en:', `${baseUrl}/api/openai/generate-short-copy`);
       const shortCopyResponse = await fetch(`${baseUrl}/api/openai/generate-short-copy`, {
         method: 'POST',
         headers: {
@@ -87,12 +89,13 @@ export async function POST(req: Request) {
           script,
         }),
       });
-
+      console.log('[generate-script] Respuesta short copy status:', shortCopyResponse.status);
       if (!shortCopyResponse.ok) {
-        console.error('[generate-script] Error al generar short copy:', await shortCopyResponse.text());
+        const text = await shortCopyResponse.text();
+        socialCopyErrors.push('ShortCopy: ' + text);
+        console.error('[generate-script] Error al generar short copy:', text);
       }
-
-      // Generar long copy
+      console.log('[generate-script] Intentando generar long copy en:', `${baseUrl}/api/openai/generate-long-copy`);
       const longCopyResponse = await fetch(`${baseUrl}/api/openai/generate-long-copy`, {
         method: 'POST',
         headers: {
@@ -103,25 +106,28 @@ export async function POST(req: Request) {
           script,
         }),
       });
-
+      console.log('[generate-script] Respuesta long copy status:', longCopyResponse.status);
       if (!longCopyResponse.ok) {
-        console.error('[generate-script] Error al generar long copy:', await longCopyResponse.text());
+        const text = await longCopyResponse.text();
+        socialCopyErrors.push('LongCopy: ' + text);
+        console.error('[generate-script] Error al generar long copy:', text);
       }
     } catch (error) {
+      socialCopyErrors.push(error instanceof Error ? error.message : String(error));
       console.error('[generate-script] Error al generar copys:', error);
     }
 
-    const response: ScriptResponse = {
-      script
-    };
-    return NextResponse.json(response);
+    return NextResponse.json({
+      script,
+      socialCopyErrors: socialCopyErrors.length > 0 ? socialCopyErrors : undefined
+    });
 
   } catch (error) {
     console.error('[generate-script] Error inesperado:', error);
-    const apiError: ApiError = {
+    return NextResponse.json({
       error: error instanceof Error ? error.message : 'An unexpected error occurred',
+      details: error instanceof Error ? error.stack : String(error),
       status: 500
-    };
-    return NextResponse.json(apiError, { status: 500 });
+    }, { status: 500 });
   }
 } 

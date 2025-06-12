@@ -6,8 +6,7 @@ import type { LongCopyResponse, ApiError } from '../../../../types/openai';
 
 export async function POST(req: Request) {
   try {
-    console.log('[generate-long-copy] Iniciando generación de long copy...');
-    
+    console.log('[generate-long-copy] INICIO');
     const body = await req.json();
     console.log('[generate-long-copy] Body recibido:', JSON.stringify(body, null, 2));
     
@@ -60,6 +59,7 @@ export async function POST(req: Request) {
       temperature: 0.7,
       max_tokens: 1000
     });
+    console.log('[generate-long-copy] Completion recibido:', completion);
 
     const longCopy = completion.choices[0].message.content;
     console.log('[generate-long-copy] Long copy generado:', longCopy);
@@ -75,6 +75,7 @@ export async function POST(req: Request) {
 
     // Guardar long copy en completion_results_videos
     const completionRef = doc(db, 'completion_results_videos', videoId);
+    console.log('[generate-long-copy] Guardando en Firestore...');
     await setDoc(completionRef, {
       longCopy: {
         platform: 'Facebook/LinkedIn',
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
       },
       updatedAt: serverTimestamp()
     }, { merge: true });
+    console.log('[generate-long-copy] Guardado en Firestore OK');
 
     const response: LongCopyResponse = {
       longCopy: {

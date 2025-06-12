@@ -1,3 +1,101 @@
+export const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
+export const HEYGEN_API_URL = 'https://api.heygen.com/v2';
+
+export interface HeyGenVoice {
+  id: string;
+  name: string;
+  language: string;
+  gender: string;
+  preview_url?: string;
+}
+
+// Voces predefinidas seleccionadas manualmente
+const SELECTED_VOICES = [
+  // Voces masculinas
+  {
+    id: 'f80e430f06b34b70b275c9c746436e37',
+    name: 'Rex - Broadcaster',
+    language: 'Multilingual',
+    gender: 'male',
+    preview_url: ''
+  },
+  {
+    id: '02733a92a0db457aadf63b235d2aa457',
+    name: 'Paul - Broadcaster',
+    language: 'Multilingual',
+    gender: 'male',
+    preview_url: ''
+  },
+  {
+    id: '715e7730f62043c290be79876b19f692',
+    name: 'Theo - Broadcaster',
+    language: 'Multilingual',
+    gender: 'male',
+    preview_url: ''
+  },
+  {
+    id: 'ef5765a5c2ee49e58f7dd942e67fb6f2',
+    name: 'Jaidev - Professional',
+    language: 'Hindi',
+    gender: 'male',
+    preview_url: 'https://static.heygen.ai/voice_preview/f76b718088c54b22bb8da12dbcb78a0f.wav'
+  },
+  {
+    id: 'fa4de0d162464cdf9311f73e83a556d7',
+    name: 'Marcus - Natural',
+    language: 'Swedish',
+    gender: 'male',
+    preview_url: 'https://static.heygen.ai/voice_preview/BvAUkFVWyJPVoCNBaQ39LD.wav'
+  },
+  // Voces femeninas
+  {
+    id: 'a43417015bdd430f9983c36add401518',
+    name: 'Christine - Broadcaster',
+    language: 'Multilingual',
+    gender: 'female',
+    preview_url: ''
+  },
+  {
+    id: 'd61b495d10ae4d1d8df0c6a8aeeece61',
+    name: 'Elizabeth - Broadcaster',
+    language: 'Multilingual',
+    gender: 'female',
+    preview_url: ''
+  },
+  {
+    id: 'f5b3191e7171477880fc9144f60d8015',
+    name: 'Melissa - Broadcaster',
+    language: 'Multilingual',
+    gender: 'female',
+    preview_url: ''
+  },
+  {
+    id: 'dcf69bbbab5b41f2b75b9f86316c06c5',
+    name: 'Aruna - Natural',
+    language: 'Hindi',
+    gender: 'female',
+    preview_url: 'https://static.heygen.ai/voice_preview/b1303134695d4d0e8d6308ac7d22bd3e.wav'
+  },
+  {
+    id: 'ceebaab47af040a49edcbd27dc8f7dbe',
+    name: 'Luningnig',
+    language: 'Filipino',
+    gender: 'female',
+    preview_url: 'https://resource.heygen.ai/text_to_speech/htZTETbhCoDCsCYKDUmnw6.mp3'
+  }
+];
+
+export async function getVoices(): Promise<HeyGenVoice[]> {
+  console.log('API Key present:', !!HEYGEN_API_KEY);
+  
+  if (!HEYGEN_API_KEY) {
+    throw new Error('HeyGen API key is not configured');
+  }
+
+  // En lugar de hacer la llamada a la API, retornamos las voces predefinidas
+  return SELECTED_VOICES;
+}
+
 interface HeyGenConfig {
   apiKey: string;
   baseUrl: string;

@@ -69,7 +69,10 @@ export default function VideoSettingsPreview() {
       setIsLoading(true);
       const response = await fetch(`/api/videos/${videoId}`);
       if (!response.ok) {
-        throw new Error('Error al cargar la configuración del video');
+        const data = await response.json();
+        setError(data.error || 'Error al cargar la configuración del video');
+        if (data.details) setError(prev => prev + ' - ' + data.details);
+        throw new Error(data.error || 'Error al cargar la configuración del video');
       }
       const data = await response.json();
       setVideoSettings(data);
@@ -242,6 +245,17 @@ export default function VideoSettingsPreview() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Cargando configuración del video...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-destructive mb-2">Error</h2>
+          <p className="text-muted-foreground">{error}</p>
         </div>
       </div>
     );

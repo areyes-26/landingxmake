@@ -1,120 +1,107 @@
-import { onRequest } from 'firebase-functions/v2/https';
+// functions/src/instagram/publish.ts
+
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import corsModule from 'cors';
 import { metaGraphApiClient } from './metaGraphApiClient';
 import { COLLECTIONS, VideoPublishStatus } from './types';
 
-admin.initializeApp();
-
-interface PublishVideoRequest {
-  userId: string;
-  videoUrl: string;
-  caption?: string;
+// Inicializa Admin SDK una vez
+if (!admin.apps.length) {
+  admin.initializeApp();
 }
+const db = admin.firestore();
 
-export const publishToInstagram = onRequest({
-  cors: true,
-  region: 'us-central1',
-  maxInstances: 1,
-  timeoutSeconds: 300,
-}, async (req, res) => {
-  try {
-    const data = req.body;
-    if (!data) {
-      throw new Error('No request body received');
-    }
+// Configura CORS
+const cors = corsModule({ origin: true });
 
-    // Validate request
-    if (!data.userId || !data.videoUrl) {
-      res.status(400).json({
-        error: 'userId and videoUrl are required'
-      });
-      return;
-    }
+// Endpoint: publicar video en Instagram
+export const publishToInstagram = functions
+  .region('us-central1')
+  .runWith({ timeoutSeconds: 300, maxInstances: 1 })
+  .https.onRequest((req, res) => {
+    cors(req, res, async () => {
+      try {
+        const { userId, videoUrl, caption } = req.body as {
+          userId?: string;
+          videoUrl?: string;
+          caption?: string;
+        };
 
-    // Create video container
-    try {
-      const containerResponse = await metaGraphApiClient.createVideoContainer(
-        data.userId,
-        data.videoUrl,
-        data.caption
-      );
+        if (!userId || !videoUrl) {
+          res.status(400).json({ error: 'userId and videoUrl are required' });
+          return;
+        }
 
-      if (containerResponse.error) {
-        throw new Error(containerResponse.error.message);
+        // 1) Crear contenedor de video en Meta
+        const containerResponse = await metaGraphApiClient.createVideoContainer(
+          userId,
+          videoUrl,
+          caption
+        );
+        if (containerResponse.error) {
+          throw new Error(containerResponse.error.message);
+        }
+        const creationId = containerResponse.data!.id;
+        if (!creationId) {
+          throw new Error('Failed to create video container');
+        }
+
+        // 2) Guardar estado inicial en Firestore
+        const statusRef = await db
+          .collection(COLLECTIONS.VIDEO_PUBLISH)
+          .add({
+            userId,
+            creationId,
+            videoUrl,
+            caption,
+            status: 'CREATING' as const,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastCheckAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+        // 3) Responder inmediatamente con el ID de estado
+        res.status(200).json({
+          statusId: statusRef.id,
+          creationId,
+          status: 'CREATING',
+        });
+      } catch (error) {
+        console.error('Error creating video container:', error);
+        res
+          .status(500)
+          .json({ error: error instanceof Error ? error.message : 'Internal server error' });
       }
+    });
+  });
 
-      const creationId = containerResponse.data?.id;
-      if (!creationId) {
-        throw new Error('Failed to create video container');
+// Endpoint: consultar estado de publicación
+export const getVideoPublishStatus = functions
+  .region('us-central1')
+  .runWith({ timeoutSeconds: 300, maxInstances: 1 })
+  .https.onRequest((req, res) => {
+    cors(req, res, async () => {
+      try {
+        const { statusId } = req.body as { statusId?: string };
+        if (!statusId) {
+          res.status(400).json({ error: 'statusId is required' });
+          return;
+        }
+
+        const snap = await db.collection(COLLECTIONS.VIDEO_PUBLISH).doc(statusId).get();
+        if (!snap.exists) {
+          res.status(404).json({ error: 'Status not found' });
+          return;
+        }
+
+        const status = snap.data() as VideoPublishStatus;
+        res.status(200).json(status);
+      } catch (error) {
+        console.error('Error getting video publish status:', error);
+        res
+          .status(500)
+          .json({ error: error instanceof Error ? error.message : 'Internal server error' });
       }
-
-      // Save to Firestore
-      const statusRef = await admin.firestore().collection(COLLECTIONS.VIDEO_PUBLISH).add({
-        userId: data.userId,
-        creationId,
-        videoUrl: data.videoUrl,
-        caption: data.caption,
-        status: 'CREATING' as const,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        lastCheckAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Return immediately with status ID
-      res.status(200).json({
-        statusId: statusRef.id,
-        creationId,
-        status: 'CREATING'
-      });
-      return;
-    } catch (error) {
-      console.error('Error creating video container:', error);
-      res.status(500).json({
-        error: error instanceof Error ? error.message : 'Failed to create video container'
-      });
-      return;
-    }
-  } catch (error) {
-    console.error('Error in publishToInstagram:', error);
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Internal server error'
     });
-  }
-});
-
-// Get video publishing status
-export const getVideoPublishStatus = onRequest({
-  cors: true,
-  region: 'us-central1',
-  maxInstances: 1,
-  timeoutSeconds: 300,
-}, async (req, res) => {
-  try {
-    const { statusId } = req.body;
-    if (!statusId) {
-      res.status(400).json({
-        error: 'statusId is required'
-      });
-      return;
-    }
-
-    const statusDoc = await admin.firestore().collection(COLLECTIONS.VIDEO_PUBLISH)
-      .doc(statusId)
-      .get();
-
-    if (!statusDoc.exists) {
-      res.status(404).json({
-        error: 'Status not found'
-      });
-      return;
-    }
-
-    const status = statusDoc.data() as VideoPublishStatus;
-    res.status(200).json(status);
-  } catch (error) {
-    console.error('Error getting video publish status:', error);
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Failed to get status'
-    });
-  }
-});
+  });

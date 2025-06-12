@@ -6,8 +6,7 @@ import type { ShortCopyResponse, ApiError } from '../../../../types/openai';
 
 export async function POST(req: Request) {
   try {
-    console.log('[generate-short-copy] Iniciando generación de short copy...');
-    
+    console.log('[generate-short-copy] INICIO');
     const body = await req.json();
     console.log('[generate-short-copy] Body recibido:', JSON.stringify(body, null, 2));
     
@@ -60,6 +59,7 @@ export async function POST(req: Request) {
       temperature: 0.7,
       max_tokens: 500
     });
+    console.log('[generate-short-copy] Completion recibido:', completion);
 
     const shortCopy = completion.choices[0].message.content;
     console.log('[generate-short-copy] Short copy generado:', shortCopy);
@@ -75,6 +75,7 @@ export async function POST(req: Request) {
 
     // Guardar short copy en completion_results_videos
     const completionRef = doc(db, 'completion_results_videos', videoId);
+    console.log('[generate-short-copy] Guardando en Firestore...');
     await setDoc(completionRef, {
       shortCopy: {
         platform: 'TikTok/Reels',
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
       },
       updatedAt: serverTimestamp()
     }, { merge: true });
+    console.log('[generate-short-copy] Guardado en Firestore OK');
 
     const response: ShortCopyResponse = {
       shortCopy: {

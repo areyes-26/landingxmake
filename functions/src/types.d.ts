@@ -17,21 +17,16 @@ declare module 'firebase-functions' {
     function onRequest(handler: (req: Request, res: Response) => void | Promise<void>): Function;
   }
 
-  export const config: {
-    (key: string): any;
-    facebook: {
-      app_secret: string;
-    };
-    heygen: {
-      api_key: string;
-    };
+  export const config: () => {
+    facebook?: { app_secret?: string };
+    heygen?: { api_key?: string };
     instagram: {
+      client_id: string; // 👈 AGREGAR ESTA LÍNEA
       client_secret: string;
       verify_token: string;
       app_secret: string;
     };
-    google: {
-      script_url: string;
-    };
+    google?: { script_url?: string };
+    openai?: { api_key?: string };
   };
 }

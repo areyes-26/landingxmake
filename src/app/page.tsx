@@ -10,6 +10,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Bell, PlaySquare, User, ChevronDown, Check } from "lucide-react";
 import Link from 'next/link';
 import { auth } from '@/lib/firebase';
+import { HeyGenVoice } from '@/lib/heygen';
+import GroupedAvatarsDropdown from '@/components/ui/GroupedAvatarsDropdown';
 
 interface AvatarOption {
   id: string;
@@ -33,6 +35,19 @@ interface FormData {
   tone: string;
   email: string;
   duration: string;
+  voiceId: string;
+  voiceDetails?: {
+    name: string;
+    language: string;
+    gender: string;
+    preview_url?: string;
+  };
+}
+
+interface VoiceOption {
+  id: string;
+  name: string;
+  language: string;
 }
 
 interface Step {
@@ -110,6 +125,7 @@ export default function Home() {
     tone: '',
     email: '',
     duration: '',
+    voiceId: '',
   });
 
   const [showSpecificCallToAction, setShowSpecificCallToAction] = useState(false);
@@ -128,6 +144,9 @@ export default function Home() {
   const [avatarGroupList, setAvatarGroupList] = useState<{id:string,name:string}[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [avatarsByGroup, setAvatarsByGroup] = useState<AvatarOption[]>([]);
+
+  const [voices, setVoices] = useState<HeyGenVoice[]>([]);
+  const [loadingVoices, setLoadingVoices] = useState(true);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -258,6 +277,34 @@ export default function Home() {
               </p>
             </div>
             <div>
+              <Label htmlFor="voice">Voz</Label>
+              <select
+                value={formData.voiceId}
+                onChange={(e) => {
+                  const selectedVoice = voices.find(v => v.id === e.target.value);
+                  setFormData(prev => ({
+                    ...prev,
+                    voiceId: e.target.value,
+                    voiceDetails: selectedVoice ? {
+                      name: selectedVoice.name,
+                      language: selectedVoice.language,
+                      gender: selectedVoice.gender,
+                      preview_url: selectedVoice.preview_url
+                    } : undefined
+                  }));
+                }}
+                className="w-full p-2 border rounded-md bg-white text-gray-900"
+                required
+              >
+                <option value="">Selecciona una voz</option>
+                {voices.map((voice) => (
+                  <option key={voice.id} value={voice.id}>
+                    {voice.name} ({voice.language})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
               <Label htmlFor="tone">Tono</Label>
               <select
                 id="tone"
@@ -276,43 +323,14 @@ export default function Home() {
             </div>
             <div>
               <Label htmlFor="avatar">Avatar</Label>
-              <div className="relative">
-                <select
-                  id="avatar"
-                  name="avatar"
-                  value={selectedAvatar?.id || ''}
-                  onChange={(e) => {
-                    const avatarId = e.target.value;
-                    const avatar = avatarGroups.flatMap(group => group.options).find(a => a.id === avatarId);
-                    if (avatar) {
-                      handleAvatarSelect(avatar);
-                    }
-                  }}
-                  className="w-full p-2 rounded-md border border-muted-foreground/20 text-muted-foreground bg-transparent focus:outline-none focus:ring-2 focus:ring-primary pr-10"
-                >
-                  <option value="">Selecciona un avatar</option>
-                  {avatarGroups.flatMap(group => group.options).map((avatar) => (
-                    <option
-                      key={avatar.id}
-                      value={avatar.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '4px 8px',
-                        backgroundColor: selectedAvatar?.id === avatar.id ? 'var(--primary)' : 'transparent',
-                        color: selectedAvatar?.id === avatar.id ? 'white' : 'var(--foreground)',
-                      }}
-                    >
-                      <div className="flex-1">{avatar.name}</div>
-                      <Avatar className="w-6 h-6">
-                        <AvatarImage src={avatar.imageUrl} alt={avatar.name} />
-                        <AvatarFallback>{avatar.name[0].toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <GroupedAvatarsDropdown
+                selectedAvatarId={selectedAvatar?.id || ''}
+                onSelect={(avatar) => {
+                  setSelectedAvatar(avatar);
+                  setFormData(prev => ({ ...prev, avatarId: avatar.id }));
+                }}
+                avatarGroups={avatarGroups}
+              />
             </div>
             {selectedAvatar && (
               <div className="mt-4">
@@ -330,6 +348,8 @@ export default function Home() {
             )}
           </div>
         );
+      default:
+        return null;
     }
   };
 
@@ -400,6 +420,42 @@ export default function Home() {
     fetchAvatars();
   }, []);
 
+  useEffect(() => {
+    const fetchVoices = async () => {
+      try {
+        console.log('Fetching voices from API...');
+        const response = await fetch('/api/voices');
+        const data = await response.json();
+        console.log('Voices data received:', data);
+        if (data.data) {
+          setVoices(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching voices:', error);
+      } finally {
+        setLoadingVoices(false);
+      }
+    };
+
+    fetchVoices();
+  }, []);
+
+  const handleVoiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const voiceId = e.target.value;
+    const selectedVoice = voices.find(voice => voice.id === voiceId);
+    
+    setFormData(prev => ({
+      ...prev,
+      voiceId: voiceId,
+      voiceDetails: selectedVoice ? {
+        name: selectedVoice.name,
+        language: selectedVoice.language,
+        gender: selectedVoice.gender,
+        preview_url: selectedVoice.preview_url
+      } : undefined
+    }));
+  };
+
   const handleNext = () => {
     // Validar campos según el paso actual
     const currentStepFields = STEPS[currentStep].fields;
@@ -438,6 +494,15 @@ export default function Home() {
         return;
       }
 
+      // Validar que se haya seleccionado una voz
+      if (!formData.voiceId) {
+        setStatus('Por favor selecciona una voz');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Enviando datos:', formData);
+
       // Enviar datos al endpoint
       const response = await fetch('/api/videos', {
         method: 'POST',
@@ -448,9 +513,10 @@ export default function Home() {
       });
 
       const data = await response.json();
+      console.log('Respuesta del servidor:', data);
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al procesar la solicitud');
+        throw new Error(data.error || data.details || 'Error al procesar la solicitud');
       }
 
       setStatus('¡Video creado exitosamente!');
@@ -459,7 +525,7 @@ export default function Home() {
       window.location.href = `/video-settings-preview?id=${data.firestoreId}`;
 
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error completo:', error);
       setStatus(error instanceof Error ? error.message : 'Error al procesar la solicitud');
     } finally {
       setIsLoading(false);
@@ -525,11 +591,11 @@ export default function Home() {
 
               {status && (
                 <p className={`mt-6 text-sm p-4 rounded-lg ${
-                  status.startsWith('Error') || status.startsWith('Error de conexión') 
+                  status?.startsWith('Error') || status?.startsWith('Error de conexión') 
                     ? 'bg-destructive/10 text-destructive' 
                     : 'bg-green-600/10 text-green-400'
                 } border ${
-                  status.startsWith('Error') || status.startsWith('Error de conexión') 
+                  status?.startsWith('Error') || status?.startsWith('Error de conexión') 
                     ? 'border-destructive/30' 
                     : 'border-green-600/30'
                 }`}>
