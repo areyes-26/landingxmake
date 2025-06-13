@@ -33,4 +33,32 @@ export interface VideoData {
     platform: string;
     content: string;
   };
+  
+  // OpenAI Results
+  openAIResults?: {
+    script?: {
+      content: string;
+      generatedAt: Timestamp;
+    };
+    socialContent?: {
+      socialCopies: {
+        platform: string;
+        content: string;
+      }[];
+      generatedAt: Timestamp;
+    };
+  };
+
+  // External Service Results
+  heygenResults?: {
+    videoUrl?: string;
+    status?: string;
+    generatedAt?: Timestamp;
+  };
+
+  creatomateResults?: {
+    videoUrl?: string;
+    status?: string;
+    generatedAt?: Timestamp;
+  };
 } 

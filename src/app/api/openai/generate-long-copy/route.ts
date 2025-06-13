@@ -2,7 +2,19 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
-import type { LongCopyResponse, ApiError } from '../../../../types/openai';
+import type { VideoData } from '@/types/video';
+
+interface LongCopyResponse {
+  longCopy: {
+    platform: string;
+    content: string;
+  };
+}
+
+interface ApiError {
+  error: string;
+  status: number;
+}
 
 export async function POST(req: Request) {
   try {

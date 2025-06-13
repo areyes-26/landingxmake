@@ -10,41 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-interface VideoSettings {
-  id: string;
-  userId: string;
-  status: 'pending' | 'processing' | 'completed' | 'error';
-  error?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  videoUrl?: string;
-  thumbnailUrl?: string;
-  script?: string;
-  videoTitle: string;
-  description: string;
-  topic: string;
-  avatarId: string;
-  callToAction: string;
-  specificCallToAction: string;
-  tone: string;
-  email: string;
-  duration: string;
-  socialContent?: {
-    socialCopies: {
-      platform: string;
-      content: string;
-    }[];
-  };
-  shortCopy?: {
-    platform: string;
-    content: string;
-  };
-  longCopy?: {
-    platform: string;
-    content: string;
-  };
-}
+import type { VideoData } from '@/types/video';
 
 export default function VideoSettingsPreview() {
   const searchParams = useSearchParams();
@@ -54,7 +20,7 @@ export default function VideoSettingsPreview() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [videoSettings, setVideoSettings] = useState<VideoSettings | null>(null);
+  const [videoSettings, setVideoSettings] = useState<VideoData | null>(null);
   const [activeTab, setActiveTab] = useState('script');
 
   useEffect(() => {

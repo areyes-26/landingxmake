@@ -10,18 +10,34 @@ export const openai = new OpenAI({
 
 export async function readPromptTemplate(path: string): Promise<string> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    if (!baseUrl) {
+      throw new Error('BASE_URL environment variable is not set');
+    }
+
     const fullUrl = new URL(path, baseUrl).toString();
     console.log('Intentando leer prompt desde:', fullUrl);
     
-    const response = await fetch(fullUrl);
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'text/plain',
+      },
+    });
+
     if (!response.ok) {
-      throw new Error(`Failed to read prompt template: ${response.statusText}`);
+      throw new Error(`Failed to read prompt template: ${response.status} ${response.statusText}`);
     }
-    return response.text();
+
+    const text = await response.text();
+    if (!text.trim()) {
+      throw new Error('Prompt template is empty');
+    }
+
+    return text;
   } catch (error) {
     console.error('Error reading prompt template:', error);
-    throw error;
+    throw new Error(`Failed to read prompt template: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -29,9 +45,18 @@ export function replacePromptPlaceholders(
   template: string,
   replacements: Record<string, string>
 ): string {
-  let result = template;
-  for (const [key, value] of Object.entries(replacements)) {
-    result = result.replace(`{{${key}}}`, value);
+  try {
+    let result = template;
+    for (const [key, value] of Object.entries(replacements)) {
+      if (value === undefined || value === null) {
+        console.warn(`Missing value for placeholder: ${key}`);
+        continue;
+      }
+      result = result.replace(new RegExp(`{{${key}}}`, 'g'), value);
+    }
+    return result;
+  } catch (error) {
+    console.error('Error replacing prompt placeholders:', error);
+    throw new Error(`Failed to replace prompt placeholders: ${error instanceof Error ? error.message : String(error)}`);
   }
-  return result;
 } 

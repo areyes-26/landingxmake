@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server';
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import type { VideoData } from '@/types/video';
+
+interface TitleResponse {
+  title: string;
+}
+
+interface ApiError {
+  error: string;
+  status: number;
+  details?: string;
+}
 
 export async function POST(req: Request) {
   try {

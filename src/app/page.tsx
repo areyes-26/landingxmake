@@ -522,7 +522,7 @@ export default function Home() {
       setStatus('¡Video creado exitosamente!');
       
       // Redirigir a la vista previa
-      window.location.href = `/video-settings-preview?id=${data.firestoreId}`;
+      window.location.href = `/videos/${data.firestoreId}`;
 
     } catch (error) {
       console.error('Error completo:', error);

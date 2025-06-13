@@ -1,6 +1,6 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth';
 
 // Validar que las variables de entorno estén presentes
 const requiredEnvVars = {
@@ -13,11 +13,15 @@ const requiredEnvVars = {
 };
 
 // Verificar que todas las variables requeridas estén presentes
-Object.entries(requiredEnvVars).forEach(([key, value]) => {
-  if (!value) {
-    throw new Error(`Missing required environment variable: NEXT_PUBLIC_FIREBASE_${key.toUpperCase()}`);
-  }
-});
+const missingVars = Object.entries(requiredEnvVars)
+  .filter(([_, value]) => !value)
+  .map(([key]) => key);
+
+if (missingVars.length > 0) {
+  throw new Error(
+    `Missing required Firebase environment variables: ${missingVars.join(', ')}`
+  );
+}
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -28,9 +32,18 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase only if it hasn't been initialized already
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const db = getFirestore(app);
-const auth = getAuth(app);
+let app: FirebaseApp;
+let db: Firestore;
+let auth: Auth;
+
+try {
+  // Initialize Firebase only if it hasn't been initialized already
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  db = getFirestore(app);
+  auth = getAuth(app);
+} catch (error) {
+  console.error('Error initializing Firebase:', error);
+  throw new Error('Failed to initialize Firebase. Please check your configuration.');
+}
 
 export { app, db, auth }; 
