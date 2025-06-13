@@ -1,7 +1,9 @@
 {
   "projects": {
     "default": "landing-x-make",
-    "testingprivacy": "landing-x-make"
+    "testingprivacy": "landing-x-make",
+    "landing videos": "landing-x-make",
+    "Landing Video": "landing-x-make"
   },
   "targets": {},
   "etags": {}

@@ -1,99 +1,87 @@
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import * as functions from 'firebase-functions/v1'; // 👈 Import correcto v1
 import * as admin from 'firebase-admin';
 import { metaGraphApiClient } from './metaGraphApiClient';
 import { COLLECTIONS, VideoPublishStatus } from './types';
 
-admin.initializeApp();
-
-const CHECK_INTERVAL = 30000; // 30 seconds
-const MAX_RETRIES = 10;
-const MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
-
-interface StatusCheckResult {
-  status: VideoPublishStatus['status'];
-  error?: string;
-  mediaUrl?: string;
+if (!admin.apps.length) {
+  admin.initializeApp();
 }
+const db = admin.firestore();
 
-export const checkVideoStatus = onDocumentCreated(
-  `/${COLLECTIONS.VIDEO_PUBLISH}/{statusId}`,
-  async (event) => {
-    const statusDoc = event.data;
-    if (!statusDoc || !statusDoc.exists) return;
+const CHECK_INTERVAL_MS = 30_000;
+const MAX_RETRIES = 10;
 
-    const status = statusDoc.data() as VideoPublishStatus;
-    if (!status.creationId) return;
+export const checkVideoStatus = functions.firestore
+  .document(`${COLLECTIONS.VIDEO_PUBLISH}/{statusId}`)
+  .onCreate(async (snapshot, context) => {
+    const initial = snapshot.data() as VideoPublishStatus;
+    const { userId, creationId } = initial;
+    if (!userId || !creationId) return null;
 
     let retries = 0;
-    let currentStatus = status.status;
 
-    const checkStatus = async () => {
+    const pollStatus = async (): Promise<void> => {
       try {
-        const statusResponse = await metaGraphApiClient.checkVideoStatus(
-          status.userId,
-          status.creationId
-        );
+        const resp = await metaGraphApiClient.checkVideoStatus(userId, creationId);
+        if (resp.error) throw new Error(resp.error.message);
 
-        if (statusResponse.error) {
-          throw new Error(statusResponse.error.message);
-        }
+        const videoStatus = resp.data!;
 
-        const videoStatus = statusResponse.data;
-        if (!videoStatus) {
-          throw new Error('No status data returned');
-        }
-
-        const statusUpdate = {
-          status: videoStatus.status as VideoPublishStatus['status'],
+        const updates: Partial<VideoPublishStatus> = {
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          lastCheckAt: admin.firestore.FieldValue.serverTimestamp()
+          lastCheckAt: admin.firestore.FieldValue.serverTimestamp(),
         };
 
         if (videoStatus.status === 'FINISHED') {
-          // Video is ready, publish it
           try {
-            await metaGraphApiClient.publishVideo(status.userId, status.creationId);
-            await statusDoc.ref.update({
-              ...statusUpdate,
-              status: 'PUBLISHED' as const,
-              mediaUrl: videoStatus.media_url
+            await metaGraphApiClient.publishVideo(userId, creationId);
+            await snapshot.ref.update({
+              ...updates,
+              status: 'PUBLISHED',
+              mediaUrl: videoStatus.media_url,
             });
-          } catch (error) {
-            console.error('Error publishing video:', error);
-            await statusDoc.ref.update({
-              ...statusUpdate,
-              status: 'FAILED' as const,
-              error: error instanceof Error ? error.message : 'Failed to publish video'
-            });
-          }
-        } else if (videoStatus.status === 'ERROR') {
-          await statusDoc.ref.update({
-            ...statusUpdate,
-            status: 'FAILED' as const,
-            error: videoStatus.error?.message
-          });
-        } else {
-          // Still uploading, update status and schedule next check
-          await statusDoc.ref.update(statusUpdate);
-          retries++;
-          if (retries < MAX_RETRIES) {
-            setTimeout(checkStatus, CHECK_INTERVAL);
-          } else {
-            await statusDoc.ref.update({
-              status: 'FAILED' as const,
-              error: 'Max retries exceeded'
+          } catch (err) {
+            await snapshot.ref.update({
+              ...updates,
+              status: 'FAILED',
+              error: err instanceof Error ? err.message : 'Error al publicar video',
             });
           }
+          return;
         }
-      } catch (error) {
-        console.error('Error checking video status:', error);
-        await statusDoc.ref.update({
-          status: 'FAILED' as const,
-          error: error instanceof Error ? error.message : 'Failed to check status'
+
+        if (videoStatus.status === 'ERROR') {
+          await snapshot.ref.update({
+            ...updates,
+            status: 'FAILED',
+            error: videoStatus.error?.message,
+          });
+          return;
+        }
+
+        await snapshot.ref.update({
+          ...updates,
+          status: 'PENDING',
+        });
+
+        retries++;
+        if (retries < MAX_RETRIES) {
+          await new Promise(res => setTimeout(res, CHECK_INTERVAL_MS));
+          return pollStatus();
+        } else {
+          await snapshot.ref.update({
+            status: 'FAILED',
+            error: 'Max retries exceeded',
+          });
+        }
+      } catch (err) {
+        console.error('Error checking video status:', err);
+        await snapshot.ref.update({
+          status: 'FAILED',
+          error: err instanceof Error ? err.message : 'Error checking status',
         });
       }
     };
 
-    await checkStatus();
-  }
-);
+    return pollStatus();
+  });

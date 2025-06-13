@@ -1,29 +1,35 @@
-import { admin, functions } from '../index';
-import { InstagramToken, COLLECTIONS } from './types';
-import { InstagramAuthResponse } from './types';
-import axios from 'axios';
-import { DocumentSnapshot } from 'firebase-admin/firestore';
-import { URLSearchParams } from 'url';
+// functions/src/instagram/tokenManager.ts
 
-// Helper function to check if we need to commit the batch
-function shouldCommitBatch(snapshot: DocumentSnapshot[]): boolean {
-  return snapshot.length > 0;
+import * as functions from 'firebase-functions';       // v1
+import * as admin from 'firebase-admin';
+import axios from 'axios';
+import { InstagramToken, InstagramAuthResponse, COLLECTIONS } from './types';
+
+// Nos aseguramos de que Admin ya esté inicializado
+if (!admin.apps.length) {
+  admin.initializeApp();
 }
+const db = admin.firestore();
+
+// Leemos la sección `instagram` de functions.config()
+const instagramCfg = functions.config().instagram;
 
 export class TokenManager {
-  private db = admin.firestore();
-  private tokensCollection = this.db.collection(COLLECTIONS.TOKENS);
+  private tokensCollection = db.collection(COLLECTIONS.TOKENS);
 
-  async createToken(userId: string, authResponse: InstagramAuthResponse): Promise<InstagramToken> {
+  async createToken(
+    userId: string,
+    authResponse: InstagramAuthResponse
+  ): Promise<InstagramToken> {
     const tokenData: InstagramToken = {
-      id: authResponse.user_id,
-      userId: authResponse.user_id,
+      id:        authResponse.user_id,
+      userId:    authResponse.user_id,
       accessToken: authResponse.access_token,
-      expiresAt: new Date(Date.now() + 3600 * 1000), // Default 1 hour
-      createdAt: new Date(),
-      lastUsedAt: new Date(),
-      status: 'active',
-      scopes: ['instagram_basic', 'instagram_content_publish', 'pages_show_list'] // Required scopes for content publishing
+      expiresAt:   new Date(Date.now() + 3600 * 1000),
+      createdAt:   new Date(),
+      lastUsedAt:  new Date(),
+      status:      'active',
+      scopes:      ['instagram_basic', 'instagram_content_publish', 'pages_show_list'],
     };
 
     await this.tokensCollection.doc(tokenData.id).set(tokenData);
@@ -31,147 +37,103 @@ export class TokenManager {
   }
 
   async getToken(userId: string): Promise<InstagramToken | null> {
-    const tokenDoc = await this.tokensCollection.doc(userId).get();
-    if (!tokenDoc.exists) return null;
+    const snap = await this.tokensCollection.doc(userId).get();
+    if (!snap.exists) return null;
 
-    const token = tokenDoc.data() as InstagramToken;
+    const token = snap.data() as InstagramToken;
     if (this.isTokenExpired(token)) {
-      // Try to refresh the token before invalidating
-      const refreshedToken = await this.refreshToken(userId);
-      if (refreshedToken) {
-        return refreshedToken;
-      }
+      const refreshed = await this.refreshToken(userId);
+      if (refreshed) return refreshed;
       await this.invalidateToken(userId);
       return null;
     }
 
-    // Update lastUsedAt
+    // Actualizamos lastUsedAt
     await this.tokensCollection.doc(userId).update({ lastUsedAt: new Date() });
     return token;
   }
 
   async invalidateToken(userId: string): Promise<void> {
     await this.tokensCollection.doc(userId).update({
-      status: 'expired',
-      lastUsedAt: new Date()
+      status:     'expired',
+      lastUsedAt: new Date(),
     });
-  }
-
-  async refreshToken(userId: string): Promise<InstagramToken | null> {
-    const tokenDoc = await this.tokensCollection.doc(userId).get();
-    if (!tokenDoc.exists) return null;
-
-    const token = tokenDoc.data() as InstagramToken;
-    if (!token.accessToken) return null;
-
-    try {
-      const response = await axios.post('https://graph.facebook.com/v18.0/oauth/access_token', {
-        grant_type: 'fb_exchange_token',
-        client_id: functions.config('instagram').client_id!,
-        client_secret: functions.config('instagram').client_secret!,
-        fb_exchange_token: token.accessToken
-      });
-
-      const { access_token, expires_in } = response.data;
-      
-      // Update token in Firestore
-      await this.tokensCollection.doc(userId).update({
-        accessToken: access_token,
-        expiresAt: new Date(Date.now() + (expires_in * 1000)),
-        lastUsedAt: new Date(),
-        status: 'active'
-      });
-
-      // Return updated token
-      return {
-        ...token,
-        accessToken: access_token,
-        expiresAt: new Date(Date.now() + (expires_in * 1000)),
-        lastUsedAt: new Date(),
-        status: 'active'
-      };
-    } catch (error) {
-      console.error('Error refreshing token:', error);
-      await this.invalidateToken(userId);
-      return null;
-    }
-  }
-
-  async refreshTokenOld(userId: string, refreshToken: string): Promise<InstagramToken | null> {
-    try {
-      // Here you would implement the actual refresh token API call
-      // This is a placeholder for the actual Meta API refresh endpoint
-      const response = await axios.post<InstagramAuthResponse>(
-        'https://api.instagram.com/oauth/access_token',
-        new URLSearchParams({
-          grant_type: 'refresh_token',
-          client_id: process.env.INSTAGRAM_CLIENT_ID!,
-          client_secret: process.env.INSTAGRAM_CLIENT_SECRET!,
-          refresh_token: refreshToken
-        }),
-        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-      );
-
-      const token = await this.createToken(userId, response.data);
-      return token;
-    } catch (error) {
-      console.error('Error refreshing token:', error);
-      await this.invalidateToken(userId);
-      return null;
-    }
   }
 
   private isTokenExpired(token: InstagramToken): boolean {
-    return token.status === 'expired' || 
-           token.status === 'revoked' ||
-           token.expiresAt < new Date();
+    return (
+      token.status === 'expired' ||
+      token.status === 'revoked' ||
+      token.expiresAt < new Date()
+    );
+  }
+
+  async refreshToken(userId: string): Promise<InstagramToken | null> {
+    const snap = await this.tokensCollection.doc(userId).get();
+    if (!snap.exists) return null;
+    const token = snap.data() as InstagramToken;
+
+    try {
+      // Usamos client_id y client_secret de functions.config()
+      const resp = await axios.post<{ access_token: string; expires_in: number }>(
+        'https://graph.facebook.com/v18.0/oauth/access_token',
+        {
+          grant_type:       'fb_exchange_token',
+          client_id:        instagramCfg.client_id,
+          client_secret:    instagramCfg.client_secret,
+          fb_exchange_token: token.accessToken,
+        }
+      );
+
+      const { access_token, expires_in } = resp.data;
+      const newExpiry = new Date(Date.now() + expires_in * 1000);
+
+      await this.tokensCollection.doc(userId).update({
+        accessToken: access_token,
+        expiresAt:   newExpiry,
+        lastUsedAt:  new Date(),
+        status:      'active',
+      });
+
+      return {
+        ...token,
+        accessToken: access_token,
+        expiresAt:   newExpiry,
+        lastUsedAt:  new Date(),
+        status:      'active',
+      };
+    } catch (e) {
+      console.error('Error refreshing token:', e);
+      await this.invalidateToken(userId);
+      return null;
+    }
   }
 
   async cleanupExpiredTokens(): Promise<void> {
-    const expiredTokensQuery = this.tokensCollection
-      .where('expiresAt', '<', new Date())
-      .where('status', '==', 'active');
+    const now = new Date();
+    const expiredSnap = await this.tokensCollection
+      .where('expiresAt', '<', now)
+      .where('status', '==', 'active')
+      .get();
 
-    const snapshot = await expiredTokensQuery.get();
-    const batch = this.db.batch();
-
-    snapshot.docs.forEach(doc => {
-      batch.update(doc.ref, {
-        status: 'expired',
-        lastUsedAt: new Date()
-      });
+    const batch = db.batch();
+    expiredSnap.docs.forEach(d => {
+      batch.update(d.ref, { status: 'expired', lastUsedAt: new Date() });
     });
-
-    // Check if we need to commit the batch
-    if (snapshot.docs.length > 0) {
-      await batch.commit();
-    }
+    if (!expiredSnap.empty) await batch.commit();
   }
 
-  async cleanupInactiveTokens(days: number = 90): Promise<void> {
-    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const inactiveTokensQuery = this.tokensCollection
-      .where('lastUsedAt', '<', cutoffDate)
-      .where('status', '==', 'active');
+  async cleanupInactiveTokens(days = 90): Promise<void> {
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const inactiveSnap = await this.tokensCollection
+      .where('lastUsedAt', '<', cutoff)
+      .where('status', '==', 'active')
+      .get();
 
-    const snapshot = await inactiveTokensQuery.get();
-    const batch = this.db.batch();
-
-    snapshot.docs.forEach(doc => {
-      batch.update(doc.ref, {
-        status: 'inactive',
-        lastUsedAt: new Date()
-      });
+    const batch = db.batch();
+    inactiveSnap.docs.forEach(d => {
+      batch.update(d.ref, { status: 'inactive', lastUsedAt: new Date() });
     });
-
-    // Check if we need to commit the batch
-    if (snapshot.docs.length > 0) {
-      await batch.commit();
-    }
+    if (!inactiveSnap.empty) await batch.commit();
   }
-}
-
-// Type for the context parameter
-interface Context {
-  timestamp: Date;
 }
