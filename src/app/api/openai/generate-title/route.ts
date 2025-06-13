@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase-admin'; // 🔁 CAMBIO: usamos el SDK Admin
+import { Timestamp } from 'firebase-admin/firestore'; // (si lo llegás a necesitar luego)
 import type { VideoData } from '@/types/video';
 
 interface TitleResponse {
@@ -26,32 +26,28 @@ export async function POST(req: Request) {
       );
     }
 
-    // Obtener el guion y el copy generados
-    const completionRef = doc(db, 'completion_results_videos', videoId);
-    const completionDoc = await getDoc(completionRef);
+    // 🔁 Migración a firebase-admin
+    const completionRef = db.collection('completion_results_videos').doc(videoId);
+    const completionDoc = await completionRef.get();
     
     let script = '';
     let socialCopy = '';
     
-    if (completionDoc.exists()) {
+    if (completionDoc.exists) {
       const completionData = completionDoc.data();
-      script = completionData.script || '';
-      // Obtener los copys sociales
-      const socialCopies = completionData.socialContent?.socialCopies || [];
+      script = completionData?.script || '';
+      const socialCopies = completionData?.socialContent?.socialCopies || [];
       socialCopy = socialCopies.map((copy: { content: string }) => copy.content).join('\n\n');
     }
 
-    // Leer y procesar el template del prompt
     const promptTemplate = await readPromptTemplate('/Prompts/generate-title.txt');
-    
-    // Reemplazar placeholders con los datos del video
     const prompt = replacePromptPlaceholders(promptTemplate, {
       originalTitle,
       topic,
       description,
       tone,
-      script: script || '',
-      socialCopy: socialCopy || ''
+      script,
+      socialCopy
     });
 
     console.log('Prompt preparado:', prompt);
@@ -78,8 +74,11 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Error en generate-title:', error);
     return NextResponse.json(
-      { error: 'Failed to generate title', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to generate title',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
-} 
+}

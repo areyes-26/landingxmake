@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase-admin'; // ✅ SDK Admin
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
 
 export async function POST(req: Request) {
@@ -45,7 +44,7 @@ export async function POST(req: Request) {
         temperature: 0.7,
         max_tokens: 1000
       });
-      script = completion.choices[0].message.content;
+      script = completion.choices[0].message.content?.trim();
       console.log('[generate-script] Script generado:', script);
     } catch (err) {
       openaiError = err instanceof Error ? err.message : String(err);
@@ -61,21 +60,21 @@ export async function POST(req: Request) {
     }
 
     // Guardar script en completion_results_videos
-    const completionRef = doc(db, 'completion_results_videos', generationId);
-    await setDoc(completionRef, {
+    const completionRef = db.collection('completion_results_videos').doc(generationId);
+    await completionRef.set({
       script,
-      updatedAt: serverTimestamp()
+      updatedAt: new Date()
     }, { merge: true });
 
     // Actualizar estado en videos
-    const videoRef = doc(db, 'videos', generationId);
-    await setDoc(videoRef, {
+    const videoRef = db.collection('videos').doc(generationId);
+    await videoRef.set({
       status: 'completed',
-      updatedAt: serverTimestamp()
+      updatedAt: new Date()
     }, { merge: true });
 
     // Generar copys sociales
-    let socialCopyErrors = [];
+    let socialCopyErrors: string[] = [];
     try {
       const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
       console.log('[generate-script] Intentando generar short copy en:', `${baseUrl}/api/openai/generate-short-copy`);
@@ -95,6 +94,7 @@ export async function POST(req: Request) {
         socialCopyErrors.push('ShortCopy: ' + text);
         console.error('[generate-script] Error al generar short copy:', text);
       }
+
       console.log('[generate-script] Intentando generar long copy en:', `${baseUrl}/api/openai/generate-long-copy`);
       const longCopyResponse = await fetch(`${baseUrl}/api/openai/generate-long-copy`, {
         method: 'POST',
@@ -130,4 +130,4 @@ export async function POST(req: Request) {
       status: 500
     }, { status: 500 });
   }
-} 
+}

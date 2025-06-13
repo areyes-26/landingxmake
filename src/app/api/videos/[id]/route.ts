@@ -1,27 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const videoRef = doc(db, 'videos', params.id);
-    const videoDoc = await getDoc(videoRef);
+    const videoRef = db.collection('videos').doc(params.id);
+    const videoDoc = await videoRef.get();
 
-    if (!videoDoc.exists()) {
+    if (!videoDoc.exists) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
     const videoData = videoDoc.data();
 
-    // Obtener datos de completion_results_videos
-    const completionRef = doc(db, 'completion_results_videos', params.id);
-    const completionDoc = await getDoc(completionRef);
-    const completionData = completionDoc.exists() ? completionDoc.data() : null;
+    const completionRef = db.collection('completion_results_videos').doc(params.id);
+    const completionDoc = await completionRef.get();
+    const completionData = completionDoc.exists ? completionDoc.data() : null;
 
-    // Combinar los datos
     const response = {
       ...videoData,
       script: completionData?.script || null,
@@ -46,48 +44,42 @@ export async function PUT(
     const body = await req.json();
     const videoId = params.id;
 
-    // Validar que el documento existe
-    const videoRef = doc(db, 'videos', videoId);
-    const videoDoc = await getDoc(videoRef);
+    const videoRef = db.collection('videos').doc(videoId);
+    const videoDoc = await videoRef.get();
 
-    if (!videoDoc.exists()) {
+    if (!videoDoc.exists) {
       return NextResponse.json(
         { error: 'Video no encontrado' },
         { status: 404 }
       );
     }
 
-    // Separar los datos del video y los datos generados
     const { script, socialContent, ...videoData } = body;
 
-    // Actualizar el documento principal en la colección videos
-    await updateDoc(videoRef, {
+    // Actualizar documento principal
+    await videoRef.update({
       ...videoData,
-      updatedAt: serverTimestamp()
+      updatedAt: Timestamp.now()
     });
 
-    // Actualizar o crear el documento en completion_results_videos
-    const completionRef = doc(db, 'completion_results_videos', videoId);
-    const completionDoc = await getDoc(completionRef);
+    const completionRef = db.collection('completion_results_videos').doc(videoId);
+    const completionDoc = await completionRef.get();
 
-    if (completionDoc.exists()) {
-      // Actualizar solo los campos que se han modificado
+    if (completionDoc.exists) {
       const updateData: any = {
-        updatedAt: serverTimestamp()
+        updatedAt: Timestamp.now()
       };
-
       if (script) updateData.script = script;
       if (socialContent) updateData.socialContent = socialContent;
 
-      await updateDoc(completionRef, updateData);
+      await completionRef.update(updateData);
     } else {
-      // Crear nuevo documento si no existe
-      await setDoc(completionRef, {
+      await completionRef.set({
         videoId,
         script: script || '',
         socialContent: socialContent || null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
       });
     }
 
@@ -102,4 +94,4 @@ export async function PUT(
       { status: 500 }
     );
   }
-} 
+}

@@ -113,6 +113,8 @@ export default function VideoSettingsPage() {
         }),
       });
       if (!response.ok) {
+        const text = await response.text();
+        console.error('Respuesta del servidor:', text);
         throw new Error('Error al regenerar el título');
       }
       const data = await response.json();
@@ -142,6 +144,8 @@ export default function VideoSettingsPage() {
         }),
       });
       if (!shortCopyResponse.ok) {
+        const text = await shortCopyResponse.text();
+        console.error('Respuesta del servidor:', text);
         throw new Error('Error al generar el short copy');
       }
       const shortCopyData = await shortCopyResponse.json();
@@ -311,7 +315,7 @@ export default function VideoSettingsPage() {
                           Copy Corto (TikTok/Reels)
                         </label>
                         <textarea
-                          value={videoSettings.shortCopy?.content || ''}
+                          value={videoSettings?.shortCopy?.content ?? ''}
                           onChange={(e) => {
                             if (!videoSettings) return;
                             setVideoSettings({
@@ -333,7 +337,7 @@ export default function VideoSettingsPage() {
                           Copy Largo (Facebook/LinkedIn)
                         </label>
                         <textarea
-                          value={videoSettings.longCopy?.content || ''}
+                          value={videoSettings?.longCopy?.content ?? ''}
                           onChange={(e) => {
                             if (!videoSettings) return;
                             setVideoSettings({

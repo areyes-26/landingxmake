@@ -5,7 +5,6 @@ import * as functions from 'firebase-functions/v1';   // <- Forzar versión v1
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import axios from 'axios';
-
 import { instagramCallback } from './instagram/callback';
 import { checkVideoStatus } from './instagram/videoStatusChecker';
 import { instagramWebhook } from './instagram/webhook';
@@ -98,7 +97,7 @@ export const instagramCallbackFn = instagramCallback;
 export const instagramWebhookFn = instagramWebhook;
 
 // === Firestore Trigger: nuevo video ===
-
+export { onVideoCreated } from './onVideoCreated';
 
 // === Firestore Trigger: check video status ===
 export { checkVideoStatus };

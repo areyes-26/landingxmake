@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase-admin'; // ✅ SDK Admin
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
-import type { VideoData } from '@/types/video';
 
 interface LongCopyResponse {
   longCopy: {
@@ -34,10 +32,10 @@ export async function POST(req: Request) {
     }
 
     // Obtener datos del video
-    const videoRef = doc(db, 'videos', videoId);
-    const videoDoc = await getDoc(videoRef);
+    const videoRef = db.collection('videos').doc(videoId);
+    const videoDoc = await videoRef.get();
     
-    if (!videoDoc.exists()) {
+    if (!videoDoc.exists) {
       const error: ApiError = {
         error: 'Video document not found',
         status: 404
@@ -47,7 +45,7 @@ export async function POST(req: Request) {
     }
 
     const videoData = videoDoc.data();
-
+    if (!videoData) throw new Error('Video data is undefined');
     // Generar long copy
     const promptTemplate = await readPromptTemplate('/Prompts/copy-largo.txt');
     const prompt = replacePromptPlaceholders(promptTemplate, {
@@ -73,7 +71,7 @@ export async function POST(req: Request) {
     });
     console.log('[generate-long-copy] Completion recibido:', completion);
 
-    const longCopy = completion.choices[0].message.content;
+    const longCopy = completion.choices[0].message.content?.trim();
     console.log('[generate-long-copy] Long copy generado:', longCopy);
 
     if (!longCopy) {
@@ -86,14 +84,14 @@ export async function POST(req: Request) {
     }
 
     // Guardar long copy en completion_results_videos
-    const completionRef = doc(db, 'completion_results_videos', videoId);
+    const completionRef = db.collection('completion_results_videos').doc(videoId);
     console.log('[generate-long-copy] Guardando en Firestore...');
-    await setDoc(completionRef, {
+    await completionRef.set({
       longCopy: {
         platform: 'Facebook/LinkedIn',
         content: longCopy
       },
-      updatedAt: serverTimestamp()
+      updatedAt: new Date()
     }, { merge: true });
     console.log('[generate-long-copy] Guardado en Firestore OK');
 
@@ -113,4 +111,4 @@ export async function POST(req: Request) {
     };
     return NextResponse.json(apiError, { status: 500 });
   }
-} 
+}

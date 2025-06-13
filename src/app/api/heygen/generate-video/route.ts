@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase-admin'; // 🔁 usamos el SDK Admin
 import { getHeyGenClient } from '@/lib/heygen';
+import { Timestamp } from 'firebase-admin/firestore'; // 🔁 reemplaza serverTimestamp
 
 export async function POST(req: Request) {
   try {
@@ -14,7 +14,6 @@ export async function POST(req: Request) {
       avatarId,
       tone,
       duration,
-      // ...otros campos relevantes
     } = body;
 
     if (!videoId || !script || !videoTitle || !voiceId || !avatarId) {
@@ -24,30 +23,24 @@ export async function POST(req: Request) {
       );
     }
 
-    // Llamada a la API de HeyGen (placeholder, debes adaptar según la doc de HeyGen)
     const heygen = getHeyGenClient();
-    // Aquí deberías usar el método real de generación de video de HeyGen
-    // Por ejemplo:
-    // const result = await heygen.generateVideo({ script, voiceId, avatarId, ... });
 
-    // Simulación de respuesta de HeyGen
+    // Simulación de respuesta (deberías reemplazarlo por la integración real)
     const result = {
       taskId: `heygen-task-${Date.now()}`,
-      status: 'generating'
+      status: 'generating',
     };
 
-    // Guardar el estado en Firestore
-    const videoRef = doc(db, 'videos', videoId);
-    await setDoc(
-      videoRef,
+    // ✅ Guardar usando SDK Admin
+    await db.collection('videos').doc(videoId).set(
       {
         status: 'generating',
         heygenResults: {
           status: 'generating',
           taskId: result.taskId,
-          generatedAt: serverTimestamp()
+          generatedAt: Timestamp.now(),
         },
-        updatedAt: serverTimestamp()
+        updatedAt: Timestamp.now(),
       },
       { merge: true }
     );
@@ -55,12 +48,15 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       message: 'Video enviado a HeyGen para generación',
-      heygenTaskId: result.taskId
+      heygenTaskId: result.taskId,
     });
   } catch (error) {
     console.error('[HeyGen Generate Video] Error:', error);
     return NextResponse.json(
-      { error: 'Error al enviar el video a HeyGen', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'Error al enviar el video a HeyGen',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

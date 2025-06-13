@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getHeyGenClient } from '@/lib/heygen';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase-admin'; // ✅ SDK Admin
+import { Timestamp } from 'firebase-admin/firestore';
 
 export async function POST(request: Request) {
   console.log('Iniciando creación de avatar...');
-  
+
   try {
     const body = await request.json();
     console.log('Datos recibidos:', body);
@@ -21,7 +21,6 @@ export async function POST(request: Request) {
     }
 
     console.log('Creando avatar con HeyGen...');
-    // Crear el avatar usando HeyGen
     const heygenClient = getHeyGenClient();
     const avatarResult = await heygenClient.createAvatarFromText({
       prompt,
@@ -32,8 +31,7 @@ export async function POST(request: Request) {
     console.log('Respuesta de HeyGen:', avatarResult);
 
     console.log('Guardando en Firestore...');
-    // Guardar en Firestore
-    const avatarDoc = await addDoc(collection(db, 'avatars'), {
+    const avatarDoc = await db.collection('avatars').add({
       prompt,
       gender,
       style,
@@ -41,7 +39,7 @@ export async function POST(request: Request) {
       avatarUrl: avatarResult.avatarUrl,
       status: avatarResult.status,
       source: 'text',
-      createdAt: serverTimestamp(),
+      createdAt: Timestamp.now(), // 🔁 reemplaza serverTimestamp()
     });
     console.log('Documento creado en Firestore:', avatarDoc.id);
 
@@ -58,4 +56,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-} 
+}

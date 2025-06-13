@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const db = getFirestore(app);
+import { FieldValue } from 'firebase-admin/firestore';
+import { db } from '@/lib/firebase-admin';
 
 export async function POST(req: NextRequest) {
+  console.log('db en /api/videos:', db);
+  if (!db) {
+    console.error("❌ Firestore no está inicializado");
+    return NextResponse.json(
+      {
+        error: "Error de configuración",
+        details: "Firestore no está inicializado correctamente"
+      },
+      { status: 500 }
+    );
+  }
+
   try {
     // 1) Leemos el JSON que envía el cliente
     const body = await req.json();
@@ -70,25 +70,51 @@ export async function POST(req: NextRequest) {
         voiceId,
         voiceDetails,
         status: 'pending',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
       };
       console.log("📝 Datos a guardar:", JSON.stringify(videoData, null, 2));
 
       console.log("💾 Guardando en Firestore...");
-      const videoDoc = await addDoc(collection(db, 'videos'), videoData);
-      firestoreDocId = videoDoc.id;
+      const videoDocRef = await db.collection('videos').add(videoData);
+firestoreDocId = videoDocRef.id;
       console.log("✅ Documento creado en Firestore con ID:", firestoreDocId);
     } catch (firestoreError) {
       console.error("❌ Error detallado al guardar en Firestore:", {
         error: firestoreError,
         message: firestoreError instanceof Error ? firestoreError.message : String(firestoreError),
-        stack: firestoreError instanceof Error ? firestoreError.stack : undefined
+        stack: firestoreError instanceof Error ? firestoreError.stack : undefined,
+        code: firestoreError instanceof Error ? (firestoreError as any).code : undefined
       });
+      
+      // Manejo específico de errores comunes de Firestore
+      const errorMessage = firestoreError instanceof Error ? firestoreError.message : String(firestoreError);
+      const errorCode = firestoreError instanceof Error ? (firestoreError as any).code : undefined;
+      
+      if (errorCode === 'permission-denied') {
+        return NextResponse.json(
+          {
+            error: "Error de permisos al guardar en Firestore",
+            details: "No tienes permisos para escribir en la colección 'videos'"
+          },
+          { status: 403 }
+        );
+      }
+      
+      if (errorCode === 'unavailable') {
+        return NextResponse.json(
+          {
+            error: "Error de conexión con Firestore",
+            details: "El servicio de Firestore no está disponible en este momento"
+          },
+          { status: 503 }
+        );
+      }
+
       return NextResponse.json(
         {
           error: "Error al guardar en Firestore",
-          details: firestoreError instanceof Error ? firestoreError.message : String(firestoreError)
+          details: errorMessage
         },
         { status: 500 }
       );
