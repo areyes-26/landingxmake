@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const db = getFirestore(app);
 
 export async function POST(req: NextRequest) {
   try {
     // 1) Leemos el JSON que envía el cliente
     const body = await req.json();
-    console.log("📦 Body recibido:", body);
+    console.log("📦 Body recibido:", JSON.stringify(body, null, 2));
 
     // 2) Desestructuramos las propiedades que esperamos
     const {
@@ -19,13 +31,22 @@ export async function POST(req: NextRequest) {
       email,
       specificCallToAction,
       duration,
+      voiceId,
+      voiceDetails
     } = body;
 
     // 3) Validación básica
-    if (!videoTitle || !description || !topic || !avatarId) {
+    if (!videoTitle || !description || !topic || !avatarId || !voiceId) {
+      console.log("❌ Validación fallida:", {
+        videoTitle: !!videoTitle,
+        description: !!description,
+        topic: !!topic,
+        avatarId: !!avatarId,
+        voiceId: !!voiceId
+      });
       return NextResponse.json(
         {
-          error: 'Faltan campos requeridos: videoTitle, description, topic o avatarId.',
+          error: 'Faltan campos requeridos: videoTitle, description, topic, avatarId o voiceId.',
         },
         { status: 400 }
       );
@@ -35,8 +56,8 @@ export async function POST(req: NextRequest) {
 
     // 4) Guardar en Firestore
     try {
-      console.log("💾 Guardando en Firestore...");
-      const videoDoc = await addDoc(collection(db, 'videos'), {
+      console.log("💾 Preparando datos para Firestore...");
+      const videoData = {
         videoTitle,
         description,
         topic,
@@ -46,14 +67,24 @@ export async function POST(req: NextRequest) {
         tone,
         email,
         duration,
+        voiceId,
+        voiceDetails,
         status: 'pending',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      };
+      console.log("📝 Datos a guardar:", JSON.stringify(videoData, null, 2));
+
+      console.log("💾 Guardando en Firestore...");
+      const videoDoc = await addDoc(collection(db, 'videos'), videoData);
       firestoreDocId = videoDoc.id;
       console.log("✅ Documento creado en Firestore con ID:", firestoreDocId);
     } catch (firestoreError) {
-      console.error("❌ Error al guardar en Firestore:", firestoreError);
+      console.error("❌ Error detallado al guardar en Firestore:", {
+        error: firestoreError,
+        message: firestoreError instanceof Error ? firestoreError.message : String(firestoreError),
+        stack: firestoreError instanceof Error ? firestoreError.stack : undefined
+      });
       return NextResponse.json(
         {
           error: "Error al guardar en Firestore",
@@ -106,7 +137,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 6) Preparar datos para OpenAI
-    const videoData = {
+    const videoDataForOpenAI = {
       videoTitle,
       description,
       tone,
@@ -125,7 +156,7 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        videoData,
+        videoData: videoDataForOpenAI,
         generationId: firestoreDocId
       })
     });
@@ -150,10 +181,14 @@ export async function POST(req: NextRequest) {
     }, { status: 200 });
 
   } catch (error) {
-    console.error("❌ Error general:", error);
+    console.error("❌ Error general:", {
+      error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json(
-      { 
-        error: "Error procesando la solicitud",
+      {
+        error: "Error interno del servidor",
         details: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
