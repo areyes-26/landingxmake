@@ -19,6 +19,13 @@ export interface VideoData {
   tone: string;
   email: string;
   duration: string;
+  voiceId: string;
+  voiceDetails?: {
+    name: string;
+    language: string;
+    gender: string;
+    preview_url?: string;
+  };
   socialContent?: {
     socialCopies: {
       platform: string;

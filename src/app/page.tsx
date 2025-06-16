@@ -503,11 +503,19 @@ export default function Home() {
 
       console.log('Enviando datos:', formData);
 
+      // Obtener el token de autenticación
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('No hay usuario autenticado');
+      }
+      const token = await user.getIdToken();
+
       // Enviar datos al endpoint
       const response = await fetch('/api/videos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData),
       });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import type { VideoData } from '@/types/video';
 
 export default function VideoSettingsPage() {
   const params = useParams();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isRegeneratingTitle, setIsRegeneratingTitle] = useState(false);
   const [isRegeneratingSocial, setIsRegeneratingSocial] = useState(false);
@@ -69,6 +70,7 @@ export default function VideoSettingsPage() {
       const videoRef = doc(db, 'videos', params.id as string);
       await setDoc(videoRef, {
         videoTitle: videoSettings.videoTitle,
+        status: 'processing',
         updatedAt: serverTimestamp()
       }, { merge: true });
       console.log('[Guardar Cambios] Título guardado en videos');
@@ -86,7 +88,32 @@ export default function VideoSettingsPage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
       console.log('[Guardar Cambios] Script y copys guardados en completion_results_videos');
+
+      // Iniciar la generación del video con Heygen
+      const response = await fetch('/api/heygen/generate-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId: params.id,
+          script: videoSettings.script,
+          videoTitle: videoSettings.videoTitle,
+          voiceId: videoSettings.voiceId,
+          avatarId: videoSettings.avatarId,
+          tone: videoSettings.tone,
+          duration: videoSettings.duration,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al iniciar la generación del video');
+      }
+
       toast.success('Cambios guardados correctamente');
+      
+      // Redirigir a la página de generación
+      router.push(`/videos/${params.id}/generating`);
     } catch (error) {
       toast.error('Error al guardar los cambios');
       console.error('[Guardar Cambios] Error:', error);

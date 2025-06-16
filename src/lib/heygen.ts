@@ -159,59 +159,79 @@ interface CreateAvatarFromImagesParams {
   images: File[];
 }
 
+interface GenerateVideoParams {
+  script: string;
+  videoTitle: string;
+  voiceId: string;
+  avatarId: string;
+  tone: string;
+  duration: string;
+}
+
+interface GenerateVideoResponse {
+  taskId: string;
+  status: string;
+}
+
+interface HeyGenVideoResponse {
+  error: null | string;
+  data: {
+    video_id: string;
+  };
+}
+
+interface VideoStatusResponse {
+  status: string;
+  videoUrl?: string;
+  error?: string;
+  thumbnailUrl?: string;
+  gifUrl?: string;
+  duration?: string;
+  captionUrl?: string;
+}
+
 export class HeyGenAPI {
-  private baseUrl: string;
   private apiKey: string;
+  private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.HEYGEN_API_URL || 'https://api.heygen.com';
     this.apiKey = process.env.HEYGEN_API_KEY || '';
+    this.baseUrl = 'https://api.heygen.com';
+    
+    if (!this.apiKey) {
+      throw new Error('HEYGEN_API_KEY is not defined');
+    }
   }
 
-  private async request(endpoint: string, options: RequestInit = {}) {
+  private async request(endpoint: string, options: RequestInit = {}): Promise<Response> {
     const url = `${this.baseUrl}${endpoint}`;
     console.log('Making request to:', url);
     
     const headers = {
       'x-api-key': this.apiKey,
       'Content-Type': 'application/json',
-      ...options.headers,
+      'Accept': 'application/json',
+      ...options.headers
     };
 
-    // No loguear la API key completa por seguridad
-    const safeHeaders = { ...headers, 'x-api-key': '***' };
-    console.log('Request headers:', safeHeaders);
-    console.log('Request options:', {
+    console.log('Request headers:', headers);
+    console.log('Request options:', { ...options, headers });
+
+    const response = await fetch(url, {
       ...options,
-      headers: safeHeaders
+      headers
     });
 
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
-      if (!response.ok) {
-        throw new Error(`HeyGen API error: ${response.status} ${response.statusText} - ${responseText}`);
-      }
-
-      try {
-        return JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('Error parsing response as JSON:', parseError);
-        throw new Error(`Invalid JSON response: ${responseText}`);
-      }
-    } catch (error) {
-      console.error('Error in request:', error);
-      throw error;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      throw new Error(`HeyGen API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
+
+    return response;
   }
 
   private async checkGenerationStatus(generationId: string): Promise<AvatarGenerationResponse['data']> {
@@ -623,6 +643,85 @@ export class HeyGenAPI {
       groupName,
       looks,
     };
+  }
+
+  async generateVideo(params: GenerateVideoParams): Promise<GenerateVideoResponse> {
+    try {
+      console.log('Generating video with params:', params);
+      
+      const response = await this.request('/v2/video/generate', {
+        method: 'POST',
+        body: JSON.stringify({
+          video_inputs: [
+            {
+              character: {
+                type: "avatar",
+                avatar_id: params.avatarId,
+                avatar_style: "normal"
+              },
+              voice: {
+                type: "text",
+                input_text: params.script,
+                voice_id: params.voiceId,
+                speed: 1.0
+              }
+            }
+          ],
+          dimension: {
+            width: 1280,
+            height: 720
+          }
+        })
+      });
+
+      const data = await response.json() as HeyGenVideoResponse;
+      console.log('Video generation response:', data);
+
+      if (data.error) {
+        throw new Error(`HeyGen API error: ${data.error}`);
+      }
+
+      if (!data.data?.video_id) {
+        throw new Error('No video_id received from HeyGen');
+      }
+
+      return {
+        taskId: data.data.video_id,
+        status: 'pending'
+      };
+    } catch (error) {
+      console.error('Error in generateVideo:', error);
+      throw error;
+    }
+  }
+
+  async checkVideoStatus(videoId: string): Promise<VideoStatusResponse> {
+    try {
+      console.log('Checking video status for:', videoId);
+      const response = await this.request(`/v1/video_status.get?video_id=${videoId}`, {
+        method: 'GET'
+      });
+
+      const data = await response.json();
+      console.log('Video status response:', data);
+
+      if (!data || !data.data) {
+        throw new Error('Invalid response format from HeyGen API');
+      }
+
+      return {
+        status: data.data.status || 'unknown',
+        videoUrl: data.data.video_url,
+        error: data.data.error,
+        thumbnailUrl: data.data.thumbnail_url,
+        gifUrl: data.data.gif_url,
+        duration: data.data.duration,
+        captionUrl: data.data.caption_url
+      };
+    } catch (error) {
+      console.error('Error checking video status:', error);
+      throw error;
+    }
   }
 }
 

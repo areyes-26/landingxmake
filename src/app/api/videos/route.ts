@@ -1,26 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '@/lib/firebase-admin';
+import { auth } from '@/lib/firebase-admin';
 
 export async function POST(req: NextRequest) {
-  console.log('db en /api/videos:', db);
-  if (!db) {
-    console.error("❌ Firestore no está inicializado");
-    return NextResponse.json(
-      {
-        error: "Error de configuración",
-        details: "Firestore no está inicializado correctamente"
-      },
-      { status: 500 }
-    );
-  }
-
   try {
-    // 1) Leemos el JSON que envía el cliente
-    const body = await req.json();
-    console.log("📦 Body recibido:", JSON.stringify(body, null, 2));
+    // 1) Verificar que Firestore esté inicializado
+    if (!db) {
+      console.error("❌ Firestore no está inicializado");
+      return NextResponse.json(
+        {
+          error: "Error de configuración",
+          details: "Firestore no está inicializado correctamente"
+        },
+        { status: 500 }
+      );
+    }
 
-    // 2) Desestructuramos las propiedades que esperamos
+    // 2) Obtener el token de autenticación
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    let userId;
+    try {
+      const decodedToken = await auth.verifyIdToken(token);
+      userId = decodedToken.uid;
+    } catch (error) {
+      console.error("❌ Error al verificar token:", error);
+      return NextResponse.json(
+        { error: 'Token inválido' },
+        { status: 401 }
+      );
+    }
+
+    // 3) Leer y validar el body
+    let body;
+    try {
+      body = await req.json();
+      console.log("📦 Body recibido:", JSON.stringify(body, null, 2));
+    } catch (parseError) {
+      console.error("❌ Error al parsear el body:", parseError);
+      return NextResponse.json(
+        {
+          error: "Error al procesar la solicitud",
+          details: "El body no es un JSON válido"
+        },
+        { status: 400 }
+      );
+    }
+
+    // 4) Desestructurar y validar campos requeridos
     const {
       videoTitle,
       description,
@@ -35,26 +70,32 @@ export async function POST(req: NextRequest) {
       voiceDetails
     } = body;
 
-    // 3) Validación básica
-    if (!videoTitle || !description || !topic || !avatarId || !voiceId) {
-      console.log("❌ Validación fallida:", {
-        videoTitle: !!videoTitle,
-        description: !!description,
-        topic: !!topic,
-        avatarId: !!avatarId,
-        voiceId: !!voiceId
-      });
+    // Validación de campos requeridos
+    const requiredFields = {
+      videoTitle,
+      description,
+      topic,
+      avatarId,
+      voiceId
+    };
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
+      console.log("❌ Campos requeridos faltantes:", missingFields);
       return NextResponse.json(
         {
-          error: 'Faltan campos requeridos: videoTitle, description, topic, avatarId o voiceId.',
+          error: 'Faltan campos requeridos',
+          details: `Los siguientes campos son requeridos: ${missingFields.join(', ')}`
         },
         { status: 400 }
       );
     }
 
-    let firestoreDocId = null;
-
-    // 4) Guardar en Firestore
+    // 5) Guardar en Firestore
+    let firestoreDocId;
     try {
       console.log("💾 Preparando datos para Firestore...");
       const videoData = {
@@ -71,41 +112,39 @@ export async function POST(req: NextRequest) {
         voiceDetails,
         status: 'pending',
         createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp(),
+        userId
       };
-      console.log("📝 Datos a guardar:", JSON.stringify(videoData, null, 2));
 
-      console.log("💾 Guardando en Firestore...");
+      console.log("💾 Guardando en Firestore con datos:", videoData);
       const videoDocRef = await db.collection('videos').add(videoData);
-firestoreDocId = videoDocRef.id;
+      firestoreDocId = videoDocRef.id;
       console.log("✅ Documento creado en Firestore con ID:", firestoreDocId);
     } catch (firestoreError) {
-      console.error("❌ Error detallado al guardar en Firestore:", {
+      console.error("❌ Error al guardar en Firestore:", {
         error: firestoreError,
         message: firestoreError instanceof Error ? firestoreError.message : String(firestoreError),
-        stack: firestoreError instanceof Error ? firestoreError.stack : undefined,
         code: firestoreError instanceof Error ? (firestoreError as any).code : undefined
       });
-      
-      // Manejo específico de errores comunes de Firestore
+
       const errorMessage = firestoreError instanceof Error ? firestoreError.message : String(firestoreError);
       const errorCode = firestoreError instanceof Error ? (firestoreError as any).code : undefined;
-      
+
       if (errorCode === 'permission-denied') {
         return NextResponse.json(
           {
-            error: "Error de permisos al guardar en Firestore",
+            error: "Error de permisos",
             details: "No tienes permisos para escribir en la colección 'videos'"
           },
           { status: 403 }
         );
       }
-      
+
       if (errorCode === 'unavailable') {
         return NextResponse.json(
           {
-            error: "Error de conexión con Firestore",
-            details: "El servicio de Firestore no está disponible en este momento"
+            error: "Error de conexión",
+            details: "El servicio de Firestore no está disponible"
           },
           { status: 503 }
         );
@@ -120,7 +159,7 @@ firestoreDocId = videoDocRef.id;
       );
     }
 
-    // 5) Enviar a Google Sheets
+    // 6) Enviar a Google Sheets (opcional)
     try {
       const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbydTxZSMPhxChk5DHF-_YWT7sBHSXsIqovLy-8JVPuA9c2EJIYdif80S0JvICiBCPfO/exec';
       console.log("🔗 Enviando a Google Sheets...");
@@ -147,10 +186,13 @@ firestoreDocId = videoDocRef.id;
         body: JSON.stringify(payload),
       });
 
+      if (!sheetsResponse.ok) {
+        throw new Error(`Error en Google Sheets: ${sheetsResponse.status}`);
+      }
+
       const sheetsText = await sheetsResponse.text();
       console.log("📥 Respuesta de Google Sheets:", sheetsText);
 
-      // Intentar parsear la respuesta como JSON
       try {
         const sheetsJson = JSON.parse(sheetsText);
         console.log("✅ Datos enviados a Google Sheets:", sheetsJson);
@@ -162,56 +204,53 @@ firestoreDocId = videoDocRef.id;
       // No retornamos error aquí porque el documento ya se creó en Firestore
     }
 
-    // 6) Preparar datos para OpenAI
-    const videoDataForOpenAI = {
-      videoTitle,
-      description,
-      tone,
-      duration,
-      topic,
-      keyPoints: specificCallToAction ? [specificCallToAction] : undefined,
-      targetAudience: email
-    };
+    // 7) Generar script con OpenAI
+    try {
+      const host = req.headers.get('host');
+      const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+      const scriptResponse = await fetch(`${protocol}://${host}/api/openai/generate-script`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          videoData: {
+            videoTitle,
+            description,
+            tone,
+            duration,
+            topic,
+            keyPoints: specificCallToAction ? [specificCallToAction] : undefined,
+            targetAudience: email
+          },
+          generationId: firestoreDocId
+        })
+      });
 
-    // 7) Llamar al endpoint de generación de script
-    const host = req.headers.get('host');
-    const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
-    const scriptResponse = await fetch(`${protocol}://${host}/api/openai/generate-script`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        videoData: videoDataForOpenAI,
-        generationId: firestoreDocId
-      })
-    });
+      if (!scriptResponse.ok) {
+        throw new Error(`Error al generar script: ${scriptResponse.status}`);
+      }
 
-    if (!scriptResponse.ok) {
-      console.error("❌ Error al generar script:", await scriptResponse.text());
-      // Aún así devolvemos éxito porque el documento se creó en Firestore
+      const scriptResult = await scriptResponse.json();
+      console.log("✅ Script generado:", scriptResult);
+
       return NextResponse.json({
         success: true,
-        message: "Documento creado en Firestore, pero hubo un error al generar el script",
-        firestoreId: firestoreDocId
-      }, { status: 200 });
+        message: "Video creado y script generado exitosamente",
+        firestoreId: firestoreDocId,
+        scriptResult
+      });
+    } catch (scriptError) {
+      console.error("❌ Error al generar script:", scriptError);
+      return NextResponse.json({
+        success: true,
+        message: "Video creado en Firestore, pero hubo un error al generar el script",
+        firestoreId: firestoreDocId,
+        error: scriptError instanceof Error ? scriptError.message : String(scriptError)
+      });
     }
-
-    const scriptResult = await scriptResponse.json();
-
-    return NextResponse.json({
-      success: true,
-      message: "Documento creado y script generado correctamente",
-      firestoreId: firestoreDocId,
-      script: scriptResult.script
-    }, { status: 200 });
-
   } catch (error) {
-    console.error("❌ Error general:", {
-      error,
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    });
+    console.error("❌ Error no manejado:", error);
     return NextResponse.json(
       {
         error: "Error interno del servidor",
