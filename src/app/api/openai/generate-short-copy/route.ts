@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin'; // ✅ SDK Admin
+import { db } from '@/lib/firebase-admin';
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
 
 interface ShortCopyResponse {
@@ -27,11 +27,10 @@ export async function POST(req: Request) {
         error: 'Video ID and script are required',
         status: 400
       };
-      console.error('[generate-short-copy] Error:', error);
+      console.error('[generate-short-copy] Campos faltantes:', error);
       return NextResponse.json(error, { status: 400 });
     }
 
-    // 🔁 SDK Admin: Referencia y obtención del documento
     const videoRef = db.collection('videos').doc(videoId);
     const videoDoc = await videoRef.get();
 
@@ -40,20 +39,20 @@ export async function POST(req: Request) {
         error: 'Video document not found',
         status: 404
       };
-      console.error('[generate-short-copy] Error:', error);
+      console.error('[generate-short-copy] Documento de video no encontrado:', error);
       return NextResponse.json(error, { status: 404 });
     }
 
     const videoData = videoDoc.data();
 
-    // Leer y procesar prompt
-    const promptTemplate = await readPromptTemplate('/Prompts/copy-corto.txt');
+    // Leer y procesar el prompt desde archivo local
+    const promptTemplate = await readPromptTemplate('copy-corto');
     const prompt = replacePromptPlaceholders(promptTemplate, {
       script,
       tone: videoData?.tone,
       topic: videoData?.topic,
       description: videoData?.description,
-      videoTitle: videoData?.videoTitle
+      videoTitle: videoData?.videoTitle,
     });
 
     console.log('[generate-short-copy] Prompt generado:', prompt);
@@ -78,11 +77,10 @@ export async function POST(req: Request) {
         error: 'Failed to generate short copy',
         status: 500
       };
-      console.error('[generate-short-copy] Error:', error);
+      console.error('[generate-short-copy] Short copy vacío:', error);
       return NextResponse.json(error, { status: 500 });
     }
 
-    // 🔁 Guardar en Firestore Admin
     const completionRef = db.collection('completion_results_videos').doc(videoId);
     console.log('[generate-short-copy] Guardando en Firestore...');
 
@@ -91,7 +89,7 @@ export async function POST(req: Request) {
         platform: 'TikTok/Reels',
         content: shortCopy
       },
-      updatedAt: new Date() // ✅ Con firebase-admin usamos `new Date()` en lugar de `serverTimestamp()`
+      updatedAt: new Date()
     }, { merge: true });
 
     console.log('[generate-short-copy] Guardado en Firestore OK');
@@ -102,6 +100,7 @@ export async function POST(req: Request) {
         content: shortCopy
       }
     };
+
     return NextResponse.json(response);
 
   } catch (error) {

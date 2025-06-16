@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
-import { db } from '@/lib/firebase-admin'; // 🔁 CAMBIO: usamos el SDK Admin
-import { Timestamp } from 'firebase-admin/firestore'; // (si lo llegás a necesitar luego)
+import { db } from '@/lib/firebase-admin';
 import type { VideoData } from '@/types/video';
 
 interface TitleResponse {
@@ -26,13 +25,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔁 Migración a firebase-admin
+    // Leer datos previos del script y copys
     const completionRef = db.collection('completion_results_videos').doc(videoId);
     const completionDoc = await completionRef.get();
-    
+
     let script = '';
     let socialCopy = '';
-    
+
     if (completionDoc.exists) {
       const completionData = completionDoc.data();
       script = completionData?.script || '';
@@ -40,28 +39,29 @@ export async function POST(req: Request) {
       socialCopy = socialCopies.map((copy: { content: string }) => copy.content).join('\n\n');
     }
 
-    const promptTemplate = await readPromptTemplate('/Prompts/generate-title.txt');
+    // Leer prompt desde archivo local
+    const promptTemplate = await readPromptTemplate('generate-title');
     const prompt = replacePromptPlaceholders(promptTemplate, {
       originalTitle,
       topic,
       description,
       tone,
       script,
-      socialCopy
+      socialCopy,
     });
 
-    console.log('Prompt preparado:', prompt);
+    console.log('📄 Prompt generado para título:', prompt);
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini-2024-07-18",
       messages: [
         {
           role: "user",
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       temperature: 0.7,
-      max_tokens: 2000
+      max_tokens: 2000,
     });
 
     const title = completion.choices[0].message.content?.trim();
@@ -72,11 +72,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ title });
   } catch (error) {
-    console.error('Error en generate-title:', error);
+    console.error('❌ Error en generate-title:', error);
     return NextResponse.json(
       {
         error: 'Failed to generate title',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
