@@ -27,11 +27,6 @@ export function Navigation() {
                 Iniciar sesión
               </Link>
             )}
-            <Link href="/admin/avatar-test">
-              <Button variant="outline" size="sm">
-                Pruebas de Avatar
-              </Button>
-            </Link>
           </div>
         </div>
       </div>

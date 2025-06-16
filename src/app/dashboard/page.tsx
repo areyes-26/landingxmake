@@ -152,9 +152,14 @@ export default function DashboardPage() {
               {getStatusBadge('pending', videos.filter(v => v.status === 'pending').length)}
             </div>
           </div>
-          <Button onClick={() => router.push('/')}>
-            Crear Nuevo Video
-          </Button>
+          <div className="flex gap-4">
+            <Button onClick={() => router.push('/video-forms')}>
+              Crear Nuevo Video
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/admin/avatar-test')}>
+              Pruebas de Avatar
+            </Button>
+          </div>
         </div>
 
         {videos.length === 0 ? (
@@ -163,7 +168,7 @@ export default function DashboardPage() {
             <p className="text-muted-foreground mb-6">
               Comienza creando tu primer video para generar contenido impactante.
             </p>
-            <Button onClick={() => router.push('/')}>
+            <Button onClick={() => router.push('/video-forms')}>
               Crear mi Primer Video
             </Button>
           </div>

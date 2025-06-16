@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     }
 
     // Generar script
-    const promptTemplate = await readPromptTemplate('/Prompts/generate-script.txt');
+    const promptTemplate = await readPromptTemplate('generate-script');
     const prompt = replacePromptPlaceholders(promptTemplate, {
       duration: videoData.duration,
       tone: videoData.tone,
