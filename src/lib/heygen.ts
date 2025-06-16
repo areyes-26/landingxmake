@@ -237,13 +237,13 @@ export class HeyGenAPI {
   private async checkGenerationStatus(generationId: string): Promise<AvatarGenerationResponse['data']> {
     console.log('Checking generation status for ID:', generationId);
     const response = await this.request(`/v2/photo_avatar/generation/${generationId}`);
-    console.log('Generation status response:', response);
-    
-    if (response.error) {
-      throw new Error(`Error checking generation status: ${response.error}`);
+    const json = await response.json();
+  
+    if (json.error) {
+      throw new Error(`Error checking generation status: ${json.error}`);
     }
-    
-    return response.data;
+  
+    return json.data;
   }
 
   /**
@@ -289,10 +289,17 @@ export class HeyGenAPI {
         image_key: imageKey,
       }),
     });
-
-    console.log('Create avatar group response:', response);
-    return response.data.avatar_group_id;
+  
+    const json = await response.json();
+    console.log('Create avatar group response:', json);
+  
+    if (json.error) {
+      throw new Error(`HeyGen API error (createAvatarGroup): ${json.error}`);
+    }
+  
+    return json.data.avatar_group_id;
   }
+  
 
   private async trainAvatarGroup(avatarGroupId: string): Promise<string> {
     console.log('Training avatar group...');
@@ -302,9 +309,15 @@ export class HeyGenAPI {
         avatar_group_id: avatarGroupId,
       }),
     });
-
-    console.log('Train response:', response);
-    return response.data.train_id;
+  
+    const json = await response.json();
+    console.log('Train response:', json);
+  
+    if (json.error) {
+      throw new Error(`HeyGen API error (trainAvatarGroup): ${json.error}`);
+    }
+  
+    return json.data.train_id;
   }
 
   private async checkTrainingStatus(trainId: string): Promise<AvatarGenerationResponse> {
@@ -312,10 +325,17 @@ export class HeyGenAPI {
     const response = await this.request(`/v2/photo_avatar/train/status?train_id=${trainId}`, {
       method: 'GET',
     });
-
-    console.log('Training status response:', response);
-    return response;
+  
+    const json = await response.json();
+    console.log('Training status response:', json);
+  
+    if (json.error) {
+      throw new Error(`HeyGen API error (checkTrainingStatus): ${json.error}`);
+    }
+  
+    return json;
   }
+  
 
   private async generateLook(avatarGroupId: string, style: string): Promise<string> {
     console.log('Generating look...');
@@ -326,26 +346,39 @@ export class HeyGenAPI {
         style: style === 'realistic' ? 'Realistic' : 'Cartoon',
       }),
     });
-
-    console.log('Generate look response:', response);
-    return response.data.look_id;
+  
+    const json = await response.json();
+    console.log('Generate look response:', json);
+  
+    if (json.error) {
+      throw new Error(`HeyGen API error (generateLook): ${json.error}`);
+    }
+  
+    return json.data.look_id;
   }
+  
 
   private async checkLookStatus(lookId: string): Promise<AvatarGenerationResponse> {
     console.log('Checking look status...');
     const response = await this.request(`/v2/photo_avatar/look/status?look_id=${lookId}`, {
       method: 'GET',
     });
-
-    console.log('Look status response:', response);
-    return response;
+  
+    const json = await response.json();
+    console.log('Look status response:', json);
+  
+    if (json.error) {
+      throw new Error(`HeyGen API error (checkLookStatus): ${json.error}`);
+    }
+  
+    return json;
   }
+  
 
   async createAvatarFromText(params: CreateAvatarFromTextParams) {
     console.log('Creating avatar from text with params:', params);
     
     try {
-      // Paso 1: Generar el avatar
       const response = await this.request('/v2/photo_avatar/photo/generate', {
         method: 'POST',
         body: JSON.stringify({
@@ -359,61 +392,54 @@ export class HeyGenAPI {
           appearance: params.prompt,
         }),
       });
-
-      console.log('Initial generation response:', response);
-
-      if (response.error) {
-        throw new Error(`Error generating avatar: ${response.error}`);
+  
+      const json = await response.json();
+      console.log('Initial generation response:', json);
+  
+      if (json.error) {
+        throw new Error(`Error generating avatar: ${json.error}`);
       }
-
-      if (!response.data?.generation_id) {
+  
+      if (!json.data?.generation_id) {
         throw new Error('No generation ID in response');
       }
-
-      // Paso 2: Verificar el estado de la generación con backoff exponencial
-      let statusResponse = await this.checkGenerationStatus(response.data.generation_id);
+  
+      let statusResponse = await this.checkGenerationStatus(json.data.generation_id);
       let attempts = 0;
       const maxAttempts = 30;
-      let waitTime = 2000; // Comenzamos con 2 segundos
-      const maxWaitTime = 5000; // Máximo 5 segundos entre intentos
-
+      let waitTime = 2000;
+      const maxWaitTime = 5000;
+  
       while (statusResponse.status === 'in_progress' && attempts < maxAttempts) {
-        console.log(`Attempt ${attempts + 1}/${maxAttempts}: Waiting for generation to complete... Status: ${statusResponse.status} (Next check in ${waitTime/1000}s)`);
-        
+        console.log(`Attempt ${attempts + 1}/${maxAttempts}: Waiting... Status: ${statusResponse.status}`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
-        
-        // Incrementar el tiempo de espera con backoff exponencial
         waitTime = Math.min(waitTime + 1000, maxWaitTime);
-        
-        statusResponse = await this.checkGenerationStatus(response.data.generation_id);
+        statusResponse = await this.checkGenerationStatus(json.data.generation_id);
         attempts++;
       }
-
-      // Manejo de diferentes estados
+  
       if (statusResponse.status === 'in_progress') {
-        throw new Error('La generación del avatar está tomando más tiempo de lo esperado. Por favor, verifica el estado más tarde.');
+        throw new Error('La generación del avatar está tomando más tiempo de lo esperado.');
       }
-
+  
       if (statusResponse.status === 'failed') {
         throw new Error(`La generación del avatar falló: ${statusResponse.msg || 'Error desconocido'}`);
       }
-
+  
       if (statusResponse.status !== 'success') {
         throw new Error(`Estado inesperado: ${statusResponse.status}`);
       }
-
+  
       if (!statusResponse.image_url_list || statusResponse.image_url_list.length === 0) {
-        throw new Error('No se recibieron URLs de avatar en la respuesta');
+        throw new Error('No se recibieron URLs de avatar');
       }
-
-      // Calcular el tiempo total de espera
+  
       const totalWaitTime = attempts * waitTime;
-      console.log(`Avatar generado exitosamente después de ${totalWaitTime/1000} segundos`);
-
+  
       return {
         avatarUrl: statusResponse.image_url_list[0],
         status: statusResponse.status,
-        generationId: response.data.generation_id,
+        generationId: json.data.generation_id,
         waitTime: totalWaitTime,
         allUrls: statusResponse.image_url_list,
         imageKeys: statusResponse.image_key_list,
@@ -423,6 +449,7 @@ export class HeyGenAPI {
       throw error;
     }
   }
+  
 
   async createAvatarFromImage(params: CreateAvatarFromImageParams): Promise<AvatarResponse> {
     console.log('Creating avatar from image with params:', params);
@@ -540,6 +567,7 @@ export class HeyGenAPI {
    */
   private async addLooksToAvatarGroup(imageKeys: string[], groupId: string, name?: string): Promise<any[]> {
     if (imageKeys.length === 0) return [];
+  
     const lookName = name || `Look-${Date.now()}`;
     const response = await this.request('/v2/photo_avatar/avatar_group/add', {
       method: 'POST',
@@ -549,10 +577,17 @@ export class HeyGenAPI {
         name: lookName,
       }),
     });
-    console.log('Add looks to group response:', response);
-    // Retornar la lista de photo_avatar generados
-    return response.data?.photo_avatar_list || [];
+  
+    const json = await response.json();
+    console.log('Add looks to group response:', json);
+  
+    if (json.error) {
+      throw new Error(`HeyGen API error (addLooksToAvatarGroup): ${json.error}`);
+    }
+  
+    return json.data?.photo_avatar_list || [];
   }
+  
 
   /**
    * Flujo completo para crear y entrenar un grupo de avatar con múltiples imágenes
