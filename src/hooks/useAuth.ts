@@ -1,18 +1,24 @@
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/me');
+        if (!res.ok) throw new Error('No autorizado');
+        const data = await res.json();
+        setUser(data.user);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => unsubscribe();
+    fetchUser();
   }, []);
 
   return { user, loading };

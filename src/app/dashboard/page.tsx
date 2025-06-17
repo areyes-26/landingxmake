@@ -195,7 +195,9 @@ export default function DashboardPage() {
                     <CardTitle className="line-clamp-2">{video.videoTitle}</CardTitle>
                   </div>
                   <CardDescription>
-                    {new Date(video.createdAt.toDate()).toLocaleDateString()}
+                  {video.createdAt?.toDate 
+  ? new Date(video.createdAt.toDate()).toLocaleDateString()
+  : 'Fecha no disponible'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
