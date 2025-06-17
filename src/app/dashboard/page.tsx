@@ -164,13 +164,18 @@ export default function DashboardPage() {
 
         {videos.length === 0 ? (
           <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold mb-4">No tienes videos aún</h2>
+            <h2 className="text-2xl font-semibold mb-4">¡Bienvenido a tu Dashboard!</h2>
             <p className="text-muted-foreground mb-6">
-              Comienza creando tu primer video para generar contenido impactante.
+              Aún no tienes videos. Comienza creando tu primer video o prueba un avatar para explorar las funcionalidades.
             </p>
-            <Button onClick={() => router.push('/video-forms')}>
-              Crear mi Primer Video
-            </Button>
+            <div className="flex flex-col md:flex-row gap-4 justify-center">
+              <Button onClick={() => router.push('/video-forms')}>
+                Crear mi Primer Video
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/admin/avatar-test')}>
+                Pruebas de Avatar
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

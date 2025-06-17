@@ -1,0 +1,24 @@
+stripe-buy-button {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  display: block !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+stripe-buy-button iframe {
+  width: 100% !important;
+  height: 48px !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+  display: block;
+  border: none !important;
+}
+
+/* Forzar el border-radius también en el contenido interno del iframe si es posible */
+stripe-buy-button iframe html body {
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+} 

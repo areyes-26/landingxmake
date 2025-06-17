@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -8,28 +8,61 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Redirigir si el usuario ya está autenticado
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, loading, router]);
+
+  const handleSessionLogin = async (idToken: string) => {
+    const res = await fetch('/api/sessionLogin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+    if (!res.ok) {
+      throw new Error('No se pudo establecer la sesión segura.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setFormLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Verificar si el email está verificado
+      if (!user.emailVerified) {
+        await auth.signOut();
+        throw new Error('Por favor, verifica tu correo electrónico antes de iniciar sesión.');
+      }
+
+      // Obtener el ID token y setear cookie de sesión
+      const idToken = await user.getIdToken();
+      await handleSessionLogin(idToken);
+
       toast.success('Inicio de sesión exitoso');
-      router.push('/dashboard');
+      router.replace('/dashboard');
       router.refresh();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al iniciar sesión:', error);
-      toast.error('Error al iniciar sesión. Verifica tus credenciales.');
+      toast.error(error.message || 'Error al iniciar sesión. Verifica tus credenciales.');
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
@@ -37,9 +70,13 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      // Obtener el ID token y setear cookie de sesión
+      const idToken = await user.getIdToken();
+      await handleSessionLogin(idToken);
       toast.success('Inicio de sesión con Google exitoso');
-      router.push('/dashboard');
+      router.replace('/dashboard');
       router.refresh();
     } catch (error) {
       console.error('Error al iniciar sesión con Google:', error);
@@ -48,6 +85,19 @@ export default function LoginPage() {
       setGoogleLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="animate-spin w-10 h-10 text-primary" />
+      </div>
+    );
+  }
+
+  if (user) {
+    // Ya se está redirigiendo, no mostrar nada
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -87,9 +137,10 @@ export default function LoginPage() {
           <Button
             type="submit"
             className="w-full"
-            disabled={loading}
+            disabled={formLoading}
           >
-            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            {formLoading ? <Loader2 className="animate-spin w-4 h-4 mr-2 inline" /> : null}
+            {formLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </Button>
 
           <div className="relative">
@@ -110,6 +161,7 @@ export default function LoginPage() {
             onClick={handleGoogleSignIn}
             disabled={googleLoading}
           >
+            {googleLoading ? <Loader2 className="animate-spin w-4 h-4 mr-2 inline" /> : null}
             {googleLoading ? (
               'Conectando...'
             ) : (

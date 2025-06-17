@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css"; // Ensures global styles are loaded
 import { Navigation } from '@/components/ui/navigation';
 import { Toaster } from "sonner";
+import { AuthProvider } from '@/components/providers/AuthProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -25,9 +26,11 @@ export default function RootLayout({
       {/* Applies base background, text color, and font from globals.css */}
       {/* font-sans class on body will now pick up --font-inter */}
       <body className="font-sans antialiased bg-background text-foreground">
-        <Navigation />
-        {children}
-        <Toaster />
+        <AuthProvider>
+          <Navigation />
+          {children}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

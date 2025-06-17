@@ -10,6 +10,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '../firebase/client';
+import { initializeUserData } from '@/lib/userData';
 
 export async function login(email: string, password: string) {
   try {
@@ -21,6 +22,7 @@ export async function login(email: string, password: string) {
     
     // Check if email is verified
     if (!user.emailVerified) {
+      await signOut(auth);
       throw new Error('Por favor, verifica tu correo electrónico antes de iniciar sesión.');
     }
     
@@ -52,6 +54,12 @@ export async function register(email: string, password: string) {
     // Send email verification
     await sendEmailVerification(user);
     console.log('Email verification sent successfully');
+    
+    // Inicializar user_data
+    await initializeUserData(user.uid);
+    console.log('user_data inicializado para:', user.uid);
+    // Cerrar sesión tras registro para forzar verificación
+    await signOut(auth);
     
     return user;
   } catch (error: any) {

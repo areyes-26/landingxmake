@@ -23,6 +23,8 @@ export async function GET(
     const response = {
       ...videoData,
       script: completionData?.script || null,
+      shortCopy: completionData?.shortCopy || null,
+      longCopy: completionData?.longCopy || null,
       socialContent: completionData?.socialContent || null
     };
 
