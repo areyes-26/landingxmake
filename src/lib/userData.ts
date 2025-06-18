@@ -1,9 +1,5 @@
 import { db } from './firebase';
-<<<<<<< HEAD
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-=======
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
->>>>>>> e30b17602a7ba8208f0ff9391968a8b3d4daa822
 import { User } from 'firebase/auth';
 
 /**
@@ -49,11 +45,7 @@ export async function ensureUserDataExists(userId: string, userData?: User) {
   if (!userSnap.exists()) {
     // Crear user_data con información mínima
     const userDataToSet: any = {
-<<<<<<< HEAD
       userId: userId,
-=======
-      userId: userId, // Campo userId para webhooks y referencias
->>>>>>> e30b17602a7ba8208f0ff9391968a8b3d4daa822
       credits: 0,
       plan: 'free',
       createdAt: serverTimestamp(),

@@ -1,14 +1,26 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
+import { authOptions } from '@/lib/auth'; // Asegurate de que esté bien la ruta
 
 export async function POST(req: Request) {
   try {
-    console.log('[generate-long-copy] Iniciando generación de long copy...');
-    
+    console.log('[generate-long-copy] 🚀 Iniciando generación de long copy...');
+
+    // Detectar si es una llamada interna (desde backend, como onVideoCreated)
+    const isInternalCall = req.headers.get('x-internal-call') === 'true';
+
+    if (!isInternalCall) {
+      const session = await getServerSession(authOptions);
+      if (!session || !session.user?.email) {
+        console.warn('[generate-long-copy] ⛔ Acceso no autorizado');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const body = await req.json();
-    console.log('[generate-long-copy] Body recibido:', JSON.stringify(body, null, 2));
-    
+    console.log('[generate-long-copy] 📦 Body recibido:', JSON.stringify(body, null, 2));
+
     const { videoId, script } = body as { videoId: string; script: string };
 
     if (!videoId || !script) {
@@ -18,7 +30,6 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // Leer datos del video para completar el prompt
     const videoDoc = await db.collection('videos').doc(videoId).get();
     if (!videoDoc.exists) {
       return NextResponse.json({
@@ -28,7 +39,6 @@ export async function POST(req: Request) {
     }
 
     const videoData = videoDoc.data();
-
     const promptTemplate = await readPromptTemplate('copy-largo');
     const prompt = replacePromptPlaceholders(promptTemplate, {
       script,
@@ -38,7 +48,7 @@ export async function POST(req: Request) {
       videoTitle: videoData?.videoTitle,
     });
 
-    console.log('[generate-long-copy] Prompt generado:', prompt);
+    console.log('[generate-long-copy] ✏️ Prompt generado:', prompt);
 
     let longCopy: string | null = null;
     let openaiError: string | null = null;
@@ -46,20 +56,16 @@ export async function POST(req: Request) {
     try {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini-2024-07-18",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
+        messages: [{ role: "user", content: prompt }],
         temperature: 0.7,
         max_tokens: 1000
       });
+
       longCopy = completion.choices[0].message.content?.trim() || null;
-      console.log('[generate-long-copy] Long copy generado:', longCopy);
+      console.log('[generate-long-copy] ✅ Long copy generado');
     } catch (err) {
       openaiError = err instanceof Error ? err.message : String(err);
-      console.error('[generate-long-copy] Error de OpenAI:', openaiError);
+      console.error('[generate-long-copy] ❌ Error de OpenAI:', openaiError);
     }
 
     if (!longCopy) {
@@ -70,7 +76,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    // Guardar long copy en Firestore
     await db.collection('completion_results_videos').doc(videoId).set({
       longCopy: {
         platform: 'Descripción extendida',
@@ -87,9 +92,9 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[generate-long-copy] Error inesperado:', error);
+    console.error('[generate-long-copy] 🔥 Error inesperado:', error);
     return NextResponse.json({
-      error: error instanceof Error ? error.message : 'An unexpected error occurred',
+      error: error instanceof Error ? error.message : 'Unexpected error',
       details: error instanceof Error ? error.stack : String(error),
       status: 500
     }, { status: 500 });
