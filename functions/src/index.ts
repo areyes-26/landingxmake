@@ -1,6 +1,7 @@
 // functions/src/index.ts
 console.log('Firebase Functions loaded.');
 
+// @ts-ignore
 import * as functions from 'firebase-functions/v1';   // <- Forzar versión v1
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
@@ -8,6 +9,7 @@ import axios from 'axios';
 import { instagramCallback } from './instagram/callback';
 import { checkVideoStatus } from './instagram/videoStatusChecker';
 import { instagramWebhook } from './instagram/webhook';
+import { HeyGenAPI } from './lib/heygen';
 
 
 // Inicializar Firebase Admin
@@ -101,3 +103,71 @@ export { onVideoCreated } from './onVideoCreated';
 
 // === Firestore Trigger: check video status ===
 export { checkVideoStatus };
+
+// === Cloud Function programada para polling de videos en proceso ===
+export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onRun(async (context) => {
+  const db = admin.firestore();
+  const heygen = new HeyGenAPI();
+  const snapshot = await db.collection('videos').where('status', '==', 'processing').get();
+  if (snapshot.empty) {
+    console.log('[pollHeygenVideos] No hay videos en proceso.');
+    return null;
+  }
+  console.log(`[pollHeygenVideos] Revisando ${snapshot.size} videos en proceso...`);
+  for (const docSnap of snapshot.docs) {
+    const videoId = docSnap.id;
+    const data = docSnap.data();
+    // Intentar obtener el ID de la tarea de diferentes fuentes
+    const taskId = data.heygenResults?.taskId || data.heygenResults?.videoId || videoId;
+    if (!taskId) {
+      console.warn(`[pollHeygenVideos] Video ${videoId} no tiene taskId.`);
+      continue;
+    }
+    try {
+      console.log(`[pollHeygenVideos] Consultando estado para video ${videoId} con taskId ${taskId}`);
+      const status = await heygen.checkVideoStatus(taskId);
+      console.log(`[pollHeygenVideos] Estado recibido para video ${videoId}:`, status);
+
+      const updateData: any = {
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        heygenResults: {
+          ...data.heygenResults,
+          status: status.status,
+          generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }
+      };
+
+      if (status.status === 'completed' && status.videoUrl) {
+        updateData.status = 'completed';
+        updateData.heygenResults.videoUrl = status.videoUrl;
+        updateData.videoUrl = status.videoUrl; // Actualizar también el campo principal
+        if (status.thumbnailUrl) {
+          updateData.thumbnailUrl = status.thumbnailUrl;
+        }
+        console.log(`[pollHeygenVideos] Video ${videoId} actualizado a completed con URL: ${status.videoUrl}`);
+      } else if (status.status === 'error') {
+        updateData.status = 'error';
+        updateData.error = status.error || 'Error al generar el video';
+        updateData.heygenResults.error = status.error;
+        console.log(`[pollHeygenVideos] Video ${videoId} actualizado a error: ${status.error}`);
+      }
+
+      await db.collection('videos').doc(videoId).update(updateData);
+    } catch (err) {
+      console.error(`[pollHeygenVideos] Error al consultar Heygen para video ${videoId}:`, err);
+      // Actualizar el estado a error si hay un problema de comunicación
+      await db.collection('videos').doc(videoId).update({
+        status: 'error',
+        error: 'Error al consultar el estado del video',
+        heygenResults: {
+          ...data.heygenResults,
+          status: 'error',
+          error: err instanceof Error ? err.message : 'Error desconocido',
+          generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+  }
+  return null;
+});

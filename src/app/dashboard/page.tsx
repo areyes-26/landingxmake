@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import type { VideoData } from '@/types/video';
+import { MoreVertical } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -17,62 +18,60 @@ export default function DashboardPage() {
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [order, setOrder] = useState<'desc' | 'asc'>('desc');
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [videoToDelete, setVideoToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    // Esperamos a que la autenticación termine de cargar
     if (authLoading) return;
-
-    // Si no hay usuario, redirigimos al login
     if (!user) {
       router.replace('/auth/login');
       return;
     }
-
     const videosRef = collection(db, 'videos');
     const q = query(
       videosRef,
       where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
-
-    console.log('[Dashboard] Consultando videos para usuario:', user.uid);
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('[Dashboard] Snapshot recibido, tamaño:', snapshot.size);
       const videoList: VideoData[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
-        console.log('[Dashboard] Video encontrado:', {
-          id: doc.id,
-          status: data.status || data.estado,
-          userId: data.userId,
-          createdAt: data.createdAt?.toDate() || data.fechaCreacion?.toDate(),
-          videoTitle: data.videoTitle || data.titulo,
-          heygenResults: data.heygenResults
-        });
-        
-        // Normalizar los campos
+        console.log('[Dashboard] Firestore raw doc:', doc.id, data);
+        // Preservar el estado original del documento
         const normalizedData = {
           ...data,
-          status: data.status || data.estado,
+          status: data.status || 'pending', // Si no hay estado, asumimos que está pendiente
           createdAt: data.createdAt || data.fechaCreacion,
-          videoTitle: data.videoTitle || data.titulo,
-          description: data.description || data.descripcion
+          videoTitle: data.videoTitle || data.titulo || 'Untitled Video',
+          description: data.description || data.descripcion || ''
         };
-        
+        console.log('[Dashboard] Normalized video:', doc.id, normalizedData);
         videoList.push({ id: doc.id, ...normalizedData } as VideoData);
       });
-      console.log('[Dashboard] Total de videos cargados:', videoList.length);
       setVideos(videoList);
       setLoading(false);
     }, (error) => {
-      console.error('[Dashboard] Error al cargar los videos:', error);
+      console.error('Error fetching videos:', error);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, [user, router, authLoading]);
 
+  // Ordenar los videos localmente según la selección
+  const orderedVideos = [...videos].sort((a, b) => {
+    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+    if (order === 'desc') {
+      return dateB.getTime() - dateA.getTime();
+    } else {
+      return dateA.getTime() - dateB.getTime();
+    }
+  });
+
+  // Ajustar el conteo y el filtro de 'Pendientes'
   const getStatusBadge = (status: string, count: number) => {
     const isSelected = selectedStatus === status;
     const baseClasses = "cursor-pointer transition-colors";
@@ -89,15 +88,21 @@ export default function DashboardPage() {
         className={`${baseClasses} ${statusClasses[status as keyof typeof statusClasses]} ${isSelected ? 'ring-2 ring-offset-2 ring-offset-background ring-ring' : ''}`}
         onClick={() => setSelectedStatus(status === selectedStatus ? null : status)}
       >
-        {status === 'all' ? 'Todos' : 
-         status === 'completed' ? 'Completados' :
-         status === 'processing' ? 'En proceso' :
-         status === 'error' ? 'Error' : 'Pendientes'}: {count}
+        {status === 'all' ? 'All' : 
+         status === 'completed' ? 'Completed' :
+         status === 'processing' ? 'Processing' :
+         status === 'error' ? 'Error' : 'Pending'}: {count}
       </Badge>
     );
   };
 
+  // Ajustar el filtro de videos
+  const filteredVideos = selectedStatus && selectedStatus !== 'all' 
+    ? orderedVideos.filter(v => v.status === selectedStatus)
+    : orderedVideos;
+
   const handleVideoClick = (video: VideoData) => {
+    console.log('[Dashboard] handleVideoClick:', video.id, 'status:', video.status);
     if (video.status === 'completed') {
       router.push(`/export-view?id=${video.id}`);
     } else if (video.status === 'processing') {
@@ -107,9 +112,34 @@ export default function DashboardPage() {
     }
   };
 
-  const filteredVideos = selectedStatus && selectedStatus !== 'all' 
-    ? videos.filter(v => v.status === selectedStatus)
-    : videos;
+  const handleDeleteVideo = async (videoId: string) => {
+    setVideoToDelete(videoId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteVideo = async () => {
+    if (!videoToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'videos', videoToDelete));
+      setMenuOpenId(null);
+      setShowDeleteModal(false);
+      setVideoToDelete(null);
+    } catch (error) {
+      alert('Error deleting video.');
+    }
+  };
+
+  const cancelDeleteVideo = () => {
+    setShowDeleteModal(false);
+    setVideoToDelete(null);
+  };
+
+  const getCardButtonLabel = (video: VideoData) => {
+    if (video.status === 'completed') return 'View Video';
+    if (video.status === 'processing') return 'Processing';
+    if (video.status === 'error') return 'Error';
+    return 'View Details';
+  };
 
   if (authLoading || loading) {
     return (
@@ -143,7 +173,7 @@ export default function DashboardPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Mis Videos</h1>
+            <h1 className="text-3xl font-bold">My Videos</h1>
             <div className="flex gap-4 mt-2">
               {getStatusBadge('all', videos.length)}
               {getStatusBadge('completed', videos.filter(v => v.status === 'completed').length)}
@@ -151,29 +181,41 @@ export default function DashboardPage() {
               {getStatusBadge('error', videos.filter(v => v.status === 'error').length)}
               {getStatusBadge('pending', videos.filter(v => v.status === 'pending').length)}
             </div>
+            <div className="mt-4">
+              <label htmlFor="order-select" className="mr-2 font-medium text-muted-foreground">Order by:</label>
+              <select
+                id="order-select"
+                value={order}
+                onChange={e => setOrder(e.target.value as 'desc' | 'asc')}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-background text-foreground"
+              >
+                <option value="desc">Newest first</option>
+                <option value="asc">Oldest first</option>
+              </select>
+            </div>
           </div>
           <div className="flex gap-4">
             <Button onClick={() => router.push('/video-forms')}>
-              Crear Nuevo Video
+              Create New Video
             </Button>
             <Button variant="outline" onClick={() => router.push('/admin/avatar-test')}>
-              Pruebas de Avatar
+              Avatar Test
             </Button>
           </div>
         </div>
 
         {videos.length === 0 ? (
           <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold mb-4">¡Bienvenido a tu Dashboard!</h2>
+            <h2 className="text-2xl font-semibold mb-4">Welcome to your Dashboard!</h2>
             <p className="text-muted-foreground mb-6">
-              Aún no tienes videos. Comienza creando tu primer video o prueba un avatar para explorar las funcionalidades.
+              You don't have any videos yet. Start by creating your first video or try an avatar to explore the features.
             </p>
             <div className="flex flex-col md:flex-row gap-4 justify-center">
               <Button onClick={() => router.push('/video-forms')}>
-                Crear mi Primer Video
+                Create my First Video
               </Button>
               <Button variant="outline" onClick={() => router.push('/admin/avatar-test')}>
-                Pruebas de Avatar
+                Avatar Test
               </Button>
             </div>
           </div>
@@ -193,11 +235,30 @@ export default function DashboardPage() {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <CardTitle className="line-clamp-2">{video.videoTitle}</CardTitle>
+                    <div className="relative ml-2" onClick={e => e.stopPropagation()}>
+                      <button
+                        className="p-1 rounded-full hover:bg-muted/40 focus:outline-none"
+                        onClick={() => setMenuOpenId(menuOpenId === video.id ? null : video.id)}
+                        aria-label="Options"
+                      >
+                        <MoreVertical className="w-5 h-5 text-muted-foreground" />
+                      </button>
+                      {menuOpenId === video.id && (
+                        <div className="absolute right-0 mt-2 w-40 bg-card border border-muted-foreground/20 rounded-md shadow-lg z-50">
+                          <button
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-800"
+                            onClick={() => handleDeleteVideo(video.id)}
+                          >
+                            Delete video
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <CardDescription>
-                  {video.createdAt?.toDate 
-  ? new Date(video.createdAt.toDate()).toLocaleDateString()
-  : 'Fecha no disponible'}
+                    {video.createdAt?.toDate 
+                      ? new Date(video.createdAt.toDate()).toLocaleDateString()
+                      : 'Fecha no disponible'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -207,14 +268,14 @@ export default function DashboardPage() {
                 </CardContent>
                 <CardFooter>
                   <Button
-                    variant="outline"
+                    variant={video.status === 'completed' ? 'default' : 'outline'}
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleVideoClick(video);
                     }}
                   >
-                    {video.status === 'completed' ? 'Ver Video' : 'Ver Detalles'}
+                    {getCardButtonLabel(video)}
                   </Button>
                 </CardFooter>
               </Card>
@@ -222,6 +283,19 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      {/* Modal de confirmación de eliminación (custom, reutilizando estilo de Plans and Pricing) */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-lg flex flex-col items-center">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Delete video</h2>
+            <p className="mb-6 text-gray-700 text-center">Are you sure you want to delete this video? This action cannot be undone.</p>
+            <div className="flex gap-4 w-full justify-center">
+              <Button variant="outline" onClick={cancelDeleteVideo}>Cancel</Button>
+              <Button variant="destructive" onClick={confirmDeleteVideo}>Delete</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

@@ -18,7 +18,7 @@ export default function VideoGeneratingPage({ params }: { params: { id: string }
   useEffect(() => {
     const videoRef = doc(db, 'videos', params.id);
     
-    const unsubscribe = onSnapshot(videoRef, async (doc) => {
+    const unsubscribe = onSnapshot(videoRef, (doc) => {
       if (!doc.exists()) {
         setError('Video no encontrado');
         setStatus('failed');
@@ -26,9 +26,11 @@ export default function VideoGeneratingPage({ params }: { params: { id: string }
       }
 
       const videoData = doc.data();
+      console.log('Estado actual del video:', videoData.status, 'HeyGen status:', videoData.heygenResults?.status);
       
       // Si el video está listo, redirigir a export-view
       if (videoData.status === 'completed' && videoData.heygenResults?.videoUrl) {
+        console.log('Video completado, redirigiendo a export-view');
         toast.success('¡Video generado exitosamente!');
         router.push(`/export-view?id=${params.id}`);
         setStatus('completed');
@@ -39,19 +41,27 @@ export default function VideoGeneratingPage({ params }: { params: { id: string }
       // Si hay un error, mostrarlo solo si no está en proceso
       if (videoData.status === 'error' && videoData.heygenResults?.status !== 'generating') {
         const errorMessage = videoData.error || 'Error al generar el video';
+        console.error('Error en la generación del video:', errorMessage);
         setError(errorMessage);
         toast.error(errorMessage);
         setStatus('failed');
         return;
       }
 
-      // Si tenemos un taskId y el video está en proceso, iniciar el polling
-      if (videoData.heygenResults?.taskId && videoData.status === 'processing') {
-        setTaskId(videoData.heygenResults.taskId);
+      // Si el video está en proceso, iniciar el polling
+      if (videoData.status === 'processing') {
+        const heygenVideoId = videoData.heygenResults?.videoId;
+        if (!heygenVideoId) {
+          console.error('No se encontró el ID de video de HeyGen');
+          setError('Error: No se encontró el ID de video de HeyGen');
+          setStatus('failed');
+          return;
+        }
+        console.log('Iniciando polling con HeyGen video_id:', heygenVideoId);
+        setTaskId(heygenVideoId);
         setStatus('processing');
       }
     }, (error) => {
-      // Solo mostrar errores de conexión con Firestore
       console.error('Error al monitorear el estado del video:', error);
       if (error.code === 'permission-denied' || error.code === 'unavailable') {
         const errorMessage = 'Error de conexión al monitorear el video';
@@ -70,16 +80,17 @@ export default function VideoGeneratingPage({ params }: { params: { id: string }
 
     const checkStatus = async () => {
       try {
+        console.log('Consultando estado del video:', params.id, 'taskId:', taskId);
         const response = await fetch(`/api/heygen/check-status?videoId=${params.id}&taskId=${taskId}`);
         if (!response.ok) {
           const errorData = await response.json();
-          // Solo mostrar el error en consola, no en la UI
           console.error('Error en el polling:', errorData.error);
           return;
         }
+        const data = await response.json();
+        console.log('Respuesta del polling:', data);
         setPollingCount(prev => prev + 1);
       } catch (error) {
-        // Solo mostrar el error en consola, no en la UI
         console.error('Error en el polling:', error);
       }
     };
@@ -109,7 +120,7 @@ export default function VideoGeneratingPage({ params }: { params: { id: string }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">

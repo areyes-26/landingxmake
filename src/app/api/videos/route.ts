@@ -83,15 +83,74 @@ export async function POST(req: NextRequest) {
       .filter(([_, value]) => !value)
       .map(([key]) => key);
 
+    // Si faltan campos requeridos, guardar como draft y NO generar script
     if (missingFields.length > 0) {
-      console.log("❌ Campos requeridos faltantes:", missingFields);
-      return NextResponse.json(
-        {
-          error: 'Faltan campos requeridos',
-          details: `Los siguientes campos son requeridos: ${missingFields.join(', ')}`
-        },
-        { status: 400 }
-      );
+      const draftData = {
+        videoTitle,
+        description,
+        topic,
+        avatarId,
+        callToAction,
+        specificCallToAction,
+        tone,
+        email,
+        duration,
+        voiceId,
+        voiceDetails,
+        status: 'draft',
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        userId
+      };
+      const draftDocRef = await db.collection('videos').add(draftData);
+      return NextResponse.json({
+        success: true,
+        message: 'Draft saved successfully',
+        firestoreId: draftDocRef.id
+      });
+    }
+
+    // 4.1) Leer créditos del usuario y calcular costo
+    let userCredits = 0;
+    let userPlan = 'free';
+    try {
+      const userDoc = await db.collection('user_data').doc(userId).get();
+      if (!userDoc.exists) {
+        return NextResponse.json({ error: 'No user data found' }, { status: 403 });
+      }
+      const userData = userDoc.data()!;
+      userCredits = userData.credits || 0;
+      userPlan = userData.plan || 'free';
+    } catch (err) {
+      return NextResponse.json({ error: 'Error reading user credits' }, { status: 500 });
+    }
+
+    // Lógica de créditos
+    const CREDIT_COSTS = {
+      baseVideo: 1,
+      durations: {
+        '30s': 0,
+        '1min': 2,
+        '1.5min': 3
+      }
+    };
+    let videoDuration = duration;
+    if (videoDuration === '60s') videoDuration = '1min';
+    if (videoDuration === '90s') videoDuration = '1.5min';
+    const durationCost = CREDIT_COSTS.durations[videoDuration as keyof typeof CREDIT_COSTS.durations] || 1;
+    const totalCost = CREDIT_COSTS.baseVideo + durationCost;
+
+    if (userCredits < totalCost) {
+      return NextResponse.json({ error: 'Not enough credits', required: totalCost, current: userCredits }, { status: 403 });
+    }
+
+    // Descontar créditos antes de crear el video
+    try {
+      await db.collection('user_data').doc(userId).update({
+        credits: userCredits - totalCost
+      });
+    } catch (err) {
+      return NextResponse.json({ error: 'Error updating credits' }, { status: 500 });
     }
 
     // 5) Guardar en Firestore

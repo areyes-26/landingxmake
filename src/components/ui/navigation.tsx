@@ -23,15 +23,14 @@ export function Navigation() {
 
   const handleLogout = async () => {
     try {
-      // Llamar al endpoint para eliminar la cookie de sesión
+      console.log('[Navigation] handleLogout: cerrando sesión');
       await fetch('/api/sessionLogout', { method: 'POST' });
-      // Hacer signOut de Firebase
       await signOut(auth);
       toast.success('Sesión cerrada exitosamente');
       router.push('/inicio');
       router.refresh();
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error('[Navigation] Error al cerrar sesión:', error);
       toast.error('Error al cerrar sesión');
     }
   };
@@ -70,6 +69,8 @@ export function Navigation() {
     };
   }, [notifOpen]);
 
+  // Log de render para debug
+  console.log('[Navigation] Render: user:', user);
   return (
     <nav className="bg-background border-b border-muted-foreground/20">
       <div className="container mx-auto px-4">
@@ -108,13 +109,20 @@ export function Navigation() {
                         className="block px-4 py-2 text-sm text-muted-foreground hover:bg-muted-foreground/10 hover:text-primary"
                         onClick={() => setDropdownOpen(false)}
                       >
-                        Ajustes y facturación
+                        Account settings
+                      </Link>
+                      <Link
+                        href="/account-setting/credit-topup"
+                        className="block px-4 py-2 text-sm text-muted-foreground hover:bg-muted-foreground/10 hover:text-primary"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        Recharge credits
                       </Link>
                       <button
                         onClick={() => { setDropdownOpen(false); handleLogout(); }}
                         className="block w-full text-left px-4 py-2 text-sm text-muted-foreground hover:bg-muted-foreground/10 hover:text-primary"
                       >
-                        Cerrar sesión
+                        Log out
                       </button>
                     </div>
                   )}

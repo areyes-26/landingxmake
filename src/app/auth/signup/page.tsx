@@ -20,10 +20,12 @@ export default function SignupPage() {
   const handleGoogleSignIn = async () => {
     try {
       setGoogleLoading(true);
+      console.log('[SignupPage] handleGoogleSignIn: intentando registro/login con Google');
       await signInWithGoogle();
+      console.log('[SignupPage] Google Sign-In exitoso, redirigiendo a /');
       router.push('/');
     } catch (error: any) {
-      console.error('Google Sign-In error:', error);
+      console.error('[SignupPage] Google Sign-In error:', error);
       alert(error.message || 'Error al iniciar sesión con Google');
     } finally {
       setGoogleLoading(false);
@@ -38,11 +40,13 @@ export default function SignupPage() {
     }
 
     try {
+      console.log('[SignupPage] handleSubmit: intentando registro con', email);
       await register(email, password);
       alert('Cuenta creada exitosamente. Por favor, verifica tu correo electrónico antes de iniciar sesión.');
+      console.log('[SignupPage] Registro exitoso, redirigiendo a /auth/login');
       router.push('/auth/login');
     } catch (error: any) {
-      console.error('Signup error:', error);
+      console.error('[SignupPage] Signup error:', error);
       alert(error.message || 'Error al crear la cuenta. Por favor, intenta de nuevo.');
     }
   };

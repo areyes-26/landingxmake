@@ -56,7 +56,31 @@ export async function PUT(
       );
     }
 
+    const currentData = videoDoc.data()!;
     const { script, socialContent, ...videoData } = body;
+
+    // Validar campos requeridos para procesamiento
+    const requiredFields = [
+      videoData.videoTitle,
+      videoData.description,
+      videoData.topic,
+      videoData.avatarId,
+      videoData.voiceId
+    ];
+    const hasAllRequired = requiredFields.every(Boolean);
+
+    // Si el video es draft o faltan campos requeridos, solo actualizar y mantener como draft
+    if (currentData.status === 'draft' || !hasAllRequired) {
+      await videoRef.update({
+        ...body,
+        updatedAt: Timestamp.now(),
+        status: 'draft',
+      });
+      return NextResponse.json({
+        success: true,
+        message: 'Draft updated successfully.'
+      });
+    }
 
     // Actualizar documento principal
     await videoRef.update({

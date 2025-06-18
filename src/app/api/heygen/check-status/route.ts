@@ -10,46 +10,71 @@ export async function GET(request: NextRequest) {
     const videoId = searchParams.get('videoId');
     const taskId = searchParams.get('taskId');
 
-    if (!videoId || !taskId) {
+    if (!videoId) {
       return NextResponse.json(
-        { error: 'Missing videoId or taskId parameter' },
+        { error: 'Missing videoId parameter' },
         { status: 400 }
       );
     }
 
-    console.log('Checking status for video:', videoId, 'task:', taskId);
+    console.log('Checking status for video:', videoId);
+
+    // Obtener el documento actual para preservar datos existentes
+    const videoRef = db.collection('videos').doc(videoId);
+    const videoDoc = await videoRef.get();
+    const currentData = videoDoc.data() || {};
+
+    // NUEVO: Si el video es un draft, no procesar
+    if (currentData.status === 'draft') {
+      return NextResponse.json(
+        { message: 'Draft video, no status check performed.' },
+        { status: 200 }
+      );
+    }
+
+    // Obtener el video_id de HeyGen del documento
+    const heygenVideoId = currentData.heygenResults?.videoId;
+    if (!heygenVideoId) {
+      return NextResponse.json(
+        { error: 'No se encontró el ID de video de HeyGen' },
+        { status: 400 }
+      );
+    }
+
+    console.log('Using HeyGen video_id:', heygenVideoId);
 
     const heygen = new HeyGenAPI();
-    const status = await heygen.checkVideoStatus(taskId);
+    const status = await heygen.checkVideoStatus(heygenVideoId);
+    console.log('HeyGen status response:', status);
 
     // Actualizar el estado en Firestore
     const updateData: any = {
       updatedAt: Timestamp.now(),
+      heygenResults: {
+        ...currentData.heygenResults,
+        status: status.status,
+        generatedAt: Timestamp.now(),
+        videoId: heygenVideoId, // Mantener el video_id de HeyGen
+      }
     };
 
-    if (status.status === 'completed') {
+    if (status.status === 'completed' && status.videoUrl) {
       updateData.status = 'completed';
-      updateData.heygenResults = {
-        status: 'completed',
-        videoUrl: status.videoUrl,
-        generatedAt: Timestamp.now(),
-      };
+      updateData.heygenResults.videoUrl = status.videoUrl;
+      updateData.videoUrl = status.videoUrl; // Actualizar también el campo principal
+      if (status.thumbnailUrl) {
+        updateData.thumbnailUrl = status.thumbnailUrl;
+      }
+      console.log('Video completed with URL:', status.videoUrl);
     } else if (status.status === 'error') {
       updateData.status = 'error';
       updateData.error = status.error || 'Error al generar el video';
-      updateData.heygenResults = {
-        status: 'error',
-        error: status.error,
-        generatedAt: Timestamp.now(),
-      };
-    } else {
-      updateData.heygenResults = {
-        status: status.status,
-        generatedAt: Timestamp.now(),
-      };
+      updateData.heygenResults.error = status.error;
+      console.log('Video error:', status.error);
     }
 
-    await db.collection('videos').doc(videoId).update(updateData);
+    await videoRef.update(updateData);
+    console.log('Firestore updated successfully');
 
     return NextResponse.json(status);
   } catch (error) {

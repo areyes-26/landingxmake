@@ -28,6 +28,14 @@ export default function VideoSettingsPage() {
     }
   }, [params.id]);
 
+  // Redirección automática si el video es un draft
+  useEffect(() => {
+    if (videoSettings && videoSettings.status === 'draft') {
+      const step = videoSettings.currentStep || 0;
+      router.replace(`/video-forms?id=${params.id}&step=${step}`);
+    }
+  }, [videoSettings, params.id, router]);
+
   const fetchVideoSettings = async (videoId: string) => {
     try {
       setIsLoading(true);
@@ -66,14 +74,22 @@ export default function VideoSettingsPage() {
     try {
       setIsLoading(true);
       console.log('[Guardar Cambios] Iniciando guardado de título en videos:', videoSettings.videoTitle);
-      // Guardar título
+      
+      // Verificar si el formulario está completo
+      const isFormComplete = videoSettings.script && 
+                           videoSettings.videoTitle && 
+                           videoSettings.voiceId && 
+                           videoSettings.avatarId;
+
+      // Guardar título y estado
       const videoRef = doc(db, 'videos', params.id as string);
       await setDoc(videoRef, {
         videoTitle: videoSettings.videoTitle,
-        status: 'processing',
+        status: isFormComplete ? 'processing' : 'draft',
         updatedAt: serverTimestamp()
       }, { merge: true });
       console.log('[Guardar Cambios] Título guardado en videos');
+
       // Guardar script y copys
       console.log('[Guardar Cambios] Iniciando guardado de script y copys en completion_results_videos:', {
         script: videoSettings.script,
@@ -89,34 +105,37 @@ export default function VideoSettingsPage() {
       }, { merge: true });
       console.log('[Guardar Cambios] Script y copys guardados en completion_results_videos');
 
-      // Iniciar la generación del video con Heygen
-      const response = await fetch('/api/heygen/generate-video', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          videoId: params.id,
-          script: videoSettings.script,
-          videoTitle: videoSettings.videoTitle,
-          voiceId: videoSettings.voiceId,
-          avatarId: videoSettings.avatarId,
-          tone: videoSettings.tone,
-          duration: videoSettings.duration,
-        }),
-      });
+      // Solo iniciar la generación si el formulario está completo
+      if (isFormComplete) {
+        const response = await fetch('/api/heygen/generate-video', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            videoId: params.id,
+            script: videoSettings.script,
+            videoTitle: videoSettings.videoTitle,
+            voiceId: videoSettings.voiceId,
+            avatarId: videoSettings.avatarId,
+            tone: videoSettings.tone,
+            duration: videoSettings.duration,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error('Error al iniciar la generación del video');
+        if (!response.ok) {
+          throw new Error('Error al iniciar la generación del video');
+        }
+
+        toast.success('Cambios guardados correctamente');
+        router.push(`/videos/${params.id}/generating`);
+      } else {
+        toast.success('Borrador guardado correctamente');
+        router.push('/dashboard');
       }
-
-      toast.success('Cambios guardados correctamente');
-      
-      // Redirigir a la página de generación
-      router.push(`/videos/${params.id}/generating`);
     } catch (error) {
+      console.error('Error al guardar:', error);
       toast.error('Error al guardar los cambios');
-      console.error('[Guardar Cambios] Error:', error);
     } finally {
       setIsLoading(false);
     }

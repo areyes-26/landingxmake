@@ -4,6 +4,7 @@ import "./globals.css"; // Ensures global styles are loaded
 import { Navigation } from '@/components/ui/navigation';
 import { Toaster } from "sonner";
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { SessionSyncer } from '@/components/SessionSyncer';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -27,6 +28,7 @@ export default function RootLayout({
       {/* font-sans class on body will now pick up --font-inter */}
       <body className="font-sans antialiased bg-background text-foreground">
         <AuthProvider>
+          <SessionSyncer />
           <Navigation />
           {children}
           <Toaster />

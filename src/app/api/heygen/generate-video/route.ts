@@ -66,6 +66,7 @@ export async function POST(req: Request) {
       heygenResults: {
         status: 'generating',
         taskId: result.taskId,
+        videoId: result.taskId,
         generatedAt: Timestamp.now(),
       },
       updatedAt: Timestamp.now(),

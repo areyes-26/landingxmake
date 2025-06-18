@@ -3,10 +3,11 @@ import { Timestamp } from 'firebase/firestore';
 export interface VideoData {
   id: string;
   userId: string;
-  status: 'pending' | 'processing' | 'completed' | 'error';
+  status: 'pending' | 'processing' | 'completed' | 'error' | 'draft';
   error?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  currentStep?: number;
   videoUrl?: string;
   thumbnailUrl?: string;
   script?: string;
@@ -61,6 +62,9 @@ export interface VideoData {
     videoUrl?: string;
     status?: string;
     generatedAt?: Timestamp;
+    taskId?: string;
+    videoId?: string;
+    error?: string;
   };
 
   creatomateResults?: {

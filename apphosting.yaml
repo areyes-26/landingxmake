@@ -71,3 +71,48 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # Stripe variables
+  - variable: STRIPE_SECRET_KEY
+    secret: STRIPE_SECRET_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: STRIPE_WEBHOOK_SECRET
+    secret: STRIPE_WEBHOOK_SECRET
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Instagram variables
+  - variable: NEXT_PUBLIC_INSTAGRAM_CLIENT_ID
+    secret: NEXT_PUBLIC_INSTAGRAM_CLIENT_ID
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_INSTAGRAM_CLIENT_SECRET
+    secret: NEXT_PUBLIC_INSTAGRAM_CLIENT_SECRET
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI
+    secret: NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_INSTAGRAM_FUNCTION_URL
+    secret: NEXT_PUBLIC_INSTAGRAM_FUNCTION_URL
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Base URL for frontend
+  - variable: NEXT_PUBLIC_BASE_URL
+    value: "https://landing-videos-generator-06--landing-x-make.us-central1.hosted.app"
+    availability:
+      - BUILD
+      - RUNTIME

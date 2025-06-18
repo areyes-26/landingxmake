@@ -7,12 +7,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Bell, PlaySquare, User, ChevronDown, Check } from "lucide-react";
+import { Bell, PlaySquare, User, ChevronDown, Check, Info } from "lucide-react";
 import Link from 'next/link';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { HeyGenVoice } from '@/lib/heygen';
 import GroupedAvatarsDropdown from '@/components/ui/GroupedAvatarsDropdown';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'react-hot-toast';
+import { useCreditValidator } from '@/hooks/useCreditValidator';
+import { calculateCreditCost, type VideoOptions } from '@/lib/creditPricing';
 
 interface AvatarOption {
   id: string;
@@ -116,6 +121,8 @@ interface AvatarGroup {
 
 export default function VideoFormsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     videoTitle: '',
@@ -126,13 +133,13 @@ export default function VideoFormsPage() {
     specificCallToAction: '',
     tone: '',
     email: '',
-    duration: '',
+    duration: '30s',
     voiceId: '',
   });
 
   const [showSpecificCallToAction, setShowSpecificCallToAction] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<DurationKey>('1.5min');
 
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarOption | null>(null);
@@ -149,6 +156,41 @@ export default function VideoFormsPage() {
 
   const [voices, setVoices] = useState<HeyGenVoice[]>([]);
   const [loadingVoices, setLoadingVoices] = useState(true);
+
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  // Credit validation hook
+  const { 
+    userCredits: creditsUserCredits, 
+    loading: creditsLoading, 
+    validateVideo, 
+    canAfford: creditsCanAfford, 
+    warning: creditsWarning 
+  } = useCreditValidator();
+
+  // Calculate current video cost
+  const currentVideoOptions: VideoOptions = {
+    duration: formData.duration,
+    avatarId: formData.avatarId,
+    voiceId: formData.voiceId,
+    callToAction: formData.callToAction,
+    specificCallToAction: formData.specificCallToAction
+  };
+
+  const currentCost = calculateCreditCost(currentVideoOptions);
+  const canAffordCurrent = creditsCanAfford(currentVideoOptions);
+
+  // Calcular si el usuario puede seleccionar cada duración
+  const canAfford = (duration: string) => {
+    const options: VideoOptions = {
+      duration,
+      avatarId: formData.avatarId,
+      voiceId: formData.voiceId,
+      callToAction: formData.callToAction,
+      specificCallToAction: formData.specificCallToAction
+    };
+    return creditsCanAfford(options);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -178,6 +220,7 @@ export default function VideoFormsPage() {
                       className={`w-full text-center ${
                         activeTab === key ? 'bg-primary text-primary-foreground' : 'bg-background'
                       }`}
+                      disabled={!canAfford(key)}
                     >
                       {DURATION_LIMITS[key].label}
                       <span className="text-xs ml-1 text-muted-foreground/80">({DURATION_LIMITS[key].limit} caract.)</span>
@@ -526,6 +569,11 @@ export default function VideoFormsPage() {
       console.log('Respuesta del servidor:', data);
 
       if (!response.ok) {
+        if (response.status === 403 && data.error === 'Not enough credits') {
+          setStatus(`No tienes créditos suficientes para crear este video. Créditos requeridos: ${data.required}, tus créditos: ${data.current}`);
+          setIsLoading(false);
+          return;
+        }
         throw new Error(data.error || data.details || 'Error al procesar la solicitud');
       }
 
@@ -542,6 +590,11 @@ export default function VideoFormsPage() {
     }
   };
 
+  // Función para verificar si hay algún campo con datos
+  const hasFormData = () => {
+    return Object.values(formData).some(value => value !== '');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <main className="flex flex-col items-center">
@@ -551,7 +604,7 @@ export default function VideoFormsPage() {
             <p className="text-lg text-muted-foreground">Comparte tu historia con el mundo. Completa el formulario para enviar tu idea de video.</p>
           </div>
 
-          <div className="bg-card p-6 sm:p-8 rounded-xl shadow-2xl mt-8">
+          <div className="bg-card p-6 sm:p-8 rounded-xl shadow-2xl mt-8 relative">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="flex justify-center mb-4">
                 <div className="flex space-x-4">
@@ -577,43 +630,96 @@ export default function VideoFormsPage() {
                   index === currentStep ? (
                     <div key={index} className="space-y-6">
                       {renderStep()}
-                      <div className="flex justify-end space-x-2">
-                        {currentStep > 0 && (
-                          <Button
-                            variant="outline"
-                            onClick={handleBack}
-                            disabled={isLoading}
-                          >
-                            Atrás
-                          </Button>
-                        )}
-                        <Button
-                          onClick={handleNext}
-                          disabled={isLoading}
-                        >
-                          {currentStep === STEPS.length - 1 ? 'Crear video' : 'Siguiente'}
-                        </Button>
+                      <div className="flex justify-end items-end mt-8">
+                        <div className="flex gap-4 ml-auto">
+                          {currentStep > 0 && (
+                            <Button
+                              variant="outline"
+                              onClick={handleBack}
+                              disabled={isLoading}
+                            >
+                              Atrás
+                            </Button>
+                          )}
+                          {currentStep < STEPS.length - 1 ? (
+                            <Button
+                              type="button"
+                              onClick={handleNext}
+                              disabled={isLoading || !canAffordCurrent}
+                            >
+                              Siguiente
+                            </Button>
+                          ) : (
+                            <Button
+                              type="submit"
+                              disabled={isLoading || !canAffordCurrent}
+                            >
+                              {isLoading ? 'Enviando...' : 'Enviar'}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ) : null
                 ))}
               </div>
 
-              {status && (
-                <p className={`mt-6 text-sm p-4 rounded-lg ${
-                  status?.startsWith('Error') || status?.startsWith('Error de conexión') 
-                    ? 'bg-destructive/10 text-destructive' 
-                    : 'bg-green-600/10 text-green-400'
-                } border ${
-                  status?.startsWith('Error') || status?.startsWith('Error de conexión') 
-                    ? 'border-destructive/30' 
-                    : 'border-green-600/30'
-                }`}>
-                  {status}
-                </p>
-              )}
+              {/* Contador de créditos en la esquina inferior izquierda */}
+              <div className="absolute left-6 bottom-6 flex items-center gap-2 z-20">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold">{currentCost}</span>
+                  <div
+                    className="relative"
+                    onMouseEnter={() => setShowTooltip(true)}
+                    onMouseLeave={() => setShowTooltip(false)}
+                  >
+                    <button
+                      type="button"
+                      className="rounded-full bg-muted p-1 flex items-center justify-center border border-border hover:bg-muted/70 focus:outline-none"
+                      tabIndex={0}
+                      aria-label="Ver tabla de costos de créditos"
+                    >
+                      <Info size={18} />
+                    </button>
+                    {showTooltip && (
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-10 z-50 bg-white text-gray-900 rounded-lg shadow-lg p-4 min-w-[220px] border border-gray-200">
+                        <div className="font-semibold mb-2 text-center">Tabla de costos</div>
+                        <table className="text-sm w-full">
+                          <tbody>
+                            <tr><td>Video base (30s)</td><td className="text-right">1</td></tr>
+                            <tr><td>+ 1 minuto</td><td className="text-right">2</td></tr>
+                            <tr><td>+ 1:30 minutos</td><td className="text-right">3</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-muted-foreground text-sm">créditos</span>
+                  {creditsWarning && (
+                    <span className="ml-2 text-orange-500 font-medium flex items-center animate-pulse">
+                      ⚠️ Créditos bajos
+                    </span>
+                  )}
+                </div>
+              </div>
             </form>
           </div>
+          {/* Mensaje de estado debajo del panel principal */}
+          {status && (
+            <div className="flex justify-center mt-6">
+              <p className={`text-sm p-4 rounded-lg max-w-xl w-full text-center ${
+                status?.startsWith('Error') || status?.startsWith('Error de conexión') 
+                  ? 'bg-destructive/10 text-destructive' 
+                  : 'bg-green-600/10 text-green-400'
+              } border ${
+                status?.startsWith('Error') || status?.startsWith('Error de conexión') 
+                  ? 'border-destructive/30' 
+                  : 'border-green-600/30'
+              }`}>
+                {status}
+              </p>
+            </div>
+          )}
         </div>
       </main>
       <div className="fixed bottom-4 right-4 z-50">

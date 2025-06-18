@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 export interface VideoGeneration {
   id: string;
   userId: string;
-  status: 'pending' | 'processing' | 'completed' | 'error';
+  status: 'pending' | 'processing' | 'completed' | 'error' | 'draft';
   error?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;

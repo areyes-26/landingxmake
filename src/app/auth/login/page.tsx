@@ -21,45 +21,50 @@ export default function LoginPage() {
 
   // Redirigir si el usuario ya está autenticado
   useEffect(() => {
+    console.log('[LoginPage] useEffect: loading:', loading, 'user:', user);
     if (!loading && user) {
+      console.log('[LoginPage] Usuario autenticado, redirigiendo a /dashboard');
       router.replace('/dashboard');
     }
   }, [user, loading, router]);
 
   const handleSessionLogin = async (idToken: string) => {
+    console.log('[LoginPage] handleSessionLogin: idToken recibido');
     const res = await fetch('/api/sessionLogin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken }),
     });
     if (!res.ok) {
+      console.error('[LoginPage] No se pudo establecer la sesión segura');
       throw new Error('No se pudo establecer la sesión segura.');
     }
+    console.log('[LoginPage] Sesión segura establecida');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormLoading(true);
-
+    console.log('[LoginPage] handleSubmit: intentando login con', email);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
+      console.log('[LoginPage] Login exitoso:', user.uid);
       // Verificar si el email está verificado
       if (!user.emailVerified) {
         await auth.signOut();
+        console.warn('[LoginPage] Email no verificado');
         throw new Error('Por favor, verifica tu correo electrónico antes de iniciar sesión.');
       }
-
       // Obtener el ID token y setear cookie de sesión
       const idToken = await user.getIdToken();
       await handleSessionLogin(idToken);
-
       toast.success('Inicio de sesión exitoso');
+      console.log('[LoginPage] Redirigiendo a /dashboard');
       router.replace('/dashboard');
       router.refresh();
     } catch (error: any) {
-      console.error('Error al iniciar sesión:', error);
+      console.error('[LoginPage] Error al iniciar sesión:', error);
       toast.error(error.message || 'Error al iniciar sesión. Verifica tus credenciales.');
     } finally {
       setFormLoading(false);
@@ -68,18 +73,21 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
+    console.log('[LoginPage] handleGoogleSignIn: intentando login con Google');
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      console.log('[LoginPage] Login con Google exitoso:', user.uid);
       // Obtener el ID token y setear cookie de sesión
       const idToken = await user.getIdToken();
       await handleSessionLogin(idToken);
       toast.success('Inicio de sesión con Google exitoso');
+      console.log('[LoginPage] Redirigiendo a /dashboard');
       router.replace('/dashboard');
       router.refresh();
     } catch (error) {
-      console.error('Error al iniciar sesión con Google:', error);
+      console.error('[LoginPage] Error al iniciar sesión con Google:', error);
       toast.error('Error al iniciar sesión con Google');
     } finally {
       setGoogleLoading(false);
