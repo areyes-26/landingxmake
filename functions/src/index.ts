@@ -171,3 +171,35 @@ export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onR
   }
   return null;
 });
+
+// === Firebase Auth Trigger: Crear user_data cuando se registra un nuevo usuario ===
+export const onUserCreated = functions.auth.user().onCreate(async (user) => {
+  try {
+    console.log(`[onUserCreated] Usuario creado: ${user.uid}`);
+    
+    // Verificar si ya existe el documento user_data
+    const userDataRef = db.collection('user_data').doc(user.uid);
+    const userDataDoc = await userDataRef.get();
+    
+    if (userDataDoc.exists) {
+      console.log(`[onUserCreated] Documento user_data ya existe para ${user.uid}`);
+      return;
+    }
+    
+    // Crear el documento user_data
+    await userDataRef.set({
+      userId: user.uid,
+      email: user.email,
+      credits: 0,
+      plan: 'free',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      isEmailVerified: user.emailVerified || false,
+      provider: user.providerData.length > 0 ? user.providerData[0].providerId : 'email',
+    });
+    
+    console.log(`[onUserCreated] Documento user_data creado exitosamente para ${user.uid}`);
+  } catch (error) {
+    console.error(`[onUserCreated] Error al crear user_data para ${user.uid}:`, error);
+    throw error;
+  }
+});
