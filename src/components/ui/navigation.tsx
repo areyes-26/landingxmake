@@ -14,6 +14,7 @@ import CreditCounter from '@/components/CreditCounter';
 
 export function Navigation() {
   const pathname = usePathname();
+  if (pathname === '/inicio') return null;
   const router = useRouter();
   const { user } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);

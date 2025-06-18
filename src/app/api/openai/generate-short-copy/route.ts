@@ -22,12 +22,28 @@ export async function POST(req: Request) {
     
     const { videoId, script } = body as { videoId: string; script: string };
 
+    console.log('[generate-short-copy] videoId:', videoId);
+    console.log('[generate-short-copy] script:', script);
+    console.log('[generate-short-copy] script length:', script?.length);
+    console.log('[generate-short-copy] script is empty:', !script || script.trim() === '');
+
     if (!videoId || !script) {
       const error: ApiError = {
         error: 'Video ID and script are required',
         status: 400
       };
       console.error('[generate-short-copy] Campos faltantes:', error);
+      console.error('[generate-short-copy] videoId presente:', !!videoId);
+      console.error('[generate-short-copy] script presente:', !!script);
+      return NextResponse.json(error, { status: 400 });
+    }
+
+    if (script.trim() === '') {
+      const error: ApiError = {
+        error: 'Script cannot be empty',
+        status: 400
+      };
+      console.error('[generate-short-copy] Script vacío:', error);
       return NextResponse.json(error, { status: 400 });
     }
 
@@ -44,6 +60,7 @@ export async function POST(req: Request) {
     }
 
     const videoData = videoDoc.data();
+    console.log('[generate-short-copy] Video data encontrado:', !!videoData);
 
     // Leer y procesar el prompt desde archivo local
     const promptTemplate = await readPromptTemplate('copy-corto');

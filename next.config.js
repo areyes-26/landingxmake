@@ -11,6 +11,17 @@ const nextConfig = {
     }
     return config;
   },
+  // Configuración para App Hosting - copiar archivos estáticos
+  output: 'standalone',
+  // Asegurar que los archivos de prompts se copien
+  async rewrites() {
+    return [
+      {
+        source: '/prompts/:path*',
+        destination: '/public/prompts/:path*',
+      },
+    ];
+  },
   env: {
     NEXT_PUBLIC_FIREBASE_API_KEY:          process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '' ,
     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:      process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '',

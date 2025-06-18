@@ -10,32 +10,41 @@ export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Lee el archivo desde public/prompts/[fileName].txt
+// Lee el archivo desde public/Prompts/[fileName].txt
 export async function readPromptTemplate(fileName: string): Promise<string> {
-  const filePath = path.join(process.cwd(), 'public', 'prompts', `${fileName}.txt`);
-  console.log('📄 Leyendo prompt desde:', filePath);
-  console.log('📄 Directorio actual:', process.cwd());
-  console.log('📄 Ruta completa:', filePath);
+  // Intentar diferentes rutas para compatibilidad con App Hosting
+  const possiblePaths = [
+    path.join(process.cwd(), 'public', 'Prompts', `${fileName}.txt`),
+    path.join(process.cwd(), 'public', 'prompts', `${fileName}.txt`),
+    path.join(process.cwd(), '.next', 'standalone', 'public', 'Prompts', `${fileName}.txt`),
+    path.join(process.cwd(), '.next', 'standalone', 'public', 'prompts', `${fileName}.txt`),
+    path.join('/workspace', '.next', 'standalone', 'public', 'Prompts', `${fileName}.txt`),
+    path.join('/workspace', '.next', 'standalone', 'public', 'prompts', `${fileName}.txt`),
+  ];
 
-  try {
-    const text = await fs.readFile(filePath, 'utf8');
-    if (!text.trim()) {
-      throw new Error('Prompt template is empty');
+  console.log('📄 Intentando leer prompt desde múltiples rutas para:', fileName);
+  console.log('📄 Directorio actual:', process.cwd());
+
+  for (const filePath of possiblePaths) {
+    try {
+      console.log('📄 Intentando ruta:', filePath);
+      const text = await fs.readFile(filePath, 'utf8');
+      if (!text.trim()) {
+        console.warn('⚠️ Archivo encontrado pero vacío:', filePath);
+        continue;
+      }
+      console.log('✅ Archivo leído exitosamente desde:', filePath);
+      return text;
+    } catch (error) {
+      console.log('❌ No se pudo leer desde:', filePath);
+      continue;
     }
-    return text;
-  } catch (error) {
-    console.error('❌ Error al leer el prompt:', error);
-    console.error('❌ Detalles del error:', {
-      code: error instanceof Error ? (error as NodeJS.ErrnoException).code : 'unknown',
-      message: error instanceof Error ? error.message : String(error),
-      path: filePath
-    });
-    throw new Error(
-      `Failed to read prompt template: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
   }
+
+  // Si ninguna ruta funciona, lanzar error
+  const errorMessage = `No se pudo encontrar el archivo de prompt: ${fileName}.txt. Rutas intentadas: ${possiblePaths.join(', ')}`;
+  console.error('❌ Error al leer el prompt:', errorMessage);
+  throw new Error(errorMessage);
 }
 
 export function replacePromptPlaceholders(

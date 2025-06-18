@@ -56,7 +56,7 @@ export async function register(email: string, password: string) {
     console.log('Email verification sent successfully');
     
     // Inicializar user_data
-    await initializeUserData(user.uid);
+    await initializeUserData(user);
     console.log('user_data inicializado para:', user.uid);
     // Cerrar sesión tras registro para forzar verificación
     await signOut(auth);
