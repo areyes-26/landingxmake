@@ -3,6 +3,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+
 
 const CREDIT_PACKS = [
   { credits: 25, price: 10, stripePriceId: 'price_1Rb9iCQKaNQdxodokSsMazhn' },
@@ -14,6 +16,7 @@ export default function CreditTopupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const handleBuy = async (pack: typeof CREDIT_PACKS[0]) => {
     setLoading(pack.credits.toString());
@@ -26,6 +29,7 @@ export default function CreditTopupPage() {
           type: 'credit_topup',
           credits: pack.credits,
           stripePriceId: pack.stripePriceId,
+          email: user?.email,
         }),
       });
       const data = await res.json();

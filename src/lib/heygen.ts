@@ -771,3 +771,26 @@ export function getHeyGenClient(): HeyGenAPI {
 
   return heygenClient;
 } 
+import fs from 'fs';
+import path from 'path';
+
+/**
+ * Lee un archivo de plantilla de prompt desde la carpeta public/prompts
+ * @param name - Nombre del archivo sin extensión (ej. "generate-title")
+ */
+export function readPromptTemplate(name: string): string {
+  const filePath = path.join(process.cwd(), 'public', 'prompts', `${name}.txt`);
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Prompt template not found: ${filePath}`);
+  }
+  return fs.readFileSync(filePath, 'utf-8');
+}
+
+/**
+ * Reemplaza los valores {{key}} dentro del prompt por los valores del objeto `replacements`
+ */
+export function replacePromptPlaceholders(template: string, replacements: Record<string, string | undefined>): string {
+  return template.replace(/\{\{(.*?)\}\}/g, (_, key) => {
+    return replacements[key.trim()] || '';
+  });
+}

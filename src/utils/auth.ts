@@ -10,7 +10,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '../firebase/client';
-import { initializeUserData } from '@/lib/userData';
+import { initializeUserData } from '@/lib/userData'; // ✅ solo este
 
 export async function login(email: string, password: string) {
   try {
@@ -56,7 +56,11 @@ export async function register(email: string, password: string) {
     console.log('Email verification sent successfully');
     
     // Inicializar user_data
+<<<<<<< HEAD
     await initializeUserData(user);
+=======
+    await initializeUserData(user); // ✅ esta función SÍ está disponible en el frontend
+>>>>>>> e30b17602a7ba8208f0ff9391968a8b3d4daa822
     console.log('user_data inicializado para:', user.uid);
     // Cerrar sesión tras registro para forzar verificación
     await signOut(auth);
