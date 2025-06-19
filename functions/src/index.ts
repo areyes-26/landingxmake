@@ -36,7 +36,7 @@ if (!openaiConfig.api_key)    throw new Error('Falta OpenAI API key en config.')
 //if (!apiConfig.key)           throw new Error('Falta api.key en config.');
 
 // === Facebook Webhook ===
-export const facebookWebhook = functions.https.onRequest((req, res) => {
+export const facebookWebhook = functions.https.onRequest((req: functions.https.Request, res: functions.Response) => {
   if (req.method === 'GET') {
     const mode      = req.query['hub.mode'];
     const token     = req.query['hub.verify_token'];
