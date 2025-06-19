@@ -1,0 +1,3 @@
+# Excluir la carpeta functions del deploy de App Hosting
+functions/
+functions/**/* 

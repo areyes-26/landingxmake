@@ -10,10 +10,18 @@ const nextConfig = {
       config.externals.push('undici');
     }
     
-    // Excluir la carpeta functions del build de Next.js
+    // Excluir la carpeta functions del build de Next.js de manera más robusta
+    config.module.rules.push({
+      test: /functions/,
+      use: 'null-loader'
+    });
+    
+    // También excluir por alias
     config.resolve.alias = {
       ...config.resolve.alias,
-      'functions': false
+      'functions': false,
+      './functions': false,
+      '../functions': false
     };
     
     return config;
