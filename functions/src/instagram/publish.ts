@@ -1,16 +1,10 @@
 // functions/src/instagram/publish.ts
 
 import * as functions from 'firebase-functions/v1';
-import * as admin from 'firebase-admin';
+import { admin, db } from '../lib/firebase-admin';
 import corsModule from 'cors';
 import { metaGraphApiClient } from './metaGraphApiClient';
 import { COLLECTIONS, VideoPublishStatus } from './types';
-
-// Inicializa Admin SDK una vez
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-const db = admin.firestore();
 
 // Configura CORS
 const cors = corsModule({ origin: true });

@@ -1,13 +1,8 @@
 // functions/src/instagram/tokencleanup.ts
 
 import * as functions from 'firebase-functions/v1';
-import * as admin from 'firebase-admin';
+import { admin, db } from '../lib/firebase-admin';
 import { TokenManager } from './tokenManager';
-
-// Inicializa Admin SDK sólo una vez
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
 
 export const cleanupTokens = functions
   .pubsub

@@ -2,7 +2,7 @@
 
 // @ts-ignore
 import * as functions from 'firebase-functions/v1';   // <- Forzar versión v1
-import * as admin from 'firebase-admin';
+import { admin, db } from './lib/firebase-admin';
 import * as crypto from 'crypto';
 import axios from 'axios';
 import { instagramCallback } from './instagram/callback';
@@ -12,12 +12,6 @@ import { HeyGenAPI } from './lib/heygen';
 
 console.log('Firebase Functions loaded.');
 
-// Inicializar Firebase Admin
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
 const cfg = functions.config() as any;
 
 const fbConfig     = cfg.facebook   || {};
@@ -27,13 +21,11 @@ const googleConfig = cfg.google     || {};
 const openaiConfig = cfg.openai     || {};
 const apiConfig    = cfg.api        || {};
 
-// Validaciones
-if (!heygenConfig.api_key)    throw new Error('Falta HeyGen API key en config.');
-if (!igConfig.client_secret)  throw new Error('Falta Instagram client_secret en config.');
-if (!googleConfig.script_url) throw new Error('Falta Google script_url en config.');
-if (!openaiConfig.api_key)    throw new Error('Falta OpenAI API key en config.');
-//if (!apiConfig.url)           throw new Error('Falta api.url en config.');
-//if (!apiConfig.key)           throw new Error('Falta api.key en config.');
+// Validaciones más suaves - loguear warnings en lugar de lanzar errores
+if (!heygenConfig.api_key)    console.warn('⚠️ Warning: Falta HeyGen API key en config.');
+if (!igConfig.client_secret)  console.warn('⚠️ Warning: Falta Instagram client_secret en config.');
+if (!googleConfig.script_url) console.warn('⚠️ Warning: Falta Google script_url en config.');
+if (!openaiConfig.api_key)    console.warn('⚠️ Warning: Falta OpenAI API key en config.');
 
 // === Facebook Webhook ===
 export const facebookWebhook = functions.https.onRequest((req: any, res: any) => {
@@ -106,7 +98,6 @@ export { checkVideoStatus };
 
 // === Cloud Function programada para polling de videos en proceso ===
 export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onRun(async (context: any) => {
-  const db = admin.firestore();
   const heygen = new HeyGenAPI();
   const snapshot = await db.collection('videos').where('status', '==', 'processing').get();
   if (snapshot.empty) {
@@ -123,6 +114,7 @@ export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onR
       console.warn(`[pollHeygenVideos] Video ${videoId} no tiene taskId.`);
       continue;
     }
+
     try {
       console.log(`[pollHeygenVideos] Consultando estado para video ${videoId} con taskId ${taskId}`);
       const status = await heygen.checkVideoStatus(taskId);

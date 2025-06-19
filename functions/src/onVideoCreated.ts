@@ -1,14 +1,7 @@
 import * as functions from 'firebase-functions';
-import * as admin from 'firebase-admin';
+import { admin, db } from './lib/firebase-admin';
 import OpenAI from 'openai';
 import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
-
-// Forzar actualización - versión 2.0
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
 
 // Inicializar OpenAI
 const openai = new OpenAI({

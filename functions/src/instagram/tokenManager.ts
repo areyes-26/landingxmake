@@ -1,15 +1,9 @@
 // functions/src/instagram/tokenManager.ts
 
 import * as functions from 'firebase-functions';       // v1
-import * as admin from 'firebase-admin';
+import { admin, db } from '../lib/firebase-admin';
 import axios from 'axios';
 import { InstagramToken, InstagramAuthResponse, COLLECTIONS } from './types';
-
-// Nos aseguramos de que Admin ya esté inicializado
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-const db = admin.firestore();
 
 // Leemos la sección `instagram` de functions.config()
 const instagramCfg = functions.config().instagram;

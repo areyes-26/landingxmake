@@ -1,15 +1,9 @@
 // functions/src/instagram/webhook.ts
 
 import * as functions from 'firebase-functions/v1';  // v1
-import * as admin from 'firebase-admin';
+import { admin, db } from '../lib/firebase-admin';
 import * as crypto from 'crypto';
 
-// Inicializa Admin SDK sólo una vez
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
 const cfg = functions.config().instagram;
 
 interface InstagramWebhookChange {

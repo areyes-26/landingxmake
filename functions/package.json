@@ -12,13 +12,16 @@
   },
   "dependencies": {
     "axios": "^1.6.7",
+    "cors": "^2.8.5",
     "firebase-admin": "^11.10.1",
     "firebase-functions": "3.23.0",
     "openai": "^4.28.0",
     "stripe": "^18.2.1"
   },
   "devDependencies": {
-    "madge": "^8.0.0"
+    "@types/cors": "^2.8.17",
+    "madge": "^8.0.0",
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": "20"

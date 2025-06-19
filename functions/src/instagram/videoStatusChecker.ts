@@ -1,13 +1,8 @@
 import * as functions from 'firebase-functions/v1'; // 👈 Import correcto v1
-import * as admin from 'firebase-admin';
+import { admin, db } from '../lib/firebase-admin';
 import { metaGraphApiClient } from './metaGraphApiClient';
 import { COLLECTIONS, VideoPublishStatus } from './types';
 import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
-
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-const db = admin.firestore();
 
 const CHECK_INTERVAL_MS = 30_000;
 const MAX_RETRIES = 10;

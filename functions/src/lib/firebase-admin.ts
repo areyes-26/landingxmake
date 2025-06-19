@@ -1,8 +1,13 @@
-import { getApps, initializeApp, applicationDefault } from 'firebase-admin/app';
+import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 
-const app = getApps().length === 0
-  ? initializeApp({ credential: applicationDefault() })
-  : getApps()[0];
+// Singleton initialization
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    projectId: process.env.FIREBASE_PROJECT_ID
+  });
+}
 
-export const db = getFirestore(app);
+export const db = getFirestore();
+export { admin };
