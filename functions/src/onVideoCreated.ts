@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { admin, db } from './lib/firebase-admin';
 import OpenAI from 'openai';
 import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
@@ -7,9 +7,6 @@ import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-// Tipar 'functions' como any para mantener compatibilidad con firestore
-const anyFunctions = functions as any;
 
 // Función para leer prompt template
 async function readPromptTemplate(fileName: string): Promise<string> {
@@ -53,7 +50,7 @@ function replacePromptPlaceholders(template: string, replacements: Record<string
   return result;
 }
 
-export const onVideoCreated = anyFunctions.firestore
+export const onVideoCreated = functions.firestore
   .document('videos/{videoId}')
   .onCreate(async (snapshot: DocumentSnapshot, context: any) => {
     const videoId = context.params.videoId;

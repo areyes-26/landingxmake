@@ -1,7 +1,6 @@
 // functions/src/index.ts
 
-// @ts-ignore
-import * as functions from 'firebase-functions/v1';   // <- Forzar versión v1
+import * as functions from 'firebase-functions/v1';
 import { admin, db } from './lib/firebase-admin';
 import * as crypto from 'crypto';
 import axios from 'axios';
