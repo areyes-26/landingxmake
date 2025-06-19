@@ -6,11 +6,12 @@
       ".git",
       "firebase-debug.log",
       "firebase-debug.*.log",
-      "firebase-debug.log",
-      "firebase-debug.*.log",
       ".runtimeconfig.json"
     ],
-    "codebase": "default"
+    "codebase": "default",
+    "predeploy": [
+      "cd functions && npm run build"
+    ]
   },
   "apphosting": {
     "backendId": "landing-videos-generator-06",
@@ -20,9 +21,10 @@
       ".git",
       "firebase-debug.log",
       "firebase-debug.*.log",
+      "functions/**",
       "functions"
     ],
-    "alwaysDeployFromSource": true
+    "alwaysDeployFromSource": false
   },
   "emulators": {
     "functions": {
