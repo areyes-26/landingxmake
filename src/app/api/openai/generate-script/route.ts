@@ -5,21 +5,34 @@ import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/ope
 export async function POST(req: Request) {
   try {
     console.log('[generate-script] 🚀 Iniciando generación de script...');
-
+    
+    // Debug: Log all headers
+    console.log('[generate-script] 🔍 Headers recibidos:', Object.fromEntries(req.headers.entries()));
+    
     const isInternalCall = req.headers.get('x-internal-call') === 'true';
+    console.log('[generate-script] 🔍 isInternalCall:', isInternalCall);
+    
     let authUser = null;
 
     if (!isInternalCall) {
+      console.log('[generate-script] ⚠️ No es llamada interna, verificando autenticación...');
       const authHeader = req.headers.get('Authorization');
+      console.log('[generate-script] 🔍 Authorization header:', authHeader);
+      
       if (!authHeader?.startsWith('Bearer ')) {
+        console.log('[generate-script] ❌ No hay Authorization header válido');
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
       }
       const idToken = authHeader.split('Bearer ')[1];
       try {
         authUser = await auth.verifyIdToken(idToken);
+        console.log('[generate-script] ✅ Token verificado para usuario:', authUser.email);
       } catch (err) {
+        console.log('[generate-script] ❌ Error verificando token:', err);
         return NextResponse.json({ error: 'Invalid or expired token' }, { status: 403 });
       }
+    } else {
+      console.log('[generate-script] ✅ Llamada interna detectada, saltando autenticación');
     }
 
     const body = await req.json();
