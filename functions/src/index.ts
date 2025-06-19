@@ -36,7 +36,7 @@ if (!openaiConfig.api_key)    throw new Error('Falta OpenAI API key en config.')
 //if (!apiConfig.key)           throw new Error('Falta api.key en config.');
 
 // === Facebook Webhook ===
-export const facebookWebhook = functions.https.onRequest((req: functions.https.Request, res: functions.Response) => {
+export const facebookWebhook = functions.https.onRequest((req: any, res: any) => {
   if (req.method === 'GET') {
     const mode      = req.query['hub.mode'];
     const token     = req.query['hub.verify_token'];
@@ -105,7 +105,7 @@ export { onVideoCreated } from './onVideoCreated';
 export { checkVideoStatus };
 
 // === Cloud Function programada para polling de videos en proceso ===
-export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onRun(async (context) => {
+export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onRun(async (context: any) => {
   const db = admin.firestore();
   const heygen = new HeyGenAPI();
   const snapshot = await db.collection('videos').where('status', '==', 'processing').get();
@@ -173,7 +173,7 @@ export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onR
 });
 
 // === Firebase Auth Trigger: Crear user_data cuando se registra un nuevo usuario ===
-export const onUserCreated = functions.auth.user().onCreate(async (user) => {
+export const onUserCreated = functions.auth.user().onCreate(async (user: any) => {
   try {
     console.log(`[onUserCreated] Usuario creado: ${user.uid}`);
     

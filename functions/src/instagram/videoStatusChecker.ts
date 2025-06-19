@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions/v1'; // 👈 Import correcto v1
 import * as admin from 'firebase-admin';
 import { metaGraphApiClient } from './metaGraphApiClient';
 import { COLLECTIONS, VideoPublishStatus } from './types';
+import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -13,7 +14,7 @@ const MAX_RETRIES = 10;
 
 export const checkVideoStatus = functions.firestore
   .document(`${COLLECTIONS.VIDEO_PUBLISH}/{statusId}`)
-  .onCreate(async (snapshot, context) => {
+  .onCreate(async (snapshot: DocumentSnapshot, context: any) => {
     const initial = snapshot.data() as VideoPublishStatus;
     const { userId, creationId } = initial;
     if (!userId || !creationId) return null;

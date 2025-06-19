@@ -19,7 +19,7 @@ const REDIRECT_URI = cfg.redirect_uri as string;
 
 const parseCookies = cookieParser();
 
-export const instagramCallback = functions.https.onRequest((req, res) => {
+export const instagramCallback = functions.https.onRequest((req: any, res: any) => {
   // ✅ casteo doble para evitar error TS2352
   const typedReq = req as unknown as Request;
   const typedRes = res as unknown as Response;
