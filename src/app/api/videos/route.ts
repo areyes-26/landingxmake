@@ -263,51 +263,15 @@ export async function POST(req: NextRequest) {
       // No retornamos error aquí porque el documento ya se creó en Firestore
     }
 
-    // 7) Generar script con OpenAI
-    try {
-      const host = req.headers.get('host');
-      const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
-      const scriptResponse = await fetch(`${protocol}://${host}/api/openai/generate-script`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          videoData: {
-            videoTitle,
-            description,
-            tone,
-            duration,
-            topic,
-            keyPoints: specificCallToAction ? [specificCallToAction] : undefined,
-            targetAudience: email
-          },
-          generationId: firestoreDocId
-        })
-      });
+    // 7) Retornar éxito - la Cloud Function se encargará de generar el script
+    console.log("✅ Video creado en Firestore. La Cloud Function generará el script automáticamente.");
+    
+    return NextResponse.json({
+      success: true,
+      message: "Video creado exitosamente. El script se generará automáticamente.",
+      firestoreId: firestoreDocId
+    });
 
-      if (!scriptResponse.ok) {
-        throw new Error(`Error al generar script: ${scriptResponse.status}`);
-      }
-
-      const scriptResult = await scriptResponse.json();
-      console.log("✅ Script generado:", scriptResult);
-
-      return NextResponse.json({
-        success: true,
-        message: "Video creado y script generado exitosamente",
-        firestoreId: firestoreDocId,
-        scriptResult
-      });
-    } catch (scriptError) {
-      console.error("❌ Error al generar script:", scriptError);
-      return NextResponse.json({
-        success: true,
-        message: "Video creado en Firestore, pero hubo un error al generar el script",
-        firestoreId: firestoreDocId,
-        error: scriptError instanceof Error ? scriptError.message : String(scriptError)
-      });
-    }
   } catch (error) {
     console.error("❌ Error no manejado:", error);
     return NextResponse.json(
