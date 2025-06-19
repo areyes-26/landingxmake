@@ -1,4 +1,10 @@
 # apphosting.yaml
+
+# Configuración de exclusión de archivos
+exclude:
+  - "functions/**"
+  - "functions/"
+
 env:
   - variable: HEYGEN_API_KEY
     secret: HEYGEN_API_KEY
