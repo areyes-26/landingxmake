@@ -1,0 +1,20 @@
+[REDES_SOCIALES]
+
+Generá un copy para promocionar este video en redes sociales:
+
+**Copy largo (para Facebook, LinkedIn, etc):**  
+   - Entre 200 y 350 caracteres.  
+   - Estructura más desarrollada, pero sin perder naturalidad.  
+   - Tono un poco más serio o profesional, sin ser robótico.  
+   - Usar emojis solo si aportan claridad visual (máximo 1 o 2).  
+   - Máximo 5 hashtags que ayuden a posicionar el contenido en redes.
+   - Los hashtags deben ubicarse al final del copy.
+
+El copy generado debe mantener coherencia con el **tono de voz elegido por el usuario: {{tone}}**.
+
+Otros datos útiles para el contenido:
+- Tema del video: {{topic}}
+- Descripción del video: {{description}}
+- Título sugerido: {{videoTitle}}
+
+Evitá repetir las palabras clave como hashtags. No incluyas ningún tipo de explicación o encabezado, solo el texto final directamente utilizable para redes.
