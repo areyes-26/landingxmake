@@ -66,6 +66,11 @@ export const onVideoCreated = anyFunctions.firestore
     const videoId = context.params.videoId;
     const videoData = snapshot.data();
 
+    if (!videoData) {
+      console.error(`[onVideoCreated] ❌ No hay datos para el video ${videoId}`);
+      return;
+    }
+
     console.log(`[onVideoCreated] ✅ Trigger activado para ${videoId}`);
     console.log(`[onVideoCreated] 📦 Video creado con datos:`, videoData);
 
