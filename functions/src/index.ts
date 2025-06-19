@@ -84,10 +84,16 @@ export const facebookWebhook = functions.https.onRequest((req: any, res: any) =>
 });
 
 // === Instagram OAuth Callback ===
-export const instagramCallbackFn = instagramCallback;
+export const instagramCallbackFn = functions
+  .region('us-central1')
+  .runWith({ timeoutSeconds: 60 })
+  .https.onRequest(instagramCallback);
 
 // === Instagram Webhook POST (procesa media) ===
-export const instagramWebhookFn = instagramWebhook;
+export const instagramWebhookFn = functions
+  .region('us-central1')
+  .runWith({ timeoutSeconds: 60 })
+  .https.onRequest(instagramWebhook);
 
 // === Firestore Trigger: nuevo video ===
 export { onVideoCreated } from './onVideoCreated';

@@ -3,9 +3,10 @@ import { admin, db } from './lib/firebase-admin';
 import OpenAI from 'openai';
 import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
 
-// Inicializar OpenAI
+// Inicializar OpenAI usando Firebase Functions config
+const cfg = functions.config() as any;
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: cfg.openai?.api_key || process.env.OPENAI_API_KEY,
 });
 
 // Función para leer prompt template
@@ -14,6 +15,8 @@ async function readPromptTemplate(fileName: string): Promise<string> {
   const possiblePaths = [
     '/workspace/public/Prompts/' + `${fileName}.txt`,
     '/workspace/public/prompts/' + `${fileName}.txt`,
+    './public/Prompts/' + `${fileName}.txt`,
+    './public/prompts/' + `${fileName}.txt`,
   ];
 
   console.log(`[onVideoCreated] 📄 Intentando leer prompt: ${fileName}`);
@@ -34,7 +37,35 @@ async function readPromptTemplate(fileName: string): Promise<string> {
     }
   }
 
-  throw new Error(`No se pudo encontrar el archivo de prompt: ${fileName}.txt`);
+  // Si no se pueden leer los archivos, usar prompts hardcodeados como fallback
+  console.warn(`[onVideoCreated] ⚠️ No se pudieron leer los archivos de prompt, usando fallbacks`);
+  
+  const fallbackPrompts: Record<string, string> = {
+    'generate-script': `Genera un script de video de {{duration}} segundos sobre {{topic}}. 
+    Tono: {{tone}}
+    Descripción: {{description}}
+    Título: {{videoTitle}}
+    
+    El script debe ser atractivo y optimizado para redes sociales.`,
+    
+    'copy-corto': `Genera un copy corto y atractivo para TikTok/Reels basado en este script:
+    {{script}}
+    
+    Tono: {{tone}}
+    Tema: {{topic}}
+    
+    El copy debe ser viral y llamativo.`,
+    
+    'copy-largo': `Genera un copy largo y detallado para descripción extendida basado en este script:
+    {{script}}
+    
+    Tono: {{tone}}
+    Tema: {{topic}}
+    
+    El copy debe ser informativo y persuasivo.`
+  };
+  
+  return fallbackPrompts[fileName] || `Prompt para ${fileName}`;
 }
 
 // Función para reemplazar placeholders
