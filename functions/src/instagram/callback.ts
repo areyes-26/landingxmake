@@ -3,12 +3,6 @@ import { admin, db } from '../lib/firebase-admin';
 import axios from 'axios';
 import { InstagramAuthResponse } from './types';
 
-// Config desde Firebase
-const cfg = (functions.config() as any).instagram;
-const CLIENT_ID = cfg.client_id as string;
-const CLIENT_SECRET = cfg.client_secret as string;
-const REDIRECT_URI = cfg.redirect_uri as string;
-
 // Simple cookie parser function
 function parseCookies(cookieHeader: string | undefined): Record<string, string> {
   const cookies: Record<string, string> = {};
@@ -25,6 +19,12 @@ function parseCookies(cookieHeader: string | undefined): Record<string, string> 
 }
 
 export const instagramCallback = functions.https.onRequest(async (req: any, res: any) => {
+  // Config desde Firebase - movido dentro del handler
+  const cfg = (functions.config() as any).instagram;
+  const CLIENT_ID = cfg.client_id as string;
+  const CLIENT_SECRET = cfg.client_secret as string;
+  const REDIRECT_URI = cfg.redirect_uri as string;
+
   const cookies = parseCookies(req.headers.cookie);
   const { code, state } = req.query as { code?: string; state?: string };
 

@@ -5,9 +5,6 @@ import { admin, db } from '../lib/firebase-admin';
 import axios from 'axios';
 import { InstagramToken, InstagramAuthResponse, COLLECTIONS } from './types';
 
-// Leemos la sección `instagram` de functions.config()
-const instagramCfg = functions.config().instagram;
-
 export class TokenManager {
   private tokensCollection = db.collection(COLLECTIONS.TOKENS);
 
@@ -63,6 +60,9 @@ export class TokenManager {
   }
 
   async refreshToken(userId: string): Promise<InstagramToken | null> {
+    // Config movido dentro del método
+    const instagramCfg = functions.config().instagram;
+    
     const snap = await this.tokensCollection.doc(userId).get();
     if (!snap.exists) return null;
     const token = snap.data() as InstagramToken;

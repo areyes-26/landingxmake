@@ -24,7 +24,7 @@
       "functions/**",
       "functions"
     ],
-    "alwaysDeployFromSource": false
+    "alwaysDeployFromSource": true
   },
   "emulators": {
     "functions": {

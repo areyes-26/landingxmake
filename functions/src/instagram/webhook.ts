@@ -4,8 +4,6 @@ import * as functions from 'firebase-functions/v1';  // v1
 import { admin, db } from '../lib/firebase-admin';
 import * as crypto from 'crypto';
 
-const cfg = functions.config().instagram;
-
 interface InstagramWebhookChange {
   value: {
     media_id: string;
@@ -80,6 +78,9 @@ export const instagramWebhook = functions
     .region('us-central1')
     .runWith({ timeoutSeconds: 60 })
     .https.onRequest(async (req, res) => {
+    // Config movido dentro del handler
+    const cfg = functions.config().instagram;
+
     // Siempre registramos la llegada del webhook
     logWebhookEvent('webhook_received', {
       method: req.method,
