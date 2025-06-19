@@ -9,6 +9,13 @@ const nextConfig = {
     if (isServer) {
       config.externals.push('undici');
     }
+    
+    // Excluir la carpeta functions del build de Next.js
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'functions': false
+    };
+    
     return config;
   },
   // Configuración para App Hosting - copiar archivos estáticos
