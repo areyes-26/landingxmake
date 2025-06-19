@@ -1,5 +1,4 @@
 // functions/src/index.ts
-console.log('Firebase Functions loaded.');
 
 // @ts-ignore
 import * as functions from 'firebase-functions/v1';   // <- Forzar versión v1
@@ -11,6 +10,7 @@ import { checkVideoStatus } from './instagram/videoStatusChecker';
 import { instagramWebhook } from './instagram/webhook';
 import { HeyGenAPI } from './lib/heygen';
 
+console.log('Firebase Functions loaded.');
 
 // Inicializar Firebase Admin
 if (!admin.apps.length) {
