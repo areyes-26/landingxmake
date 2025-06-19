@@ -3,43 +3,14 @@ import { admin, db } from './lib/firebase-admin';
 import OpenAI from 'openai';
 import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
 
-// Inicializar OpenAI usando Firebase Functions config
-const cfg = functions.config() as any;
+// Inicializar OpenAI usando process.env directamente como en generate-title
 const openai = new OpenAI({
-  apiKey: cfg.openai?.api_key || process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Función para leer prompt template
+// Función para leer prompt template (simplificada)
 async function readPromptTemplate(fileName: string): Promise<string> {
-  // En Cloud Functions, los prompts están en el directorio de la función
-  const possiblePaths = [
-    '/workspace/public/Prompts/' + `${fileName}.txt`,
-    '/workspace/public/prompts/' + `${fileName}.txt`,
-    './public/Prompts/' + `${fileName}.txt`,
-    './public/prompts/' + `${fileName}.txt`,
-  ];
-
-  console.log(`[onVideoCreated] 📄 Intentando leer prompt: ${fileName}`);
-  
-  for (const filePath of possiblePaths) {
-    try {
-      const fs = require('fs').promises;
-      const text = await fs.readFile(filePath, 'utf8');
-      if (!text.trim()) {
-        console.warn(`[onVideoCreated] ⚠️ Archivo encontrado pero vacío: ${filePath}`);
-        continue;
-      }
-      console.log(`[onVideoCreated] ✅ Archivo leído exitosamente desde: ${filePath}`);
-      return text;
-    } catch (error) {
-      console.log(`[onVideoCreated] ❌ No se pudo leer desde: ${filePath}`);
-      continue;
-    }
-  }
-
-  // Si no se pueden leer los archivos, usar prompts hardcodeados como fallback
-  console.warn(`[onVideoCreated] ⚠️ No se pudieron leer los archivos de prompt, usando fallbacks`);
-  
+  // Prompts hardcodeados como fallback
   const fallbackPrompts: Record<string, string> = {
     'generate-script': `Genera un script de video de {{duration}} segundos sobre {{topic}}. 
     Tono: {{tone}}
@@ -68,7 +39,7 @@ async function readPromptTemplate(fileName: string): Promise<string> {
   return fallbackPrompts[fileName] || `Prompt para ${fileName}`;
 }
 
-// Función para reemplazar placeholders
+// Función para reemplazar placeholders (simplificada)
 function replacePromptPlaceholders(template: string, replacements: Record<string, string | undefined>): string {
   let result = template;
   for (const [key, value] of Object.entries(replacements)) {
