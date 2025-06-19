@@ -15,18 +15,39 @@ import type { VideoData } from '@/types/video';
 export default function VideoSettingsPage() {
   const params = useParams();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRegeneratingTitle, setIsRegeneratingTitle] = useState(false);
   const [isRegeneratingSocial, setIsRegeneratingSocial] = useState(false);
+  const [isRegeneratingScript, setIsRegeneratingScript] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [videoSettings, setVideoSettings] = useState<VideoData | null>(null);
   const [activeTab, setActiveTab] = useState('script');
 
   useEffect(() => {
     if (params.id) {
+      console.log('🔄 useEffect triggered with videoId:', params.id);
+      console.log('🚀 Loading video settings for ID:', params.id);
       fetchVideoSettings(params.id as string);
+    } else {
+      console.log('❌ No video ID found in params');
+      setIsLoading(false);
+      setError('No se encontró el ID del video');
     }
   }, [params.id]);
+
+  // Efecto adicional para recargar datos si el video está en estado "pending" o "processing"
+  useEffect(() => {
+    if (videoSettings && (videoSettings.status === 'pending' || videoSettings.status === 'processing')) {
+      console.log('⏳ Video en estado pending/processing, recargando en 3 segundos...');
+      const timer = setTimeout(() => {
+        if (params.id) {
+          fetchVideoSettings(params.id as string);
+        }
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [videoSettings?.status, params.id]);
 
   // Redirección automática si el video es un draft
   useEffect(() => {
@@ -39,31 +60,62 @@ export default function VideoSettingsPage() {
   const fetchVideoSettings = async (videoId: string) => {
     try {
       setIsLoading(true);
+      console.log('🔍 Fetching video settings for ID:', videoId);
+      
       // Obtener datos del video
       const videoRef = doc(db, 'videos', videoId);
       const videoDoc = await getDoc(videoRef);
       if (!videoDoc.exists()) {
+        console.log('❌ Video document not found');
         setError('Video no encontrado');
         return;
       }
       const data = videoDoc.data();
+      console.log('📦 Video data loaded:', data);
+      
       let settings: VideoData = { ...data, id: videoId } as VideoData;
+      
       // Obtener datos de completion_results_videos
       const completionRef = doc(db, 'completion_results_videos', videoId);
       const completionDoc = await getDoc(completionRef);
       if (completionDoc.exists()) {
         const completionData = completionDoc.data();
+        console.log('📝 Completion data loaded:', completionData);
+        
         settings = {
           ...settings,
           script: completionData.script || settings.script,
           shortCopy: completionData.shortCopy || settings.shortCopy,
           longCopy: completionData.longCopy || settings.longCopy
         };
+        
+        // Verificar si los datos están presentes
+        if (settings.script) {
+          console.log('✅ Script encontrado, longitud:', settings.script.length);
+        } else {
+          console.log('❌ No hay script');
+        }
+        
+        if (settings.shortCopy) {
+          console.log('✅ Short copy encontrado:', settings.shortCopy);
+        } else {
+          console.log('❌ No hay short copy');
+        }
+        
+        if (settings.longCopy) {
+          console.log('✅ Long copy encontrado:', settings.longCopy);
+        } else {
+          console.log('❌ No hay long copy');
+        }
+      } else {
+        console.log('❌ Completion document not found');
       }
+      
+      console.log('🎯 Final settings:', settings);
       setVideoSettings(settings);
     } catch (error) {
+      console.error('❌ Error fetching video settings:', error);
       setError('Error al cargar la configuración del video');
-      console.error('Error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -171,6 +223,54 @@ export default function VideoSettingsPage() {
       console.error('Error:', error);
     } finally {
       setIsRegeneratingTitle(false);
+    }
+  };
+
+  const handleRegenerateScript = async () => {
+    try {
+      if (!videoSettings) return;
+      setIsRegeneratingScript(true);
+      
+      const videoId = params.id as string;
+      if (!videoId) {
+        throw new Error('No se encontró el ID del video');
+      }
+
+      const response = await fetch('/api/openai/generate-script', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          generationId: videoId,
+          videoData: {
+            duration: videoSettings.duration,
+            tone: videoSettings.tone,
+            topic: videoSettings.topic,
+            description: videoSettings.description,
+            videoTitle: videoSettings.videoTitle
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al regenerar el script');
+      }
+
+      const data = await response.json();
+      
+      // Actualizar el estado local
+      setVideoSettings({
+        ...videoSettings,
+        script: data.script
+      });
+
+      toast.success('Script regenerado correctamente');
+    } catch (error) {
+      toast.error('Error al regenerar el script');
+      console.error('Error:', error);
+    } finally {
+      setIsRegeneratingScript(false);
     }
   };
 
@@ -316,7 +416,17 @@ export default function VideoSettingsPage() {
                 <TabsContent value="script" className="mt-4">
                   {videoSettings.script ? (
                     <div className="space-y-4">
-                      <Label>Guion Generado</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Guion Generado</Label>
+                        <Button
+                          onClick={handleRegenerateScript}
+                          variant="outline"
+                          size="sm"
+                          disabled={isRegeneratingScript}
+                        >
+                          {isRegeneratingScript ? 'Regenerando...' : 'Regenerar Guion'}
+                        </Button>
+                      </div>
                       <Textarea
                         value={videoSettings.script}
                         onChange={(e) => setVideoSettings({ ...videoSettings, script: e.target.value })}
@@ -324,7 +434,22 @@ export default function VideoSettingsPage() {
                       />
                     </div>
                   ) : (
-                    <p className="text-muted-foreground">No hay guion generado aún.</p>
+                    <div className="text-center py-8">
+                      <div className="text-muted-foreground mb-4">
+                        <svg className="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p className="text-lg font-medium">No hay guion generado aún</p>
+                        <p className="text-sm">El guion se generará automáticamente cuando se complete el formulario de video.</p>
+                      </div>
+                      <Button
+                        onClick={handleRegenerateScript}
+                        variant="outline"
+                        disabled={isRegeneratingScript}
+                      >
+                        {isRegeneratingScript ? 'Generando...' : 'Generar Guion Manualmente'}
+                      </Button>
+                    </div>
                   )}
                 </TabsContent>
                 <TabsContent value="social" className="mt-4">

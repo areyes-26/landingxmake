@@ -14,9 +14,10 @@ import type { VideoData } from '@/types/video';
 
 export default function VideoSettingsPreview() {
   const searchParams = useSearchParams();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRegeneratingTitle, setIsRegeneratingTitle] = useState(false);
   const [isRegeneratingSocial, setIsRegeneratingSocial] = useState(false);
+  const [isRegeneratingScript, setIsRegeneratingScript] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -25,14 +26,38 @@ export default function VideoSettingsPreview() {
 
   useEffect(() => {
     const videoId = searchParams.get('id');
+    console.log('🔄 useEffect triggered with videoId:', videoId);
+    
     if (videoId) {
+      console.log('🚀 Loading video settings for ID:', videoId);
       fetchVideoSettings(videoId);
+    } else {
+      console.log('❌ No video ID found in search params');
+      setIsLoading(false);
+      setError('No se encontró el ID del video');
     }
   }, [searchParams]);
+
+  // Efecto adicional para recargar datos si el video está en estado "pending" o "processing"
+  useEffect(() => {
+    if (videoSettings && (videoSettings.status === 'pending' || videoSettings.status === 'processing')) {
+      console.log('⏳ Video en estado pending/processing, recargando en 3 segundos...');
+      const timer = setTimeout(() => {
+        const videoId = searchParams.get('id');
+        if (videoId) {
+          fetchVideoSettings(videoId);
+        }
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [videoSettings?.status, searchParams]);
 
   const fetchVideoSettings = async (videoId: string) => {
     try {
       setIsLoading(true);
+      console.log('🔍 Fetching video settings for ID:', videoId);
+      
       const response = await fetch(`/api/videos/${videoId}`);
       if (!response.ok) {
         const data = await response.json();
@@ -41,27 +66,33 @@ export default function VideoSettingsPreview() {
         throw new Error(data.error || 'Error al cargar la configuración del video');
       }
       const data = await response.json();
-      setVideoSettings(data);
-
-      // Obtener datos de completion_results_videos
-      const completionRef = doc(db, 'completion_results_videos', videoId);
-      const completionDoc = await getDoc(completionRef);
-
-      if (completionDoc.exists()) {
-        const completionData = completionDoc.data();
-        console.log('Completion data loaded:', completionData);
-
-        // Actualizar el estado con los datos de completion
-        setVideoSettings(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            script: completionData.script || prev.script,
-            shortCopy: completionData.shortCopy || prev.shortCopy,
-            longCopy: completionData.longCopy || prev.longCopy
-          };
-        });
+      
+      console.log('📦 Video data loaded:', data);
+      console.log('📝 Script data:', data.script);
+      console.log('📱 Short copy data:', data.shortCopy);
+      console.log('📄 Long copy data:', data.longCopy);
+      console.log('🎯 Video status:', data.status);
+      
+      // Verificar si los datos están presentes
+      if (data.script) {
+        console.log('✅ Script encontrado, longitud:', data.script.length);
+      } else {
+        console.log('❌ No hay script');
       }
+      
+      if (data.shortCopy) {
+        console.log('✅ Short copy encontrado:', data.shortCopy);
+      } else {
+        console.log('❌ No hay short copy');
+      }
+      
+      if (data.longCopy) {
+        console.log('✅ Long copy encontrado:', data.longCopy);
+      } else {
+        console.log('❌ No hay long copy');
+      }
+      
+      setVideoSettings(data);
     } catch (error) {
       toast.error('Error al cargar la configuración del video');
       console.error('Error:', error);
@@ -132,6 +163,54 @@ export default function VideoSettingsPreview() {
       console.error('Error:', error);
     } finally {
       setIsRegeneratingTitle(false);
+    }
+  };
+
+  const handleRegenerateScript = async () => {
+    try {
+      if (!videoSettings) return;
+      setIsRegeneratingScript(true);
+      
+      const videoId = searchParams.get('id');
+      if (!videoId) {
+        throw new Error('No se encontró el ID del video');
+      }
+
+      const response = await fetch('/api/openai/generate-script', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          generationId: videoId,
+          videoData: {
+            duration: videoSettings.duration,
+            tone: videoSettings.tone,
+            topic: videoSettings.topic,
+            description: videoSettings.description,
+            videoTitle: videoSettings.videoTitle
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al regenerar el script');
+      }
+
+      const data = await response.json();
+      
+      // Actualizar el estado local
+      setVideoSettings({
+        ...videoSettings,
+        script: data.script
+      });
+
+      toast.success('Script regenerado correctamente');
+    } catch (error) {
+      toast.error('Error al regenerar el script');
+      console.error('Error:', error);
+    } finally {
+      setIsRegeneratingScript(false);
     }
   };
 
@@ -289,7 +368,17 @@ export default function VideoSettingsPreview() {
                 <TabsContent value="script" className="mt-4">
                   {videoSettings.script ? (
                     <div className="space-y-4">
-                      <Label>Guion Generado</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Guion Generado</Label>
+                        <Button
+                          onClick={handleRegenerateScript}
+                          variant="outline"
+                          size="sm"
+                          disabled={isRegeneratingScript}
+                        >
+                          {isRegeneratingScript ? 'Regenerando...' : 'Regenerar Guion'}
+                        </Button>
+                      </div>
                       <Textarea
                         value={videoSettings.script}
                         onChange={(e) => setVideoSettings({ ...videoSettings, script: e.target.value })}
@@ -297,7 +386,22 @@ export default function VideoSettingsPreview() {
                       />
                     </div>
                   ) : (
-                    <p className="text-muted-foreground">No hay guion generado aún.</p>
+                    <div className="text-center py-8">
+                      <div className="text-muted-foreground mb-4">
+                        <svg className="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p className="text-lg font-medium">No hay guion generado aún</p>
+                        <p className="text-sm">El guion se generará automáticamente cuando se complete el formulario de video.</p>
+                      </div>
+                      <Button
+                        onClick={handleRegenerateScript}
+                        variant="outline"
+                        disabled={isRegeneratingScript}
+                      >
+                        {isRegeneratingScript ? 'Generando...' : 'Generar Guion Manualmente'}
+                      </Button>
+                    </div>
                   )}
                 </TabsContent>
                 <TabsContent value="social" className="mt-4">
@@ -333,21 +437,29 @@ export default function VideoSettingsPreview() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Copy Corto (TikTok/Reels)
                         </label>
-                        <textarea
-                          value={videoSettings.shortCopy?.content || ''}
-                          onChange={(e) => {
-                            if (!videoSettings) return;
-                            setVideoSettings({
-                              ...videoSettings,
-                              shortCopy: {
-                                platform: 'TikTok/Reels',
-                                content: e.target.value
-                              }
-                            });
-                          }}
-                          className="w-full h-32 p-3 bg-card border border-input rounded-lg text-foreground focus:ring-2 focus:ring-ring focus:border-ring"
-                          placeholder="El copy corto se generará automáticamente después de generar el guion..."
-                        />
+                        {videoSettings.shortCopy?.content ? (
+                          <textarea
+                            value={videoSettings.shortCopy.content}
+                            onChange={(e) => {
+                              if (!videoSettings) return;
+                              setVideoSettings({
+                                ...videoSettings,
+                                shortCopy: {
+                                  platform: 'TikTok/Reels',
+                                  content: e.target.value
+                                }
+                              });
+                            }}
+                            className="w-full h-32 p-3 bg-card border border-input rounded-lg text-foreground focus:ring-2 focus:ring-ring focus:border-ring"
+                          />
+                        ) : (
+                          <div className="w-full h-32 p-3 bg-muted/50 border border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
+                            <div className="text-center text-muted-foreground">
+                              <p className="text-sm">No hay copy corto generado aún</p>
+                              <p className="text-xs">Se generará automáticamente con el guion</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Copy Largo */}
@@ -355,21 +467,29 @@ export default function VideoSettingsPreview() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Copy Largo (Facebook/LinkedIn)
                         </label>
-                        <textarea
-                          value={videoSettings.longCopy?.content || ''}
-                          onChange={(e) => {
-                            if (!videoSettings) return;
-                            setVideoSettings({
-                              ...videoSettings,
-                              longCopy: {
-                                platform: 'Facebook/LinkedIn',
-                                content: e.target.value
-                              }
-                            });
-                          }}
-                          className="w-full h-32 p-3 bg-card border border-input rounded-lg text-foreground focus:ring-2 focus:ring-ring focus:border-ring"
-                          placeholder="El copy largo se generará automáticamente después de generar el guion..."
-                        />
+                        {videoSettings.longCopy?.content ? (
+                          <textarea
+                            value={videoSettings.longCopy.content}
+                            onChange={(e) => {
+                              if (!videoSettings) return;
+                              setVideoSettings({
+                                ...videoSettings,
+                                longCopy: {
+                                  platform: 'Facebook/LinkedIn',
+                                  content: e.target.value
+                                }
+                              });
+                            }}
+                            className="w-full h-32 p-3 bg-card border border-input rounded-lg text-foreground focus:ring-2 focus:ring-ring focus:border-ring"
+                          />
+                        ) : (
+                          <div className="w-full h-32 p-3 bg-muted/50 border border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
+                            <div className="text-center text-muted-foreground">
+                              <p className="text-sm">No hay copy largo generado aún</p>
+                              <p className="text-xs">Se generará automáticamente con el guion</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

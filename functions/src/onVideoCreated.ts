@@ -2,6 +2,8 @@ import * as functions from 'firebase-functions/v1';
 import { admin, db } from './lib/firebase-admin';
 import OpenAI from 'openai';
 import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Función para crear el cliente OpenAI solo cuando se necesite
 function getOpenAIClient() {
@@ -12,35 +14,107 @@ function getOpenAIClient() {
   return new OpenAI({ apiKey });
 }
 
-// Función para leer prompt template (simplificada)
+// Función para leer prompt template desde archivos
 async function readPromptTemplate(fileName: string): Promise<string> {
-  // Prompts hardcodeados como fallback
-  const fallbackPrompts: Record<string, string> = {
-    'generate-script': `Genera un script de video de {{duration}} segundos sobre {{topic}}. 
-    Tono: {{tone}}
-    Descripción: {{description}}
-    Título: {{videoTitle}}
+  // Prompts detallados hardcodeados como fallback (y principal)
+  const detailedPrompts: Record<string, string> = {
+    'generate-script': `Quiero que generes un guion para un video que será narrado por un avatar virtual. El guion debe ser claro, natural y adaptado al siguiente tono: **{{tone}}**.
+
+🧠 Condiciones:
+- Duración estimada: {{duration}} segundos.
+- Ritmo: calmado. Calculá las palabras necesarias (~70 para 30s, ~120 para 60s, ~180 para 90s).
+- Estilo: directo, conversacional y sin rodeos.
+- No se permiten emojis ni frases genéricas de apertura (ej: "Hola, hoy te contaré…").
+
+🧩 Estructura obligatoria:
+1. **Gancho (Hook)**: captá la atención en los primeros 3 segundos.
+2. **Desarrollo**: explicá el contenido de forma atractiva, fluida y sin relleno.
+3. **Cierre**: concluí con una llamada a la acción breve y convincente.
+
+📌 Tema: {{topic}}
+📌 Descripción base: {{description}}
+📌 Título del video: {{videoTitle}}
+
+🎯 Resultado: Generá solo el guion (sin explicaciones, sin encabezados).`,
     
-    El script debe ser atractivo y optimizado para redes sociales.`,
+    'copy-corto': `[REDES_SOCIALES]
+
+Generá un copy para promocionar este video en redes sociales:
+
+**Copy corto (para TikTok, Reels, Shorts):**  
+   - Máximo 140–200 caracteres.  
+   - Estilo atrapante y directo.  
+   - Incluir algunos emojis relevantes al tema (no más de 2 o 3).  
+   - Incluir hasta 3 hashtags eficaces, sin repetir palabras clave evidentes.
+   - Los hashtags deben ubicarse al final del copy.  
+   - Ideal para atraer visualmente y generar interacción orgánica.
+
+El copy generado debe mantener coherencia con el **tono de voz elegido por el usuario: {{tone}}**.
+
+**Script del video:**
+{{script}}
+
+Otros datos útiles para el contenido:
+- Tema del video: {{topic}}
+- Descripción del video: {{description}}
+- Título sugerido: {{videoTitle}}
+
+Evitá repetir las palabras clave como hashtags. No incluyas ningún tipo de explicación o encabezado, solo el texto final directamente utilizable para redes.`,
     
-    'copy-corto': `Genera un copy corto y atractivo para TikTok/Reels basado en este script:
-    {{script}}
-    
-    Tono: {{tone}}
-    Tema: {{topic}}
-    
-    El copy debe ser viral y llamativo.`,
-    
-    'copy-largo': `Genera un copy largo y detallado para descripción extendida basado en este script:
-    {{script}}
-    
-    Tono: {{tone}}
-    Tema: {{topic}}
-    
-    El copy debe ser informativo y persuasivo.`
+    'copy-largo': `[REDES_SOCIALES]
+
+Generá un copy para promocionar este video en redes sociales:
+
+**Copy largo (para Facebook, LinkedIn, etc):**  
+   - Entre 200 y 350 caracteres.  
+   - Estructura más desarrollada, pero sin perder naturalidad.  
+   - Tono un poco más serio o profesional, sin ser robótico.  
+   - Usar emojis solo si aportan claridad visual (máximo 1 o 2).  
+   - Máximo 5 hashtags que ayuden a posicionar el contenido en redes.
+   - Los hashtags deben ubicarse al final del copy.
+
+El copy generado debe mantener coherencia con el **tono de voz elegido por el usuario: {{tone}}**.
+
+**Script del video:**
+{{script}}
+
+Otros datos útiles para el contenido:
+- Tema del video: {{topic}}
+- Descripción del video: {{description}}
+- Título sugerido: {{videoTitle}}
+
+Evitá repetir las palabras clave como hashtags. No incluyas ningún tipo de explicación o encabezado, solo el texto final directamente utilizable para redes.`
   };
-  
-  return fallbackPrompts[fileName] || `Prompt para ${fileName}`;
+
+  try {
+    // Intentar leer desde functions/lib/public/Prompts/ (archivos copiados durante build)
+    const promptPath = path.join(__dirname, 'public', 'Prompts', `${fileName}.txt`);
+    console.log(`[onVideoCreated] 📄 Intentando leer prompt desde: ${promptPath}`);
+    console.log(`[onVideoCreated] 📄 __dirname: ${__dirname}`);
+    console.log(`[onVideoCreated] 📄 fileName: ${fileName}`);
+    
+    if (fs.existsSync(promptPath)) {
+      console.log(`[onVideoCreated] ✅ Archivo encontrado en: ${promptPath}`);
+      const content = fs.readFileSync(promptPath, 'utf8');
+      if (content.trim()) {
+        console.log(`[onVideoCreated] ✅ Prompt leído exitosamente desde archivo: ${fileName}`);
+        console.log(`[onVideoCreated] 📝 Contenido del prompt (primeras 100 chars): ${content.substring(0, 100)}...`);
+        return content;
+      } else {
+        console.log(`[onVideoCreated] ⚠️ Archivo encontrado pero vacío: ${promptPath}`);
+      }
+    } else {
+      console.log(`[onVideoCreated] ❌ Archivo no encontrado en: ${promptPath}`);
+    }
+    
+    console.log(`[onVideoCreated] 🔄 Usando prompt detallado hardcodeado para: ${fileName}`);
+    return detailedPrompts[fileName] || `Prompt para ${fileName}`;
+    
+  } catch (error) {
+    console.warn(`[onVideoCreated] ⚠️ Error al leer prompt ${fileName}:`, error);
+    console.log(`[onVideoCreated] 🔄 Usando prompt detallado hardcodeado para: ${fileName}`);
+    return detailedPrompts[fileName] || `Prompt para ${fileName}`;
+  }
 }
 
 // Función para reemplazar placeholders (simplificada)

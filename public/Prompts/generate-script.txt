@@ -1,23 +1,18 @@
-Quiero que generes un guion para un video que será interpretado por un avatar de inteligencia artificial. Este guion debe cumplir con los siguientes requisitos obligatorios:
+Quiero que generes un guion para un video que será narrado por un avatar virtual. El guion debe ser claro, natural y adaptado al siguiente tono: **{{tone}}**.
 
-- Duración máxima: {{duration}} segundos.
-- Estilo del guion: Natural, dinámico y claro, como si lo explicara un creador de contenido.
-- Tono de voz: Usá el tono **{{tone}}** que eligió el usuario. Es muy importante que el guion refleje este estilo, ya que el objetivo es que el avatar represente fielmente la intención y personalidad del mensaje. Adaptá el lenguaje, las frases y el ritmo para que coincidan con este tono de comunicación.
-- Cantidad máxima de palabras: Calculá las palabras necesarias para que el avatar lo pueda decir en {{duration}} segundos, considerando un ritmo calmado. Por ejemplo: ~70 palabras para 30s, ~120 para 60s, ~180 para 90s.
-- El contenido debe generarse en base a este tema: **{{topic}}**
-- El guion debe partir de la siguiente descripción: {{description}}
+🧠 Condiciones:
+- Duración estimada: {{duration}} segundos.
+- Ritmo: calmado. Calculá las palabras necesarias (~70 para 30s, ~120 para 60s, ~180 para 90s).
+- Estilo: directo, conversacional y sin rodeos.
+- No se permiten emojis ni frases genéricas de apertura (ej: "Hola, hoy te contaré…").
 
-Estructura del video: ESTA DEBE RESPETARSE OBLIGATORIAMENTE.
-1. **Gancho (Hook)**: La primera frase debe captar la atención en los primeros 3 segundos. Debe ser directa, intrigante o emocional.
-2. **Desarrollo**: Explicá de forma clara, progresiva y atractiva el contenido principal. Utilizá una narrativa natural que mantenga la atención del espectador hasta el final. Podés hacer uso de ejemplos o comparaciones breves.
-3. **Cierre**: Cerrá el video con una conclusión clara, e incluí una llamada a la acción que invite al espectador a visitar el blog, perfil o seguir la cuenta.
+🧩 Estructura obligatoria:
+1. **Gancho (Hook)**: captá la atención en los primeros 3 segundos.
+2. **Desarrollo**: explicá el contenido de forma atractiva, fluida y sin relleno.
+3. **Cierre**: concluí con una llamada a la acción breve y convincente.
 
-Restricciones adicionales:
-- No usar emojis.
-- No exceder el número de palabras estimado.
-- Evitá frases genéricas o introductorias como "Hola, en este video te contaré...".
-- Escribí en lenguaje conversacional, cercano, y con fluidez.
+📌 Tema: {{topic}}
+📌 Descripción base: {{description}}
+📌 Título del video: {{videoTitle}}
 
-Título del video: **{{videoTitle}}**
-
-Generá únicamente el guion para ser interpretado por un avatar de video. No incluyas instrucciones, ni explicaciones adicionales. Solo el guion.
+🎯 Resultado: Generá solo el guion (sin explicaciones, sin encabezados).
