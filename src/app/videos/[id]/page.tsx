@@ -34,6 +34,23 @@ export default function VideoSettingsPage() {
       setError('No se encontró el ID del video');
     }
   }, [params.id]);
+  useEffect(() => {
+    const missingData =
+      videoSettings &&
+      (!videoSettings.script || !videoSettings.shortCopy || !videoSettings.longCopy);
+  
+    if (missingData) {
+      console.log('🔁 Datos incompletos, reintentando obtener desde Firestore en 4 segundos...');
+      const timeout = setTimeout(() => {
+        if (params.id) {
+          setIsLoading(true); // ← Esta línea da feedback visual
+          fetchVideoSettings(params.id as string);
+        }
+      }, 4000);
+  
+      return () => clearTimeout(timeout);
+    }
+  }, [videoSettings, params.id]);
 
   // Efecto adicional para recargar datos si el video está en estado "pending" o "processing"
   useEffect(() => {
