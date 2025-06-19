@@ -34,6 +34,11 @@ export const onVideoCreated = anyFunctions.firestore
       const response = await axios.post(`${baseUrl}/api/openai/generate-script`, {
         generationId: videoId,
         videoData,
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-call': 'true'
+        }
       });
 
       console.log(`[onVideoCreated] ✅ Generación exitosa:`, response.data);
