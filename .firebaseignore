@@ -1,3 +1,5 @@
-# Excluir la carpeta functions del deploy de App Hosting
+# Firebase ignore file to exclude functions from app hosting build
 functions/
-functions/**/* 
+functions/**
+**/functions/**
+**/functions/ 
