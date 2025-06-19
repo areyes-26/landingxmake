@@ -1,6 +1,6 @@
 // functions/src/instagram/tokenManager.ts
 
-import * as functions from 'firebase-functions';       // v1
+import * as functions from 'firebase-functions/v1';
 import { admin, db } from '../lib/firebase-admin';
 import axios from 'axios';
 import { InstagramToken, InstagramAuthResponse, COLLECTIONS } from './types';
