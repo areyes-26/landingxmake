@@ -14,17 +14,24 @@ export const openai = new OpenAI({
 export async function readPromptTemplate(fileName: string): Promise<string> {
   // Intentar diferentes rutas para compatibilidad con App Hosting
   const possiblePaths = [
+    // Rutas para desarrollo local
     path.join(process.cwd(), 'public', 'Prompts', `${fileName}.txt`),
     path.join(process.cwd(), 'public', 'prompts', `${fileName}.txt`),
+    // Rutas para Firebase Hosting
+    path.join(process.cwd(), '.next', 'server', 'app', 'public', 'Prompts', `${fileName}.txt`),
+    path.join(process.cwd(), '.next', 'server', 'app', 'public', 'prompts', `${fileName}.txt`),
+    // Rutas para standalone
     path.join(process.cwd(), '.next', 'standalone', 'public', 'Prompts', `${fileName}.txt`),
     path.join(process.cwd(), '.next', 'standalone', 'public', 'prompts', `${fileName}.txt`),
-    path.join('/workspace', '.next', 'standalone', 'public', 'Prompts', `${fileName}.txt`),
-    path.join('/workspace', '.next', 'standalone', 'public', 'prompts', `${fileName}.txt`),
+    // Rutas absolutas para Firebase Functions
+    '/workspace/public/Prompts/' + `${fileName}.txt`,
+    '/workspace/public/prompts/' + `${fileName}.txt`,
   ];
 
   console.log('📄 Intentando leer prompt desde múltiples rutas para:', fileName);
   console.log('📄 Directorio actual:', process.cwd());
 
+  let lastError: Error | null = null;
   for (const filePath of possiblePaths) {
     try {
       console.log('📄 Intentando ruta:', filePath);
@@ -37,19 +44,24 @@ export async function readPromptTemplate(fileName: string): Promise<string> {
       return text;
     } catch (error) {
       console.log('❌ No se pudo leer desde:', filePath);
+      lastError = error instanceof Error ? error : new Error(String(error));
       continue;
     }
   }
 
-  // Si ninguna ruta funciona, lanzar error
-  const errorMessage = `No se pudo encontrar el archivo de prompt: ${fileName}.txt. Rutas intentadas: ${possiblePaths.join(', ')}`;
+  // Si ninguna ruta funciona, lanzar error con más detalles
+  const errorMessage = `No se pudo encontrar el archivo de prompt: ${fileName}.txt. 
+    Rutas intentadas: ${possiblePaths.join(', ')}
+    Último error: ${lastError?.message || 'Unknown error'}
+    CWD: ${process.cwd()}
+    NODE_ENV: ${process.env.NODE_ENV}`;
   console.error('❌ Error al leer el prompt:', errorMessage);
   throw new Error(errorMessage);
 }
 
 export function replacePromptPlaceholders(
   template: string,
-  replacements: Record<string, string>
+  replacements: Record<string, string | undefined>
 ): string {
   try {
     let result = template;

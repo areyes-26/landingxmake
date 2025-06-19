@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { db, auth } from '@/lib/firebase-admin';
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
-import { auth } from '@/lib/firebase-admin/auth'; // Asegúrate de tener esto configurado
 
 interface ShortCopyResponse {
   shortCopy: {

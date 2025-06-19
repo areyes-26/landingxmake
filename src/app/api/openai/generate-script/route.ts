@@ -1,18 +1,24 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { db, auth } from '@/lib/firebase-admin';
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
-import { authOptions } from '@/lib/auth'; // Asegúrate de que esta ruta sea correcta
 
 export async function POST(req: Request) {
   try {
     console.log('[generate-script] 🚀 Iniciando generación de script...');
 
     const isInternalCall = req.headers.get('x-internal-call') === 'true';
+    let authUser = null;
 
     if (!isInternalCall) {
-      const session = await getServerSession(authOptions);
-      if (!session || !session.user?.email) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+      const idToken = authHeader.split('Bearer ')[1];
+      try {
+        authUser = await auth.verifyIdToken(idToken);
+      } catch (err) {
+        return NextResponse.json({ error: 'Invalid or expired token' }, { status: 403 });
       }
     }
 
@@ -75,7 +81,7 @@ export async function POST(req: Request) {
     }, { merge: true });
 
     // Generar copys
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
     let socialCopyErrors: string[] = [];
 
     try {

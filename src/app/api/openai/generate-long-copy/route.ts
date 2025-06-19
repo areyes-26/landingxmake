@@ -1,20 +1,24 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { db, auth } from '@/lib/firebase-admin';
 import { openai, readPromptTemplate, replacePromptPlaceholders } from '@/lib/openai';
-import { authOptions } from '@/lib/auth'; // Asegurate de que esté bien la ruta
 
 export async function POST(req: Request) {
   try {
     console.log('[generate-long-copy] 🚀 Iniciando generación de long copy...');
 
-    // Detectar si es una llamada interna (desde backend, como onVideoCreated)
     const isInternalCall = req.headers.get('x-internal-call') === 'true';
+    let authUser = null;
 
     if (!isInternalCall) {
-      const session = await getServerSession(authOptions);
-      if (!session || !session.user?.email) {
-        console.warn('[generate-long-copy] ⛔ Acceso no autorizado');
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+      const idToken = authHeader.split('Bearer ')[1];
+      try {
+        authUser = await auth.verifyIdToken(idToken);
+      } catch (err) {
+        return NextResponse.json({ error: 'Invalid or expired token' }, { status: 403 });
       }
     }
 
