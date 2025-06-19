@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "@/firebase/client";
+import { auth } from "@/lib/firebase";
+import { toast } from 'sonner';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -19,9 +20,9 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, email);
-      setStatus("Te hemos enviado un correo para restablecer tu contraseña.");
+      toast.success('Password reset email sent successfully');
     } catch (error: any) {
-      setStatus(error.message || "Error al enviar el correo de recuperación.");
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -34,7 +35,7 @@ export default function ForgotPasswordPage() {
         <p className="mb-6 text-muted-foreground text-center">
           Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
         </p>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className={loading ? 'loading' : ''}>
           <div>
             <Label htmlFor="email">Correo electrónico</Label>
             <Input
@@ -56,7 +57,7 @@ export default function ForgotPasswordPage() {
           </div>
         )}
         <div className="mt-6 text-center">
-          <Link href="/auth/login" className="text-muted-foreground hover:text-primary">
+          <Link href="/auth" className="text-muted-foreground hover:text-primary">
             Volver al inicio de sesión
           </Link>
         </div>

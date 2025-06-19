@@ -26,7 +26,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.replace('/auth/login');
+      router.replace('/auth');
       return;
     }
     const videosRef = collection(db, 'videos');

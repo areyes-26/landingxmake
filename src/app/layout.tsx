@@ -1,7 +1,7 @@
 import { Inter } from 'next/font/google';
 import type { Metadata } from "next";
 import "./globals.css"; // Ensures global styles are loaded
-import { Navigation } from '@/components/ui/navigation';
+import { NewNavigation } from '@/components/ui/NewNavigation';
 import { Toaster } from "sonner";
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { SessionSyncer } from '@/components/SessionSyncer';
@@ -29,7 +29,7 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-background text-foreground">
         <AuthProvider>
           <SessionSyncer />
-          <Navigation />
+          <NewNavigation />
           {children}
           <Toaster />
         </AuthProvider>

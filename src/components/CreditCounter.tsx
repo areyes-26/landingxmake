@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Coins } from 'lucide-react';
 
 export default function CreditCounter() {
   const { user, loading } = useAuth();
@@ -26,7 +25,7 @@ export default function CreditCounter() {
 
   if (loading || credits === null) {
     return (
-      <div className="h-9 px-3 flex items-center justify-center rounded-md bg-muted text-muted-foreground font-bold text-base animate-pulse select-none min-w-[48px]" style={{ minWidth: 48 }}>
+      <div className="h-9 px-4 flex items-center justify-center rounded-lg bg-[rgba(14,165,233,0.1)] text-[rgba(255,255,255,0.7)] font-medium text-base animate-pulse select-none">
         ...
       </div>
     );
@@ -34,12 +33,10 @@ export default function CreditCounter() {
 
   return (
     <div
-      className="h-9 px-3 flex items-center rounded-md bg-primary/90 text-white font-semibold text-base select-none shadow-sm gap-2 min-w-[48px]"
-      style={{ minWidth: 48, cursor: 'default', pointerEvents: 'none' }}
+      className="h-9 px-4 flex items-center rounded-lg bg-[rgba(14,165,233,0.1)] text-[#0ea5e9] font-medium text-base select-none border border-[rgba(14,165,233,0.2)] gap-2"
       title="Créditos disponibles"
     >
-      <Coins className="w-4 h-4 mr-1 text-yellow-400" />
-      <span className="ml-1">{credits}</span>
+      💎 {credits} créditos
     </div>
   );
 } 

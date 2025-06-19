@@ -1,28 +1,40 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Rutas que requieren autenticación
-const protectedRoutes = ['/dashboard', '/videos', '/profile'];
-// Rutas de autenticación
-const authRoutes = ['/auth/login', '/auth/signup', '/auth/forgot-password'];
+// Rutas que no requieren autenticación
+const PUBLIC_PATHS = ['/inicio', '/auth', '/privacy'];
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+// Rutas que son específicamente para usuarios NO autenticados
+const UNAUTH_PATHS = ['/auth'];
 
-  // Solo verificar si la cookie de sesión existe (no validar con Firebase Admin)
-  const sessionCookie = request.cookies.get('session')?.value;
-  const isAuthenticated = Boolean(sessionCookie);
+export async function middleware(request: NextRequest) {
+  const sessionCookie = request.cookies.get('session');
+  const authToken = request.cookies.get('authToken');
 
-  // Si la ruta es protegida y no hay sesión, redirigir al login
-  if (protectedRoutes.some(route => pathname.startsWith(route)) && !isAuthenticated) {
-    const url = new URL('/auth/login', request.url);
-    url.searchParams.set('from', pathname);
-    return NextResponse.redirect(url);
+  // Determinar si el usuario está autenticado
+  const isAuthenticated = !!(sessionCookie || authToken);
+
+  // Verificar si la ruta actual es pública
+  const isPublicPath = PUBLIC_PATHS.some(path => 
+    request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + '/')
+  );
+
+  // Verificar si la ruta es específicamente para usuarios no autenticados
+  const isUnauthPath = UNAUTH_PATHS.some(path => 
+    request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + '/')
+  );
+
+  // Si el usuario está autenticado y trata de acceder a rutas de auth
+  if (isAuthenticated && isUnauthPath) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // Si hay sesión y el usuario intenta acceder a rutas de auth, redirigir al dashboard
-  if (authRoutes.some(route => pathname.startsWith(route)) && isAuthenticated) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // Si el usuario NO está autenticado y trata de acceder a una ruta protegida
+  if (!isAuthenticated && !isPublicPath) {
+    const searchParams = new URLSearchParams({
+      redirect: request.nextUrl.pathname
+    });
+    return NextResponse.redirect(new URL(`/auth?${searchParams}`, request.url));
   }
 
   return NextResponse.next();
@@ -37,8 +49,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }; 

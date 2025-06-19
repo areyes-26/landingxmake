@@ -4,43 +4,14 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 export default function InicioPage() {
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [activeFaq, setActiveFaq] = useState(-1);
 
   const toggleFaq = (index: number) => {
-    setActiveFaq(activeFaq === index ? null : index);
+    setActiveFaq(activeFaq === index ? -1 : index);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0c0d1f] via-[#151629] to-[#1a1b35] text-white overflow-x-hidden">
-      {/* Header */}
-      <header className="flex justify-between items-center px-12 py-6 sticky top-0 z-50 bg-[rgba(12,13,31,0.95)] backdrop-blur-xl border-b border-[rgba(14,165,233,0.2)]">
-        <div className="flex items-center gap-3 text-2xl font-semibold text-[#0ea5e9]">
-          <div className="w-9 h-9 bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] rounded-lg flex items-center justify-center text-lg shadow-[0_0_20px_rgba(14,165,233,0.3)]">
-            🎬
-          </div>
-          <span>CreateCast</span>
-        </div>
-        <nav className="flex gap-10 items-center">
-          <a href="#features" className="text-[rgba(255,255,255,0.7)] hover:text-[#0ea5e9] transition-all duration-300 font-medium relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-0.5 after:bg-[#0ea5e9] after:transition-all after:duration-300 hover:after:w-full">
-            Features
-          </a>
-          <a href="#pricing" className="text-[rgba(255,255,255,0.7)] hover:text-[#0ea5e9] transition-all duration-300 font-medium relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-0.5 after:bg-[#0ea5e9] after:transition-all after:duration-300 hover:after:w-full">
-            Pricing
-          </a>
-          <a href="#faq" className="text-[rgba(255,255,255,0.7)] hover:text-[#0ea5e9] transition-all duration-300 font-medium relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-0.5 after:bg-[#0ea5e9] after:transition-all after:duration-300 hover:after:w-full">
-            FAQ
-          </a>
-        </nav>
-        <div className="flex gap-4 items-center">
-          <Link href="/auth/login" className="px-6 py-3 rounded-lg text-[rgba(255,255,255,0.9)] bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(14,165,233,0.3)] transition-all duration-300 font-medium text-sm">
-            Login
-          </Link>
-          <Link href="/auth/signup" className="px-6 py-3 rounded-lg bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white shadow-[0_4px_15px_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_8px_25px_rgba(14,165,233,0.4)] transition-all duration-300 font-medium text-sm">
-            Try For Free
-          </Link>
-        </div>
-      </header>
-
       {/* Hero Section */}
       <section className="text-center px-12 py-24 max-w-7xl mx-auto">
         <div className="inline-block bg-[rgba(14,165,233,0.1)] text-[#0ea5e9] px-5 py-2 rounded-full text-sm font-medium mb-8 border border-[rgba(14,165,233,0.2)]">
@@ -52,8 +23,8 @@ export default function InicioPage() {
         <p className="text-xl text-[rgba(255,255,255,0.7)] max-w-4xl mx-auto mb-12 leading-relaxed">
           The complete solution for businesses to build virtual influencers, produce engaging videos, and automatically distribute content across Facebook, Instagram, TikTok, and YouTube.
         </p>
-        <Link href="/auth/signup" className="inline-block bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white px-10 py-4 text-lg rounded-lg font-semibold transition-all duration-300 mb-24 shadow-[0_0_30px_rgba(14,165,233,0.3)] hover:translate-y-[-3px] hover:shadow-[0_0_40px_rgba(14,165,233,0.5)]">
-          Start Creating
+        <Link href="/auth" className="inline-block bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white px-10 py-4 text-lg rounded-lg font-semibold transition-all duration-300 mb-24 shadow-[0_0_30px_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_8px_25px_rgba(14,165,233,0.4)]">
+          Get Started
         </Link>
       </section>
 
@@ -222,7 +193,7 @@ export default function InicioPage() {
         </div>
 
         <div className="text-center">
-          <Link href="/auth/signup" className="inline-block bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white px-10 py-4 text-lg rounded-lg font-semibold transition-all duration-300 shadow-[0_0_30px_rgba(14,165,233,0.3)] hover:translate-y-[-3px] hover:shadow-[0_0_40px_rgba(14,165,233,0.5)]">
+          <Link href="/auth" className="inline-block bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white px-10 py-4 text-lg rounded-lg font-semibold transition-all duration-300 shadow-[0_0_30px_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_8px_25px_rgba(14,165,233,0.4)]">
             Turn Your Ideas Into Videos in Minutes
           </Link>
         </div>
@@ -312,7 +283,7 @@ export default function InicioPage() {
                 ))}
               </ul>
               <Link 
-                href="/auth/signup" 
+                href="/auth" 
                 className={`w-full py-4 rounded-lg font-semibold transition-all duration-300 text-sm mt-auto ${
                   plan.buttonStyle === 'primary' 
                     ? 'bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white shadow-[0_4px_15px_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_8px_25px_rgba(14,165,233,0.4)]' 
