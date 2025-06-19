@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import OpenAI from 'openai';
 import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
 
+// Forzar actualización - versión 2.0
 if (!admin.apps.length) {
   admin.initializeApp();
 }
