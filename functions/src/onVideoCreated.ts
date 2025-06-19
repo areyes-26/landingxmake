@@ -3,10 +3,14 @@ import { admin, db } from './lib/firebase-admin';
 import OpenAI from 'openai';
 import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
 
-// Inicializar OpenAI usando process.env directamente como en generate-title
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Función para crear el cliente OpenAI solo cuando se necesite
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY not set in environment');
+  }
+  return new OpenAI({ apiKey });
+}
 
 // Función para leer prompt template (simplificada)
 async function readPromptTemplate(fileName: string): Promise<string> {
@@ -67,6 +71,9 @@ export const onVideoCreated = functions.firestore
     console.log(`[onVideoCreated] 📦 Video creado con datos:`, videoData);
 
     try {
+      // Crear cliente OpenAI solo cuando se necesite
+      const openai = getOpenAIClient();
+
       // Generar script
       console.log(`[onVideoCreated] 🚀 Generando script...`);
       

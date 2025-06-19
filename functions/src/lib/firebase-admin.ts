@@ -3,10 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 // Singleton initialization
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    projectId: process.env.FIREBASE_PROJECT_ID
-  });
+  admin.initializeApp();
 }
 
 export const db = getFirestore();
