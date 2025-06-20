@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, Bell } from "lucide-react";
+import { ChevronDown, Bell, Settings, ArrowLeft } from "lucide-react";
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,14 @@ export function NewNavigation() {
   const pathname = usePathname();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [notifTab, setNotifTab] = useState('videos');
+  const [showNotifSettings, setShowNotifSettings] = useState(false);
+
+  // States for notification preferences
+  const [videoNotifs, setVideoNotifs] = useState(true);
+  const [systemNotifs, setSystemNotifs] = useState(true);
+  const [emailNotifs, setEmailNotifs] = useState(false);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -131,8 +139,68 @@ export function NewNavigation() {
               <Bell className="w-5 h-5 text-white/70" />
             </button>
             {notifOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-[rgba(12,13,31,0.95)] border border-[rgba(14,165,233,0.2)] rounded-lg shadow-lg backdrop-blur-xl py-2">
-                <div className="px-4 py-2 text-sm text-white/50">No new notifications</div>
+              <div className="absolute right-0 mt-2 w-96 bg-gray-900/90 border border-blue-500/20 rounded-lg shadow-lg backdrop-blur-xl text-white">
+                <div className="flex justify-between items-center p-3 border-b border-blue-500/20">
+                  <div className="flex items-center gap-2">
+                    {showNotifSettings && (
+                      <button onClick={() => setShowNotifSettings(false)} className="p-1 rounded-full text-gray-400 hover:bg-white/10 hover:text-white transition-colors">
+                        <ArrowLeft className="w-5 h-5" />
+                      </button>
+                    )}
+                    <h3 className="font-semibold">{showNotifSettings ? 'Notification Settings' : 'Notifications'}</h3>
+                  </div>
+                  
+                  {!showNotifSettings && (
+                    <button onClick={() => setShowNotifSettings(true)} className="text-gray-400 hover:text-white transition-colors">
+                      <Settings className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+                
+                {showNotifSettings ? (
+                  <div className="p-4">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <label htmlFor="video-notifs" className="text-sm text-gray-300">Video Notifications</label>
+                        <input type="checkbox" id="video-notifs" className="toggle-checkbox" checked={videoNotifs} onChange={() => setVideoNotifs(!videoNotifs)} />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <label htmlFor="system-notifs" className="text-sm text-gray-300">System Updates</label>
+                        <input type="checkbox" id="system-notifs" className="toggle-checkbox" checked={systemNotifs} onChange={() => setSystemNotifs(!systemNotifs)} />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <label htmlFor="email-notifs" className="text-sm text-gray-300">Email Notifications</label>
+                        <input type="checkbox" id="email-notifs" className="toggle-checkbox" checked={emailNotifs} onChange={() => setEmailNotifs(!emailNotifs)} />
+                      </div>
+                    </div>
+                    <button className="w-full mt-6 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                      Save preferences
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-2 bg-gray-900/50">
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => setNotifTab('videos')}
+                          className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors ${notifTab === 'videos' ? 'bg-blue-600 text-white font-semibold' : 'bg-transparent text-gray-400 hover:bg-white/10'}`}
+                        >
+                          Videos
+                        </button>
+                        <button 
+                          onClick={() => setNotifTab('system')}
+                          className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors ${notifTab === 'system' ? 'bg-blue-600 text-white font-semibold' : 'bg-transparent text-gray-400 hover:bg-white/10'}`}
+                        >
+                          System
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-2 max-h-80 overflow-y-auto">
+                      {notifTab === 'videos' && <div className="p-4 text-center text-gray-500">No new video notifications.</div>}
+                      {notifTab === 'system' && <div className="p-4 text-center text-gray-500">No new system notifications.</div>}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

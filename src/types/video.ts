@@ -33,14 +33,8 @@ export interface VideoData {
       content: string;
     }[];
   };
-  shortCopy?: {
-    platform: string;
-    content: string;
-  };
-  longCopy?: {
-    platform: string;
-    content: string;
-  };
+  shortCopy?: string;
+  longCopy?: string;
   
   // OpenAI Results
   openAIResults?: {

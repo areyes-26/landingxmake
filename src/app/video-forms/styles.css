@@ -537,4 +537,105 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+.voice-select {
+  padding: 1rem;
+  width: 100%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1em;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.voice-select option {
+  background-color: #1a1a2e; /* Dark background for options */
+  color: #e0e0e0; /* Light text for options */
+  padding: 15px 12px; /* Increased padding for more width/height */
+}
+
+.voice-select:focus {
+  outline: none;
+  border-color: #0ea5e9; /* Match other inputs */
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2); /* Match other inputs */
+}
+
+/* Custom Voice Dropdown Styles */
+.voice-options-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #1a1a2e;
+  border: 1px solid #4f4f7a;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  z-index: 10;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.voice-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.voice-option:hover {
+  background-color: #635bff;
+}
+
+.voice-option-text {
+  color: #e0e0e0;
+}
+
+.voice-preview-button {
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.voice-preview-button:hover {
+  color: white;
+  transform: scale(1.1);
+}
+
+.avatar-options-container {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #1e293b;
+}
+
+.avatar-options-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.avatar-options-container::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 10px;
+}
+
+.avatar-options-container::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 10px;
+  border: 2px solid #1e293b;
 } 

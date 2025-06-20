@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
       id: a.id,
       name: a.name,
       imageUrl: a.preview_image,
+      dataAiHint: 'avatar-image',
     }));
 
     return NextResponse.json({ data: list }, { status: 200 });

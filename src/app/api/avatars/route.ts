@@ -8,6 +8,7 @@ export async function GET() {
         accept: 'application/json',
         'x-api-key': process.env.HEYGEN_API_KEY!, // <- Asegurate de tener esto en tu .env.local
       },
+      cache: 'no-store',
     });
 
     if (!response.ok) {

@@ -183,6 +183,9 @@ export const onUserCreated = functions.auth.user().onCreate(async (user: any) =>
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       isEmailVerified: user.emailVerified || false,
       provider: user.providerData.length > 0 ? user.providerData[0].providerId : 'email',
+      firstName: '',
+      lastName: '',
+      profession: '',
     });
     
     console.log(`[onUserCreated] Documento user_data creado exitosamente para ${user.uid}`);

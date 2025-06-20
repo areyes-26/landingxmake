@@ -11,7 +11,7 @@ export async function GET() {
   };
 
   const res = await fetch(
-    'https://api.heygen.com/v2/avatar_group.list?include_public=false',
+    'https://api.heygen.com/v2/avatar_group.list',
     options
   );
   if (!res.ok) {

@@ -1,44 +1,43 @@
 // File: src/app/export-view/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Copy, Download, ArrowLeft, Instagram } from 'lucide-react';
-import { SiTiktok } from 'react-icons/si';
+import { ArrowLeft, Instagram } from 'lucide-react';
+import { SiTiktok, SiYoutube, SiLinkedin } from 'react-icons/si';
+import { RiTwitterXFill } from 'react-icons/ri';
 import type { VideoData } from '@/types/video';
+import './custom-scrollbar.css';
+import './export-view.css';
 
 export default function ExportViewPage() {
   const router = useRouter();
-  const [isExporting, setIsExporting] = useState(false);
   const [videoData, setVideoData] = useState<VideoData | null>(null);
-  const [downloadHover, setDownloadHover] = useState(false);
   const searchParams = useSearchParams();
   const videoId = searchParams.get('id');
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [copied, setCopied] = useState<'short' | 'long' | null>(null);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   useEffect(() => {
     if (!videoId) {
-      toast.error('No se proporcionó un ID de video');
+      toast.error('No video ID provided');
       return;
     }
-
-    // Escuchar el documento de videos para actualizaciones en tiempo real
     const videoRef = doc(db, 'videos', videoId);
     const unsubscribe = onSnapshot(videoRef, (docSnap) => {
       if (!docSnap.exists()) {
-        toast.error('Video no encontrado');
+        toast.error('Video not found');
         return;
       }
       const data = docSnap.data() as VideoData;
       setVideoData((prev) => ({ ...prev, ...data, id: docSnap.id }));
     });
-
-    // Fetch a /api/videos/[id] para obtener los copys
     const fetchCopys = async () => {
       try {
         const res = await fetch(`/api/videos/${videoId}`);
@@ -46,8 +45,7 @@ export default function ExportViewPage() {
         const data = await res.json();
         setVideoData((prev) => ({ ...prev, ...data, id: videoId }));
       } catch (err) {
-        // No mostrar error, solo loguear
-        console.error('No se pudieron obtener los copys:', err);
+        console.error('Could not fetch copies:', err);
       }
     };
     fetchCopys();
@@ -55,40 +53,19 @@ export default function ExportViewPage() {
     return () => unsubscribe();
   }, [videoId]);
 
-  useEffect(() => {
-    if (videoData) {
-      console.log('[ExportView] videoData:', videoData);
-      console.log('shortCopy:', videoData.shortCopy);
-      console.log('longCopy:', videoData.longCopy);
-    }
-  }, [videoData]);
-
-  const handleExport = async () => {
-    try {
-      setIsExporting(true);
-      // TODO: Implementar lógica de exportación aquí
-      toast.success('Exportación iniciada con éxito.');
-    } catch (error) {
-      console.error('Error en exportación:', error);
-      toast.error('Error al iniciar la exportación.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleCopyText = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Texto copiado al portapapeles');
-  };
+  const confirmDownload = async () => {
+    setShowDownloadModal(false);
+    await handleDownload();
+  }
 
   const handleDownload = async () => {
-    if (!videoData?.heygenResults?.videoUrl) {
-      toast.error('No hay video disponible para descargar');
+    const downloadUrl = videoData?.heygenResults?.videoUrl || videoData?.videoUrl;
+    if (!downloadUrl) {
+      toast.error('No video available for download');
       return;
     }
-
     try {
-      const response = await fetch(videoData.heygenResults.videoUrl);
+      const response = await fetch(downloadUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -98,211 +75,181 @@ export default function ExportViewPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success('Descarga iniciada');
+      toast.success('Download started');
     } catch (error) {
-      console.error('Error al descargar el video:', error);
-      toast.error('Error al descargar el video');
+      console.error('Error downloading video:', error);
+      toast.error('Error downloading video');
     }
   };
+  
+  const handleCopyText = (text: string, type: 'short' | 'long') => {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    toast.success('Text copied to clipboard');
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleInstagramShare = () => {
+    window.open('https://www.instagram.com/', '_blank');
+  };
+
+  const handleTikTokShare = () => {
+    window.open('https://www.tiktok.com/tiktokstudio/upload', '_blank');
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+  
+  const getCopy = (copy: any) => {
+    if (!copy) return 'No copy available...';
+    if (typeof copy === 'object' && copy.content) return copy.content;
+    return copy;
+  }
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'N/A';
+    if (timestamp.seconds) {
+      return new Date(timestamp.seconds * 1000).toLocaleDateString('en-US');
+    }
+    return new Date(timestamp).toLocaleDateString('en-US');
+  }
 
   if (!videoData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Cargando video...</p>
+          <p className="mt-4 text-muted-foreground">Loading video...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Botón de retorno */}
-          <Button
-            variant="ghost"
-            className="mb-6"
-            onClick={() => router.push('/dashboard')}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver al Dashboard
-          </Button>
+  const shortCopyText = getCopy(videoData.shortCopy);
+  const longCopyText = getCopy(videoData.longCopy);
 
-          <div className="flex justify-between items-center mb-6">
-            {/* Eliminar título y botón Exportar */}
+  return (
+    <>
+      <div className="container" style={{ background: 'linear-gradient(135deg, #0c0d1f 0%, #151629 50%, #1a1b35 100%)', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'}}>
+        <Button
+            variant="ghost"
+            className="mb-6 absolute top-8 left-8 text-white hover:text-sky-400"
+            onClick={() => router.push('/dashboard')}
+        >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+        </Button>
+        <div className="page-header text-center">
+          <h1 className="page-title">Video Details</h1>
+          <p className="page-subtitle">Review and manage your video content with optimized social media copies</p>
+        </div>
+
+        <div className="content-grid">
+          <div className="video-section">
+            <h2 className="section-title">Video Preview</h2>
+            <div className="video-container">
+              <video
+                ref={videoRef}
+                className="video-player"
+                poster={videoData.thumbnailUrl}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
+                onClick={togglePlay}
+                src={videoData.heygenResults?.videoUrl}
+              >
+                Your browser does not support the video tag.
+              </video>
+              {!isPlaying && (
+                <div className="video-overlay" onClick={togglePlay}>
+                  <div className="play-icon"></div>
+                </div>
+              )}
+            </div>
+            <div className="video-info">
+              <h3 className="video-title">{videoData.videoTitle}</h3>
+              <p className="video-meta">1080x1920 • Created {formatDate(videoData.createdAt)}</p>
+            </div>
           </div>
 
-          <div className="space-y-6">
-            {/* Vista previa del video y opciones de exportación en un flex */}
-            <div className="flex flex-col md:flex-row gap-6">
-              {/* Vista previa del video */}
-              <Card className="flex-1 flex flex-col justify-between">
-                <CardHeader>
-                  <CardTitle>Vista Previa del Video</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col justify-center">
-                  {videoData.heygenResults?.videoUrl ? (
-                    <div className="relative w-full max-w-[360px] mx-auto">
-                      <div className="aspect-[9/16] w-full bg-black rounded-lg overflow-hidden">
-                        <video
-                          src={videoData.heygenResults.videoUrl}
-                          controls
-                          className="w-full h-full object-cover"
-                          poster={videoData.thumbnailUrl}
-                        >
-                          Tu navegador no soporta el elemento de video.
-                        </video>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative w-full max-w-[360px] mx-auto">
-                      <div className="aspect-[9/16] w-full bg-muted rounded-lg flex items-center justify-center">
-                        <p className="text-muted-foreground">No hay video disponible</p>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              {/* Columna derecha: Opciones de exportación + Copys */}
-              <div className="flex flex-col w-full max-w-xs h-full gap-6">
-                {/* Opciones de exportación compactas */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Opciones de Exportación</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Button
-                      className="w-full"
-                      onClick={handleDownload}
-                      disabled={!videoData.heygenResults?.videoUrl}
-                      onMouseEnter={() => setDownloadHover(true)}
-                      onMouseLeave={() => setDownloadHover(false)}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Descargar Video
-                    </Button>
-                    {downloadHover && (
-                      <p className="text-sm text-muted-foreground">
-                        El video se descargara en formato MP4
-                      </p>
-                    )}
-                    <div className="flex flex-col gap-3">
-                      <Button
-                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 text-white border-0 hover:brightness-110"
-                        style={{ boxShadow: '0 2px 8px 0 rgba(225,48,108,0.15)' }}
-                        variant="default"
-                        disabled
-                      >
-                        <Instagram className="w-4 h-4" />
-                        Compartir en Instagram
-                      </Button>
-                      <Button
-                        className="w-full flex items-center justify-center gap-2 bg-black text-white border-0 hover:bg-gray-900"
-                        style={{ boxShadow: '0 2px 8px 0 rgba(0,0,0,0.15)' }}
-                        variant="default"
-                        disabled
-                      >
-                        <SiTiktok className="w-4 h-4" />
-                        Compartir en TikTok
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-                {/* Copys para redes sociales */}
-                <Card className="flex-1 flex flex-col">
-                  <CardHeader>
-                    <CardTitle>Copys para Redes Sociales</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col">
-                    <Tabs defaultValue="tiktok" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="tiktok">TikTok/Reels</TabsTrigger>
-                        <TabsTrigger value="facebook">Facebook/LinkedIn</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="tiktok" className="space-y-4">
-                        <div className="relative">
-                          <textarea
-                            readOnly
-                            value={videoData.shortCopy?.content || 'No hay copy disponible'}
-                            className="w-full h-32 p-3 bg-muted rounded-lg resize-none"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-2 right-2"
-                            onClick={() => handleCopyText(videoData.shortCopy?.content || '')}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {videoData.socialContent?.socialCopies && (
-                          <div className="space-y-2">
-                            <h3 className="font-medium">Copys Generados:</h3>
-                            {videoData.socialContent.socialCopies
-                              .filter(copy => copy.platform.toLowerCase().includes('tiktok') || copy.platform.toLowerCase().includes('reels'))
-                              .map((copy, index) => (
-                                <div key={index} className="relative bg-muted/50 p-3 rounded-lg">
-                                  <p className="text-sm">{copy.content}</p>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute top-2 right-2"
-                                    onClick={() => handleCopyText(copy.content)}
-                                  >
-                                    <Copy className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </TabsContent>
-                      <TabsContent value="facebook" className="space-y-4">
-                        <div className="relative">
-                          <textarea
-                            readOnly
-                            value={videoData.longCopy?.content || 'No hay copy disponible'}
-                            className="w-full h-32 p-3 bg-muted rounded-lg resize-none"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-2 right-2"
-                            onClick={() => handleCopyText(videoData.longCopy?.content || '')}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {videoData.socialContent?.socialCopies && (
-                          <div className="space-y-2">
-                            <h3 className="font-medium">Copys Generados:</h3>
-                            {videoData.socialContent.socialCopies
-                              .filter(copy => copy.platform.toLowerCase().includes('facebook') || copy.platform.toLowerCase().includes('linkedin'))
-                              .map((copy, index) => (
-                                <div key={index} className="relative bg-muted/50 p-3 rounded-lg">
-                                  <p className="text-sm">{copy.content}</p>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute top-2 right-2"
-                                    onClick={() => handleCopyText(copy.content)}
-                                  >
-                                    <Copy className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </TabsContent>
-                    </Tabs>
-                  </CardContent>
-                </Card>
+          <div className="copies-section">
+            <h2 className="section-title">Social Media Copies</h2>
+            <div className="copy-group">
+              <div className="copy-label">
+                <span className="copy-title">
+                  Short Copy
+                  <div className="help-icon">?
+                    <div className="tooltip">Perfect for Twitter, Instagram captions, and social posts with character limits</div>
+                  </div>
+                </span>
+                <button className={`copy-btn ${copied === 'short' ? 'copied' : ''}`} onClick={() => handleCopyText(shortCopyText, 'short')}>
+                  {copied === 'short' ? 'Copied!' : 'Copy'}
+                </button>
               </div>
+              <textarea className="copy-textarea short-copy" readOnly value={shortCopyText}></textarea>
+            </div>
+
+            <div className="copy-group">
+              <div className="copy-label">
+                <span className="copy-title">
+                  Long Copy
+                  <div className="help-icon">?
+                    <div className="tooltip">Ideal for LinkedIn posts, blog articles, newsletters, and detailed content</div>
+                  </div>
+                </span>
+                <button className={`copy-btn ${copied === 'long' ? 'copied' : ''}`} onClick={() => handleCopyText(longCopyText, 'long')}>
+                  {copied === 'long' ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+              <textarea className="copy-textarea long-copy" readOnly value={longCopyText}></textarea>
+            </div>
+
+            <div className="actions-section">
+              <div className="share-buttons">
+                <button className="share-btn share-btn-instagram" title="Share on Instagram" onClick={handleInstagramShare}>
+                  <Instagram className="w-6 h-6" />
+                </button>
+                <button className="share-btn share-btn-twitter" title="Share on Twitter" disabled>
+                  <RiTwitterXFill className="w-6 h-6" />
+                </button>
+                <button className="share-btn share-btn-linkedin" title="Share on LinkedIn" disabled>
+                  <SiLinkedin className="w-6 h-6" />
+                </button>
+                <button className="share-btn share-btn-tiktok" title="Share on TikTok" onClick={handleTikTokShare}>
+                  <SiTiktok className="w-6 h-6" />
+                </button>
+                <button className="share-btn share-btn-youtube" title="Share on YouTube" disabled>
+                  <SiYoutube className="w-6 h-6" />
+                </button>
+              </div>
+              <button className="download-btn" onClick={() => setShowDownloadModal(true)} disabled={!(videoData.heygenResults?.videoUrl || videoData.videoUrl)}>
+                Download Video
+              </button>
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+      {showDownloadModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className="modal-title">Confirm Download</h2>
+            <p className="modal-text">Your video will be downloaded in MP4 format.</p>
+            <div className="modal-actions">
+              <button onClick={() => setShowDownloadModal(false)} className="btn btn-secondary">Cancel</button>
+              <button onClick={confirmDownload} className="btn btn-primary">Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

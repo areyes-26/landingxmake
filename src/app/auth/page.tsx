@@ -200,7 +200,7 @@ export default function AuthPage() {
                         />
                     </div>
 
-                    {!isLogin && (
+                    {!isLogin && password && (
                         <div>
                             <label className="block text-base font-medium text-white/70 mb-2">Confirm Password</label>
                             <input
@@ -278,15 +278,7 @@ export default function AuthPage() {
                 </form>
 
                 <div className="text-center mt-8 space-y-2">
-                    <p className="text-sm text-white/50">
-                        ¿No tienes una cuenta?{' '}
-                        <button
-                            onClick={() => setIsLogin(false)}
-                            className="text-[#0ea5e9] hover:underline"
-                        >
-                            Regístrate
-                        </button>
-                    </p>
+                    {isLogin && (
                     <p className="text-sm text-white/50">
                         ¿Olvidaste tu contraseña?{' '}
                         <button
@@ -296,6 +288,7 @@ export default function AuthPage() {
                             Recuperar contraseña
                         </button>
                     </p>
+                    )}
                 </div>
             </div>
         </div>

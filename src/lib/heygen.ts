@@ -10,78 +10,78 @@ export interface HeyGenVoice {
 }
 
 // Voces predefinidas seleccionadas manualmente
-const SELECTED_VOICES = [
-  // Voces masculinas
+const SELECTED_VOICES: HeyGenVoice[] = [
+  // --- Voces Masculinas ---
   {
-    id: 'f80e430f06b34b70b275c9c746436e37',
-    name: 'Rex - Broadcaster',
-    language: 'Multilingual',
-    gender: 'male',
-    preview_url: ''
+    "id": "ef5765a5c2ee49e58f7dd942e67fb6f2",
+    "name": "Jaidev - Profesional",
+    "language": "Hindi",
+    "gender": "male",
+    "preview_url": "https://static.heygen.ai/voice_preview/f76b718088c54b22bb8da12dbcb78a0f.wav"
   },
   {
-    id: '02733a92a0db457aadf63b235d2aa457',
-    name: 'Paul - Broadcaster',
-    language: 'Multilingual',
-    gender: 'male',
-    preview_url: ''
+    "id": "fa4de0d162464cdf9311f73e83a556d7",
+    "name": "Marcus - Natural",
+    "language": "Swedish",
+    "gender": "male",
+    "preview_url": "https://static.heygen.ai/voice_preview/BvAUkFVWyJPVoCNBaQ39LD.wav"
   },
   {
-    id: '715e7730f62043c290be79876b19f692',
-    name: 'Theo - Broadcaster',
-    language: 'Multilingual',
-    gender: 'male',
-    preview_url: ''
+    "id": "3533a1e04173432e9f88c835b642a8b9",
+    "name": "Alex - Conversational",
+    "language": "English (US)",
+    "gender": "male",
+    "preview_url": "https://static.heygen.ai/voice_preview/565d7ae217984f7b886c23b207a99f36.wav"
   },
   {
-    id: 'ef5765a5c2ee49e58f7dd942e67fb6f2',
-    name: 'Jaidev - Professional',
-    language: 'Hindi',
-    gender: 'male',
-    preview_url: 'https://static.heygen.ai/voice_preview/f76b718088c54b22bb8da12dbcb78a0f.wav'
+    "id": "2d1a63c647b24340a6311e3b6801905a",
+    "name": "Luis - Neutral",
+    "language": "Spanish (Spain)",
+    "gender": "male",
+    "preview_url": "https://static.heygen.ai/voice_preview/e7f13010b9874c8f936f44d82a170f80.wav"
   },
   {
-    id: 'fa4de0d162464cdf9311f73e83a556d7',
-    name: 'Marcus - Natural',
-    language: 'Swedish',
-    gender: 'male',
-    preview_url: 'https://static.heygen.ai/voice_preview/BvAUkFVWyJPVoCNBaQ39LD.wav'
+    "id": "18fdd967353f4dd88a531e0a29f73359",
+    "name": "Klaus - Calm",
+    "language": "German",
+    "gender": "male",
+    "preview_url": "https://static.heygen.ai/voice_preview/e78982a7f0524f73a382583fd215b2e6.wav"
   },
-  // Voces femeninas
+  // --- Voces Femeninas ---
   {
-    id: 'a43417015bdd430f9983c36add401518',
-    name: 'Christine - Broadcaster',
-    language: 'Multilingual',
-    gender: 'female',
-    preview_url: ''
-  },
-  {
-    id: 'd61b495d10ae4d1d8df0c6a8aeeece61',
-    name: 'Elizabeth - Broadcaster',
-    language: 'Multilingual',
-    gender: 'female',
-    preview_url: ''
+    "id": "dcf69bbbab5b41f2b75b9f86316c06c5",
+    "name": "Aruna - Natural",
+    "language": "Hindi",
+    "gender": "female",
+    "preview_url": "https://static.heygen.ai/voice_preview/b1303134695d4d0e8d6308ac7d22bd3e.wav"
   },
   {
-    id: 'f5b3191e7171477880fc9144f60d8015',
-    name: 'Melissa - Broadcaster',
-    language: 'Multilingual',
-    gender: 'female',
-    preview_url: ''
+    "id": "ceebaab47af040a49edcbd27dc8f7dbe",
+    "name": "Luningnig - Gentle",
+    "language": "Filipino",
+    "gender": "female",
+    "preview_url": "https://resource.heygen.ai/text_to_speech/htZTETbhCoDCsCYKDUmnw6.mp3"
   },
   {
-    id: 'dcf69bbbab5b41f2b75b9f86316c06c5',
-    name: 'Aruna - Natural',
-    language: 'Hindi',
-    gender: 'female',
-    preview_url: 'https://static.heygen.ai/voice_preview/b1303134695d4d0e8d6308ac7d22bd3e.wav'
+    "id": "2e3c231758414a1e941712a2a9a72b38",
+    "name": "Ana - Friendly",
+    "language": "Portuguese (Brazil)",
+    "gender": "female",
+    "preview_url": "https://static.heygen.ai/voice_preview/b929285038b340578619d44391694f71.wav"
   },
   {
-    id: 'ceebaab47af040a49edcbd27dc8f7dbe',
-    name: 'Luningnig',
-    language: 'Filipino',
-    gender: 'female',
-    preview_url: 'https://resource.heygen.ai/text_to_speech/htZTETbhCoDCsCYKDUmnw6.mp3'
+    "id": "53cb5fde8b1e42f58e4a7b5a41551b9e",
+    "name": "Clara - Cheerful",
+    "language": "Italian",
+    "gender": "female",
+    "preview_url": "https://static.heygen.ai/voice_preview/a3791338d8234393965a3d702d9c1527.wav"
+  },
+  {
+    "id": "a3b11e2be3b244d2a6a62c8f85f5e27a",
+    "name": "Noelle - Pleasant",
+    "language": "French",
+    "gender": "female",
+    "preview_url": "https://static.heygen.ai/voice_preview/2452309873a44ec2b2fb0a82b5753065.wav"
   }
 ];
 

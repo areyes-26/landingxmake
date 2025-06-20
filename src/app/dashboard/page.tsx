@@ -1,108 +1,173 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/hooks/useAuth';
 import type { VideoData } from '@/types/video';
-import { MoreVertical } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import CreditCounter from '@/components/CreditCounter';
+import styles from './dashboard.module.css';
+
+// Helper function to format dates
+const formatDate = (date: any) => {
+  if (!date) return 'No date';
+  const d = date.toDate ? date.toDate() : new Date(date);
+  return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+};
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [order, setOrder] = useState<'desc' | 'asc'>('desc');
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<string>('newest');
+  
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState<string | null>(null);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [videoToDownload, setVideoToDownload] = useState<VideoData | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  // Fetch videos from Firestore
   useEffect(() => {
-    if (authLoading) return;
     if (!user) {
-      router.replace('/auth');
+      if (!authLoading) router.replace('/auth');
       return;
     }
-    const videosRef = collection(db, 'videos');
-    const q = query(
-      videosRef,
+
+    const videosQuery = query(
+      collection(db, 'videos'),
       where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const videoList: VideoData[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        console.log('[Dashboard] Firestore raw doc:', doc.id, data);
-        // Preservar el estado original del documento
-        const normalizedData = {
-          ...data,
-          status: data.status || 'pending', // Si no hay estado, asumimos que está pendiente
-          createdAt: data.createdAt || data.fechaCreacion,
-          videoTitle: data.videoTitle || data.titulo || 'Untitled Video',
-          description: data.description || data.descripcion || ''
-        };
-        console.log('[Dashboard] Normalized video:', doc.id, normalizedData);
-        videoList.push({ id: doc.id, ...normalizedData } as VideoData);
-      });
+
+    const unsubscribe = onSnapshot(videosQuery, (snapshot) => {
+      const videoList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as VideoData));
       setVideos(videoList);
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching videos:', error);
+      console.error("Error fetching videos:", error);
       setLoading(false);
     });
+
     return () => unsubscribe();
-  }, [user, router, authLoading]);
+  }, [user, authLoading, router]);
 
-  // Ordenar los videos localmente según la selección
-  const orderedVideos = [...videos].sort((a, b) => {
-    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
-    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
-    if (order === 'desc') {
-      return dateB.getTime() - dateA.getTime();
-    } else {
-      return dateA.getTime() - dateB.getTime();
-    }
-  });
-
-  // Ajustar el conteo y el filtro de 'Pendientes'
-  const getStatusBadge = (status: string, count: number) => {
-    const isSelected = selectedStatus === status;
-    const baseClasses = "cursor-pointer transition-colors";
-    const statusClasses = {
-      completed: "bg-green-500 hover:bg-green-600",
-      processing: "bg-yellow-500 hover:bg-yellow-600",
-      error: "bg-red-500 hover:bg-red-600",
-      pending: "bg-gray-500 hover:bg-gray-600",
-      all: "bg-blue-500 hover:bg-blue-600"
+  // Handle closing menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (openMenuId && !target.closest(`[data-menu-id="${openMenuId}"]`)) {
+        setOpenMenuId(null);
+      }
     };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openMenuId]);
 
-    return (
-      <Badge 
-        className={`${baseClasses} ${statusClasses[status as keyof typeof statusClasses]} ${isSelected ? 'ring-2 ring-offset-2 ring-offset-background ring-ring' : ''}`}
-        onClick={() => setSelectedStatus(status === selectedStatus ? null : status)}
-      >
-        {status === 'all' ? 'All' : 
-         status === 'completed' ? 'Completed' :
-         status === 'processing' ? 'Processing' :
-         status === 'error' ? 'Error' : 'Pending'}: {count}
-      </Badge>
-    );
+  // Filter and sort videos
+  const processedVideos = videos
+    .filter(video => activeFilter === 'all' || video.status === activeFilter)
+    .sort((a, b) => {
+      switch (sortOrder) {
+        case 'oldest':
+          return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+        case 'title':
+          return (a.videoTitle || '').localeCompare(b.videoTitle || '');
+        case 'status':
+          return (a.status || '').localeCompare(b.status || '');
+        case 'newest':
+        default:
+          return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+      }
+    });
+
+  const statusCounts = videos.reduce((acc, video) => {
+    const status = video.status || 'pending';
+    if (status in acc) {
+      acc[status as keyof typeof acc]++;
+    }
+    acc.all++;
+    return acc;
+  }, { all: 0, completed: 0, processing: 0, error: 0, pending: 0 });
+  
+  const handleDeleteClick = (videoId: string) => {
+    setVideoToDelete(videoId);
+    setShowDeleteModal(true);
+    setOpenMenuId(null); // Close the dropdown menu
   };
 
-  // Ajustar el filtro de videos
-  const filteredVideos = selectedStatus && selectedStatus !== 'all' 
-    ? orderedVideos.filter(v => v.status === selectedStatus)
-    : orderedVideos;
+  const confirmDelete = async () => {
+    if (!videoToDelete) return;
+    try {
+        await deleteDoc(doc(db, 'videos', videoToDelete));
+    } catch (error) {
+        console.error("Error deleting video: ", error);
+        alert('Failed to delete video.');
+    } finally {
+        setShowDeleteModal(false);
+        setVideoToDelete(null);
+    }
+  };
 
-  const handleVideoClick = (video: VideoData) => {
-    console.log('[Dashboard] handleVideoClick:', video.id, 'status:', video.status);
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setVideoToDelete(null);
+  };
+
+  const handleDownloadClick = (video: VideoData) => {
+    if (video.videoUrl) {
+      setVideoToDownload(video);
+      setShowDownloadModal(true);
+      setOpenMenuId(null);
+    } else {
+      alert("Video is not available for download yet.");
+    }
+  };
+
+  const confirmDownload = async () => {
+    if (!videoToDownload?.videoUrl) {
+      console.error('No video available for download');
+      setShowDownloadModal(false);
+      setVideoToDownload(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(videoToDownload.videoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${videoToDownload.videoTitle || 'video'}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading the video:', error);
+      alert('Error downloading the video');
+    } finally {
+      setShowDownloadModal(false);
+      setVideoToDownload(null);
+    }
+  };
+
+  const cancelDownload = () => {
+    setShowDownloadModal(false);
+    setVideoToDownload(null);
+  };
+
+  const handleViewDetails = (video: VideoData) => {
     if (video.status === 'completed') {
       router.push(`/export-view?id=${video.id}`);
     } else if (video.status === 'processing') {
@@ -112,190 +177,106 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDeleteVideo = async (videoId: string) => {
-    setVideoToDelete(videoId);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDeleteVideo = async () => {
-    if (!videoToDelete) return;
-    try {
-      await deleteDoc(doc(db, 'videos', videoToDelete));
-      setMenuOpenId(null);
-      setShowDeleteModal(false);
-      setVideoToDelete(null);
-    } catch (error) {
-      alert('Error deleting video.');
-    }
-  };
-
-  const cancelDeleteVideo = () => {
-    setShowDeleteModal(false);
-    setVideoToDelete(null);
-  };
-
-  const getCardButtonLabel = (video: VideoData) => {
-    if (video.status === 'completed') return 'View Video';
-    if (video.status === 'processing') return 'Processing';
-    if (video.status === 'error') return 'Error';
-    return 'View Details';
-  };
-
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <Skeleton className="h-8 w-48" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-4 w-full mb-2" />
-                  <Skeleton className="h-4 w-2/3" />
-                </CardContent>
-                <CardFooter>
-                  <Skeleton className="h-10 w-full" />
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <div>Loading...</div>; // Replace with a proper skeleton loader if desired
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">My Videos</h1>
-            <div className="flex gap-4 mt-2">
-              {getStatusBadge('all', videos.length)}
-              {getStatusBadge('completed', videos.filter(v => v.status === 'completed').length)}
-              {getStatusBadge('processing', videos.filter(v => v.status === 'processing').length)}
-              {getStatusBadge('error', videos.filter(v => v.status === 'error').length)}
-              {getStatusBadge('pending', videos.filter(v => v.status === 'pending').length)}
-            </div>
-            <div className="mt-4">
-              <label htmlFor="order-select" className="mr-2 font-medium text-muted-foreground">Order by:</label>
-              <select
-                id="order-select"
-                value={order}
-                onChange={e => setOrder(e.target.value as 'desc' | 'asc')}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-background text-foreground"
-              >
-                <option value="desc">Newest first</option>
-                <option value="asc">Oldest first</option>
-              </select>
-            </div>
+    <>
+      <div className={styles.container}>
+        <div className={styles.pageHeader}>
+          <div className={styles.pageTitleSection}>
+            <h1 className={styles.pageTitle}>My Videos</h1>
           </div>
-          <div className="flex gap-4">
-            <Button onClick={() => router.push('/video-forms')}>
-              Create New Video
-            </Button>
-            <Button variant="outline" onClick={() => router.push('/admin/avatar-test')}>
-              Avatar Test
-            </Button>
+          
+          <div className={styles.statusFilters}>
+            {Object.entries(statusCounts).map(([status, count]) => (
+              <div 
+                key={status}
+                className={`${styles.statusFilter} ${activeFilter === status ? styles.active : ''} ${styles[status]}`}
+                onClick={() => setActiveFilter(status)}
+              >
+                {`${status.charAt(0).toUpperCase() + status.slice(1)}: ${count}`}
+              </div>
+            ))}
           </div>
         </div>
 
-        {videos.length === 0 ? (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold mb-4">Welcome to your Dashboard!</h2>
-            <p className="text-muted-foreground mb-6">
-              You don't have any videos yet. Start by creating your first video or try an avatar to explore the features.
-            </p>
-            <div className="flex flex-col md:flex-row gap-4 justify-center">
-              <Button onClick={() => router.push('/video-forms')}>
-                Create my First Video
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/admin/avatar-test')}>
-                Avatar Test
-              </Button>
-            </div>
+        <div className={styles.controls}>
+          <div className={styles.controlsLeft}>
+            <select className={styles.sortSelect} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="title">Title A-Z</option>
+              <option value="status">By status</option>
+            </select>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVideos.map((video) => (
-              <Card
-                key={video.id}
-                className={`cursor-pointer hover:shadow-lg transition-shadow ${
-                  video.status === 'error' ? 'border-red-500' :
-                  video.status === 'processing' ? 'border-yellow-500' :
-                  video.status === 'completed' ? 'border-green-500' :
-                  'border-gray-500'
-                }`}
-                onClick={() => handleVideoClick(video)}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="line-clamp-2">{video.videoTitle}</CardTitle>
-                    <div className="relative ml-2" onClick={e => e.stopPropagation()}>
-                      <button
-                        className="p-1 rounded-full hover:bg-muted/40 focus:outline-none"
-                        onClick={() => setMenuOpenId(menuOpenId === video.id ? null : video.id)}
-                        aria-label="Options"
-                      >
-                        <MoreVertical className="w-5 h-5 text-muted-foreground" />
-                      </button>
-                      {menuOpenId === video.id && (
-                        <div className="absolute right-0 mt-2 w-40 bg-card border border-muted-foreground/20 rounded-md shadow-lg z-50">
-                          <button
-                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-800"
-                            onClick={() => handleDeleteVideo(video.id)}
-                          >
-                            Delete video
-                          </button>
-                        </div>
-                      )}
-                    </div>
+          <div className={styles.actionButtons}>
+            <button className={`${styles.btn} ${styles.btnSecondary}`} disabled>Avatar Test</button>
+            <Link href="/video-forms" className={`${styles.btn} ${styles.btnPrimary}`}>Create New Video</Link>
+          </div>
+        </div>
+
+        <div className={styles.videosGrid}>
+          {processedVideos.length > 0 ? (
+            processedVideos.map(video => (
+              <div key={video.id} className={styles.videoCard}>
+                <div className={styles.videoHeader}>
+                  <h3 className={styles.videoTitle}>{video.videoTitle}</h3>
+                  <div className={styles.videoMenu} data-menu-id={video.id}>
+                    <button className={styles.menuTrigger} onClick={() => setOpenMenuId(openMenuId === video.id ? null : video.id)}>⋯</button>
+                    {openMenuId === video.id && (
+                       <div className={`${styles.dropdownMenu} ${styles.show}`}>
+                        <div className={styles.dropdownItem} onClick={() => handleDownloadClick(video)}>⬇ Download</div>
+                        <div className={`${styles.dropdownItem} ${styles.delete}`} onClick={() => handleDeleteClick(video.id)}>🗑 Delete</div>
+                      </div>
+                    )}
                   </div>
-                  <CardDescription>
-                    {video.createdAt?.toDate 
-                      ? new Date(video.createdAt.toDate()).toLocaleDateString()
-                      : 'Fecha no disponible'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {video.description}
-                  </p>
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    variant={video.status === 'completed' ? 'default' : 'outline'}
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleVideoClick(video);
-                    }}
-                  >
-                    {getCardButtonLabel(video)}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
+                </div>
+                <div className={styles.videoMeta}>
+                  <div className={styles.videoDate}>{formatDate(video.createdAt)}</div>
+                  <div className={styles.videoDescription}>{video.description}</div>
+                  <span className={`${styles.videoStatus} ${styles[`status${video.status?.charAt(0).toUpperCase() + video.status?.slice(1)}`]}`}>
+                    {video.status}
+                  </span>
+                </div>
+                <div className={styles.videoActions}>
+                    <button onClick={() => handleViewDetails(video)} className={`${styles.actionBtn} ${video.status === 'completed' ? styles.actionBtnPrimary : styles.actionBtnSecondary}`}>View Details</button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>🎬</div>
+              <h2>No videos found</h2>
+              <p>Start by creating a new video.</p>
+            </div>
+          )}
+        </div>
       </div>
-      {/* Modal de confirmación de eliminación (custom, reutilizando estilo de Plans and Pricing) */}
       {showDeleteModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-lg flex flex-col items-center">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">Delete video</h2>
-            <p className="mb-6 text-gray-700 text-center">Are you sure you want to delete this video? This action cannot be undone.</p>
-            <div className="flex gap-4 w-full justify-center">
-              <Button variant="outline" onClick={cancelDeleteVideo}>Cancel</Button>
-              <Button variant="destructive" onClick={confirmDeleteVideo}>Delete</Button>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2 className={styles.modalTitle}>Delete Video</h2>
+            <p className={styles.modalText}>Are you sure you want to delete this video? This action cannot be undone.</p>
+            <div className={styles.modalActions}>
+              <button onClick={cancelDelete} className={`${styles.btn} ${styles.btnSecondary}`}>Cancel</button>
+              <button onClick={confirmDelete} className={`${styles.btn} ${styles.btnDelete}`}>Delete</button>
             </div>
           </div>
         </div>
       )}
-    </div>
+      {showDownloadModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <p className={styles.modalText}>Your video will be downloaded in MP4 format.</p>
+            <div className={styles.modalActions}>
+              <button onClick={cancelDownload} className={`${styles.btn} ${styles.btnSecondary}`}>Cancel</button>
+              <button onClick={confirmDownload} className={`${styles.btn} ${styles.btnPrimary}`}>Download</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 } 

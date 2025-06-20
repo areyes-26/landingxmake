@@ -23,10 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${inter.variable}`} suppressHydrationWarning>
-      {/* Applies base background, text color, and font from globals.css */}
-      {/* font-sans class on body will now pick up --font-inter */}
-      <body className="font-sans antialiased bg-background text-foreground">
+    <html lang="en">
+      <body className={inter.className}>
         <AuthProvider>
           <SessionSyncer />
           <NewNavigation />
