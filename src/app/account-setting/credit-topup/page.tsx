@@ -83,7 +83,7 @@ export default function CreditTopupPage() {
       {/* Credit Packages */}
       <section className="packages-section">
         <div className="packages-grid">
-          {CREDIT_PACKS.map((pack) => (
+        {CREDIT_PACKS.map((pack) => (
             <div 
               key={pack.credits} 
               className={`package-card ${pack.popular ? 'popular' : ''}`}
@@ -104,16 +104,16 @@ export default function CreditTopupPage() {
               </ul>
               <button 
                 className="buy-btn" 
-                onClick={() => handleBuy(pack)} 
-                disabled={!!loading}
+              onClick={() => handleBuy(pack)}
+              disabled={!!loading}
                 style={{ marginTop: 'auto' }}
-              >
-                {loading === pack.credits.toString() ? 'Redirecting...' : 'Buy'}
+            >
+              {loading === pack.credits.toString() ? 'Redirecting...' : 'Buy'}
               </button>
             </div>
-          ))}
-        </div>
-        {error && <div className="text-red-500 text-center mt-6">{error}</div>}
+        ))}
+      </div>
+      {error && <div className="text-red-500 text-center mt-6">{error}</div>}
       </section>
 
       {/* Upgrade to Pro Section */}

@@ -437,17 +437,14 @@ export default function VideoSettingsPreview() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Copy Corto (TikTok/Reels)
                         </label>
-                        {videoSettings.shortCopy?.content ? (
+                        {videoSettings.shortCopy ? (
                           <textarea
-                            value={videoSettings.shortCopy.content}
+                            value={videoSettings.shortCopy}
                             onChange={(e) => {
                               if (!videoSettings) return;
                               setVideoSettings({
                                 ...videoSettings,
-                                shortCopy: {
-                                  platform: 'TikTok/Reels',
-                                  content: e.target.value
-                                }
+                                shortCopy: e.target.value
                               });
                             }}
                             className="w-full h-32 p-3 bg-card border border-input rounded-lg text-foreground focus:ring-2 focus:ring-ring focus:border-ring"
@@ -467,17 +464,14 @@ export default function VideoSettingsPreview() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Copy Largo (Facebook/LinkedIn)
                         </label>
-                        {videoSettings.longCopy?.content ? (
+                        {videoSettings.longCopy ? (
                           <textarea
-                            value={videoSettings.longCopy.content}
+                            value={videoSettings.longCopy}
                             onChange={(e) => {
                               if (!videoSettings) return;
                               setVideoSettings({
                                 ...videoSettings,
-                                longCopy: {
-                                  platform: 'Facebook/LinkedIn',
-                                  content: e.target.value
-                                }
+                                longCopy: e.target.value
                               });
                             }}
                             className="w-full h-32 p-3 bg-card border border-input rounded-lg text-foreground focus:ring-2 focus:ring-ring focus:border-ring"

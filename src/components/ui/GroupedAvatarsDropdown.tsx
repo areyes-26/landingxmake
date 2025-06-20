@@ -81,9 +81,9 @@ export default function GroupedAvatarsDropdown({ selectedAvatarId, onSelect, ava
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={avatar.imageUrl} alt={avatar.name} data-ai-hint={avatar.dataAiHint} />
-                    <AvatarFallback>{avatar.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                  <AvatarImage src={avatar.imageUrl} alt={avatar.name} data-ai-hint={avatar.dataAiHint} />
+                  <AvatarFallback>{avatar.name.charAt(0)}</AvatarFallback>
+                </Avatar>
                   <span className="text-sm truncate">{avatar.name}</span>
                 </div>
                 {selectedAvatarId === avatar.id && <Check className="w-4 h-4 text-sky-400" />}
@@ -94,4 +94,4 @@ export default function GroupedAvatarsDropdown({ selectedAvatarId, onSelect, ava
       )}
     </div>
   );
-} 
+}

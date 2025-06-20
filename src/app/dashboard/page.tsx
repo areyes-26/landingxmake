@@ -181,7 +181,7 @@ export default function DashboardPage() {
     return <div>Loading...</div>; // Replace with a proper skeleton loader if desired
   }
 
-  return (
+    return (
     <>
       <div className={styles.container}>
         <div className={styles.pageHeader}>
@@ -209,7 +209,7 @@ export default function DashboardPage() {
               <option value="oldest">Oldest first</option>
               <option value="title">Title A-Z</option>
               <option value="status">By status</option>
-            </select>
+              </select>
           </div>
           <div className={styles.actionButtons}>
             <button className={`${styles.btn} ${styles.btnSecondary}`} disabled>Avatar Test</button>
@@ -229,10 +229,10 @@ export default function DashboardPage() {
                        <div className={`${styles.dropdownMenu} ${styles.show}`}>
                         <div className={styles.dropdownItem} onClick={() => handleDownloadClick(video)}>⬇ Download</div>
                         <div className={`${styles.dropdownItem} ${styles.delete}`} onClick={() => handleDeleteClick(video.id)}>🗑 Delete</div>
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
                 <div className={styles.videoMeta}>
                   <div className={styles.videoDate}>{formatDate(video.createdAt)}</div>
                   <div className={styles.videoDescription}>{video.description}</div>
@@ -250,8 +250,8 @@ export default function DashboardPage() {
               <div className={styles.emptyIcon}>🎬</div>
               <h2>No videos found</h2>
               <p>Start by creating a new video.</p>
-            </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
       {showDeleteModal && (
@@ -275,7 +275,7 @@ export default function DashboardPage() {
               <button onClick={confirmDownload} className={`${styles.btn} ${styles.btnPrimary}`}>Download</button>
             </div>
           </div>
-        </div>
+    </div>
       )}
     </>
   );

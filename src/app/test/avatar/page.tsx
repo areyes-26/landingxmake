@@ -61,14 +61,14 @@ export default function AvatarTestPage() {
   };
 
   const handleImageSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
+    e.preventDefault();
       if (selectedFiles.length === 0) {
           setError("Por favor, selecciona al menos una imagen.");
           return;
       }
-      setLoading(true);
-      setError(null);
-      setSuccess(null);
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
 
       const formData = new FormData();
       selectedFiles.forEach(file => {
@@ -80,23 +80,23 @@ export default function AvatarTestPage() {
 
       try {
           const response = await fetch('/api/create-avatar', {
-              method: 'POST',
+        method: 'POST',
               body: formData,
-          });
+      });
 
-          if (!response.ok) {
+      if (!response.ok) {
               const errorData = await response.json();
               throw new Error(errorData.error || 'Falló la creación del avatar desde la imagen');
-          }
+      }
           const result = await response.json();
           setSuccess('¡Avatar creado exitosamente desde la imagen! Redirigiendo...');
           // Adjust redirection as needed
           // router.push(`/videos/${result.videoId}`);
       } catch (err: any) {
           setError(err.message);
-      } finally {
-          setLoading(false);
-      }
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -134,17 +134,17 @@ export default function AvatarTestPage() {
   return (
     <div className="avatar-test-wrapper">
       <div className="container mx-auto p-4 sm:p-6">
-         {error && (
+      {error && (
             <Alert variant="destructive" className="mb-6 fixed top-20 right-5 z-[1001] w-auto">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-          {success && (
+      {success && (
             <Alert className="mb-6 bg-green-50 border-green-200 fixed top-20 right-5 z-[1001] w-auto">
-              <AlertDescription className="text-green-800">{success}</AlertDescription>
-            </Alert>
-          )}
+          <AlertDescription className="text-green-800">{success}</AlertDescription>
+        </Alert>
+      )}
 
         <h1 className="page-title">Prueba de Generación de Avatares</h1>
 
@@ -166,7 +166,7 @@ export default function AvatarTestPage() {
                             id="avatarDescription"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            required
+                    required
                         ></textarea>
                     </div>
 
@@ -177,7 +177,7 @@ export default function AvatarTestPage() {
                                 <button type="button" className={`option-btn ${textGender === 'Masculino' ? 'active' : ''}`} onClick={() => setTextGender('Masculino')}>Masculino</button>
                                 <button type="button" className={`option-btn ${textGender === 'Femenino' ? 'active' : ''}`} onClick={() => setTextGender('Femenino')}>Femenino</button>
                             </div>
-                        </div>
+                </div>
 
                         <div className="option-group">
                             <label className="option-label">Estilo</label>
@@ -185,7 +185,7 @@ export default function AvatarTestPage() {
                                 <button type="button" className={`option-btn ${textStyle === 'Realista' ? 'active' : ''}`} onClick={() => setTextStyle('Realista')}>Realista</button>
                                 <button type="button" className={`option-btn ${textStyle === 'Caricatura' ? 'active' : ''}`} onClick={() => setTextStyle('Caricatura')}>Caricatura</button>
                             </div>
-                        </div>
+                </div>
 
                         <div className="option-group">
                             <label className="option-label">Etnia</label>
@@ -198,15 +198,15 @@ export default function AvatarTestPage() {
                                 <option value="middle-eastern">Medio Oriente</option>
                                 <option value="indigenous">Indígena</option>
                                 <option value="mixed">Mixto</option>
-                            </select>
+                  </select>
                         </div>
-                    </div>
+                </div>
 
                     <button type="submit" className="create-btn" disabled={loading}>
-                        {loading ? 'Creando Avatar...' : 'Crear Avatar'}
-                    </button>
-                </form>
-            </div>
+                  {loading ? 'Creando Avatar...' : 'Crear Avatar'}
+                </button>
+              </form>
+                </div>
 
             <div className={`tab-content ${activeTab === 'image' ? 'active' : ''}`} id="image-tab">
                 <form className="image-avatar-section" onSubmit={handleImageSubmit}>
@@ -239,7 +239,7 @@ export default function AvatarTestPage() {
                                 </p>
                             </div>
                         </div>
-                    </div>
+                </div>
 
                     <div className="upload-section">
                         <label className="upload-label">Imágenes de Referencia (Mínimo 10 fotos)</label>
@@ -326,12 +326,12 @@ export default function AvatarTestPage() {
                                 </div>
                             </div>
                         )}
-                    </div>
+                </div>
 
                     <button type="submit" className={`process-btn ${selectedFiles.length >= 1 ? 'enabled' : ''}`} disabled={loading || selectedFiles.length < 1}>
                         {loading ? 'Procesando...' : 'Comenzar Proceso'}
-                    </button>
-                </form>
+                </button>
+              </form>
             </div>
         </div>
       </div>

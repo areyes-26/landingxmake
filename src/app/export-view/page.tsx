@@ -113,7 +113,7 @@ export default function ExportViewPage() {
     if (!copy) return 'No copy available...';
     if (typeof copy === 'object' && copy.content) return copy.content;
     return copy;
-  }
+    }
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'N/A';
@@ -140,46 +140,46 @@ export default function ExportViewPage() {
   return (
     <>
       <div className="container" style={{ background: 'linear-gradient(135deg, #0c0d1f 0%, #151629 50%, #1a1b35 100%)', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'}}>
-        <Button
+          <Button
             variant="ghost"
             className="mb-6 absolute top-8 left-8 text-white hover:text-sky-400"
             onClick={() => router.push('/dashboard')}
-        >
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
-        </Button>
+          </Button>
         <div className="page-header text-center">
           <h1 className="page-title">Video Details</h1>
           <p className="page-subtitle">Review and manage your video content with optimized social media copies</p>
-        </div>
+          </div>
 
         <div className="content-grid">
           <div className="video-section">
             <h2 className="section-title">Video Preview</h2>
             <div className="video-container">
-              <video
+                        <video
                 ref={videoRef}
                 className="video-player"
-                poster={videoData.thumbnailUrl}
+                          poster={videoData.thumbnailUrl}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 onEnded={() => setIsPlaying(false)}
                 onClick={togglePlay}
                 src={videoData.heygenResults?.videoUrl}
-              >
+                        >
                 Your browser does not support the video tag.
-              </video>
+                        </video>
               {!isPlaying && (
                 <div className="video-overlay" onClick={togglePlay}>
                   <div className="play-icon"></div>
-                </div>
+                      </div>
               )}
-            </div>
+                    </div>
             <div className="video-info">
               <h3 className="video-title">{videoData.videoTitle}</h3>
               <p className="video-meta">1080x1920 • Created {formatDate(videoData.createdAt)}</p>
-            </div>
-          </div>
+                      </div>
+                    </div>
 
           <div className="copies-section">
             <h2 className="section-title">Social Media Copies</h2>
@@ -189,14 +189,14 @@ export default function ExportViewPage() {
                   Short Copy
                   <div className="help-icon">?
                     <div className="tooltip">Perfect for Twitter, Instagram captions, and social posts with character limits</div>
-                  </div>
+                    </div>
                 </span>
                 <button className={`copy-btn ${copied === 'short' ? 'copied' : ''}`} onClick={() => handleCopyText(shortCopyText, 'short')}>
                   {copied === 'short' ? 'Copied!' : 'Copy'}
                 </button>
-              </div>
+                        </div>
               <textarea className="copy-textarea short-copy" readOnly value={shortCopyText}></textarea>
-            </div>
+                                </div>
 
             <div className="copy-group">
               <div className="copy-label">
@@ -204,14 +204,14 @@ export default function ExportViewPage() {
                   Long Copy
                   <div className="help-icon">?
                     <div className="tooltip">Ideal for LinkedIn posts, blog articles, newsletters, and detailed content</div>
-                  </div>
+                          </div>
                 </span>
                 <button className={`copy-btn ${copied === 'long' ? 'copied' : ''}`} onClick={() => handleCopyText(longCopyText, 'long')}>
                   {copied === 'long' ? 'Copied!' : 'Copy'}
                 </button>
-              </div>
+                        </div>
               <textarea className="copy-textarea long-copy" readOnly value={longCopyText}></textarea>
-            </div>
+                                </div>
 
             <div className="actions-section">
               <div className="share-buttons">
@@ -248,7 +248,7 @@ export default function ExportViewPage() {
               <button onClick={confirmDownload} className="btn btn-primary">Confirm</button>
             </div>
           </div>
-        </div>
+    </div>
       )}
     </>
   );

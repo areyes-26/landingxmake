@@ -296,8 +296,8 @@ export default function VideoFormsPage() {
   const handleVoiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = e.target;
     const selectedVoice = voices.find(v => v.id === value);
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       voiceId: value,
       voiceDetails: selectedVoice ? {
         name: selectedVoice.name,
@@ -597,7 +597,7 @@ export default function VideoFormsPage() {
                           <span className="voice-option-text">{option.label}</span>
                           {formData.tone === option.value && <Check className="w-4 h-4 text-sky-400" />}
                         </div>
-                      ))}
+                  ))}
                     </div>
                   )}
                 </div>
@@ -631,7 +631,7 @@ export default function VideoFormsPage() {
                             </button>
                           )}
                         </div>
-                      ))}
+                  ))}
                     </div>
                   )}
                 </div>
@@ -641,12 +641,12 @@ export default function VideoFormsPage() {
                  {loadingAvatars ? (
                   <p>Cargando avatares...</p>
                 ) : (
-                  <GroupedAvatarsDropdown
+                      <GroupedAvatarsDropdown
                     avatarGroups={[{ title: 'Avatares Disponibles', options: avatarOptions }]}
-                    selectedAvatarId={selectedAvatar?.id || null}
-                    onSelect={handleAvatarSelect}
-                  />
-                )}
+                        selectedAvatarId={selectedAvatar?.id || null}
+                        onSelect={handleAvatarSelect}
+                      />
+                  )}
               </div>
             </div>
 
