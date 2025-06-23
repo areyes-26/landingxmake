@@ -10,6 +10,7 @@ import { HeyGenVoice } from '@/lib/heygen';
 import GroupedAvatarsDropdown from '@/components/ui/GroupedAvatarsDropdown';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserPlan } from '@/hooks/useUserPlan';
 import { useCreditValidator } from '@/hooks/useCreditValidator';
 import { calculateCreditCost, type VideoOptions } from '@/lib/creditPricing';
 import './styles.css';
@@ -47,64 +48,62 @@ interface FormData {
 
 interface Step {
   title: string;
-  isValid: boolean;
-  fields: string[];
+  fields: (keyof Omit<FormData, 'voiceDetails'>)[];
 }
 
 const STEPS: Step[] = [
   {
-    title: "Detalles básicos",
-    isValid: false,
+    title: "Basic Details",
     fields: ["videoTitle", "description", "duration"]
   },
   {
-    title: "Llamado a la acción",
-    isValid: false,
+    title: "Call to Action",
     fields: ["callToAction", "specificCallToAction"]
   },
   {
-    title: "Últimos detalles del video",
-    isValid: false,
-    fields: ["topic", "email", "tone", "avatarId"]
+    title: "Final Video Details",
+    fields: ["topic", "tone", "avatarId", "voiceId"]
   }
 ];
 
 const CALL_TO_ACTION_OPTIONS = [
-  { value: 'Visita nuestro sitio web', label: 'Visita nuestro sitio web', icon: '🌐' },
-  { value: 'Suscríbete ahora', label: 'Suscríbete ahora', icon: '🔔' },
-  { value: 'Comparte con tus amigos', label: 'Comparte con tus amigos', icon: '📱' },
-  { value: 'Descarga nuestra app', label: 'Descarga nuestra app', icon: '📱' }
+  { value: 'Visita nuestro sitio web', label: 'Visit our website', icon: '🌐' },
+  { value: 'Suscríbete ahora', label: 'Subscribe now', icon: '🔔' },
+  { value: 'Comparte con tus amigos', label: 'Share with your friends', icon: '📱' },
+  { value: 'Descarga nuestra app', label: 'Download our app', icon: '📱' }
 ] as const;
 
 const TONE_OPTIONS = [
-  { value: 'profesional', label: 'Profesional' },
+  { value: 'profesional', label: 'Professional' },
   { value: 'casual', label: 'Casual' },
-  { value: 'entusiasta', label: 'Entusiasta' },
-  { value: 'humoristico', label: 'Humorístico' },
-  { value: 'inspirador', label: 'Inspirador' }
+  { value: 'entusiasta', label: 'Enthusiastic' },
+  { value: 'humoristico', label: 'Humorous' },
+  { value: 'inspirador', label: 'Inspirational' }
 ] as const;
 
 const DURATION_LIMITS = {
-  '30s': { label: '30 segundos', limit: 100 },
-  '1min': { label: '1 minuto', limit: 300 },
-  '1.5min': { label: '1:30 minutos', limit: 600 },
+  '30s': { label: '30 seconds', limit: 100 },
+  '1min': { label: '1 minute', limit: 300 },
+  '1.5min': { label: '1:30 minutes', limit: 600 },
 };
 
 export default function VideoFormsPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { userPlan } = useUserPlan();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
 
   const handleLogout = async () => {
     try {
       await fetch('/api/sessionLogout', { method: 'POST' });
       await signOut(auth);
-      toast.success('Sesión cerrada exitosamente');
+      toast.success('Logged out successfully');
       router.push('/inicio');
       router.refresh();
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      toast.error('Error al cerrar sesión');
+      console.error('Error logging out:', error);
+      toast.error('Error logging out');
     }
   };
   const [formData, setFormData] = useState<FormData>({
@@ -119,6 +118,21 @@ export default function VideoFormsPage() {
     duration: '30s',
     voiceId: '',
   });
+
+  useEffect(() => {
+    const validateStep = () => {
+      const currentStepFields = STEPS[currentStep].fields;
+      const isValid = currentStepFields.every(field => {
+        const value = formData[field];
+        if (typeof value === 'string') {
+          return value.trim() !== '';
+        }
+        return value !== null && value !== undefined;
+      });
+      setIsCurrentStepValid(isValid);
+    };
+    validateStep();
+  }, [formData, currentStep]);
 
   const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -167,7 +181,7 @@ export default function VideoFormsPage() {
   };
 
   const handleNext = () => {
-    if (currentStep < STEPS.length - 1) {
+    if (isCurrentStepValid && currentStep < STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -175,26 +189,14 @@ export default function VideoFormsPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setStatus('Enviando...');
+    setStatus('Sending...');
 
     try {
-      if (!formData.avatarId) {
-        setStatus('Por favor selecciona un avatar');
-        setIsLoading(false);
-        return;
-      }
-
-      if (!formData.voiceId) {
-        setStatus('Por favor selecciona una voz');
-        setIsLoading(false);
-        return;
-      }
-
-      console.log('Enviando datos:', formData);
+      console.log('Sending data:', formData);
 
       const user = auth.currentUser;
       if (!user) {
-        throw new Error('No hay usuario autenticado');
+        throw new Error('User not authenticated');
       }
       const token = await user.getIdToken();
 
@@ -208,23 +210,23 @@ export default function VideoFormsPage() {
       });
 
       const data = await response.json();
-      console.log('Respuesta del servidor:', data);
+      console.log('Server response:', data);
 
       if (!response.ok) {
         if (response.status === 403 && data.error === 'Not enough credits') {
-          setStatus(`No tienes créditos suficientes para crear este video. Créditos requeridos: ${data.required}, tus créditos: ${data.current}`);
+          setStatus(`You don't have enough credits to create this video. Required credits: ${data.required}, your credits: ${data.current}`);
           setIsLoading(false);
           return;
         }
-        throw new Error(data.error || data.details || 'Error al procesar la solicitud');
+        throw new Error(data.error || data.details || 'Error processing request');
       }
 
-      setStatus('¡Video creado exitosamente!');
+      setStatus('Video created successfully!');
       router.push(`/videos/${data.firestoreId}`);
 
     } catch (error) {
-      console.error('Error completo:', error);
-      setStatus(error instanceof Error ? error.message : 'Error al procesar la solicitud');
+      console.error('Full error:', error);
+      setStatus(error instanceof Error ? error.message : 'Error processing request');
     } finally {
       setIsLoading(false);
     }
@@ -258,12 +260,12 @@ export default function VideoFormsPage() {
           
           setAvatarOptions([...formattedAvatars, ...formattedTalkingPhotos]);
         } else {
-            toast.error("Error al cargar los avatares.");
+            toast.error("Error loading avatars.");
             console.error("Failed to fetch avatars");
         }
       } catch (error) {
         console.error('Error fetching avatars:', error);
-        toast.error("Hubo un problema al cargar los avatares.");
+        toast.error("There was a problem loading the avatars.");
       } finally {
         setLoadingAvatars(false);
       }
@@ -272,10 +274,15 @@ export default function VideoFormsPage() {
     const fetchVoices = async () => {
       try {
         setLoadingVoices(true);
-        const response = await fetch('/api/voices');
+        const response = await fetch(`/api/voices?plan=${userPlan}`);
         if (response.ok) {
           const data = await response.json();
           setVoices(data.data || []);
+          
+          // Show plan-based voice limit info
+          if (data.userPlan && data.totalVoices && data.filteredCount) {
+            console.log(`User plan: ${data.userPlan}, Available voices: ${data.filteredCount}/${data.totalVoices}`);
+          }
         }
       } catch (error) {
         console.error('Error fetching voices:', error);
@@ -286,7 +293,7 @@ export default function VideoFormsPage() {
 
     fetchAvatarsData();
     fetchVoices();
-  }, []);
+  }, [userPlan]);
 
   const handleAvatarSelect = (avatar: AvatarOption) => {
     setSelectedAvatar(avatar);
@@ -327,17 +334,33 @@ export default function VideoFormsPage() {
     setIsToneDropdownOpen(false);
   };
 
-  const handlePreviewVoice = (e: React.MouseEvent, voice: HeyGenVoice) => {
+  const handlePreviewVoice = async (e: React.MouseEvent, voice: HeyGenVoice) => {
     e.stopPropagation();
-    if (audioRef.current) {
-        if (currentlyPlaying === voice.id) {
-            audioRef.current.pause();
-            setCurrentlyPlaying(null);
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (!voice.preview_url) {
+      toast.error("No preview available for this voice.");
+      return;
+    }
+
+    if (currentlyPlaying === voice.id) {
+      audio.pause();
+      setCurrentlyPlaying(null);
+    } else {
+      try {
+        audio.src = voice.preview_url || '';
+        await audio.play();
+        setCurrentlyPlaying(voice.id);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'NotSupportedError') {
+          toast.error("Preview format not supported for this voice.");
         } else {
-            audioRef.current.src = voice.preview_url || '';
-            audioRef.current.play();
-            setCurrentlyPlaying(voice.id);
+          toast.error("Could not play voice preview.");
         }
+        console.error("Error playing audio:", error);
+        setCurrentlyPlaying(null);
+      }
     }
   };
 
@@ -428,9 +451,9 @@ export default function VideoFormsPage() {
       <div className="video-forms-main-container">
         {/* Form Header */}
         <div className="video-forms-form-header">
-          <h1 className="video-forms-form-title">Crear Video</h1>
+          <h1 className="video-forms-form-title">Create Video</h1>
           <p className="video-forms-form-subtitle">
-            Comparte tu historia con el mundo. Completa el formulario para crear tu video con IA.
+            Share your story with the world. Fill out the form to create your video with AI.
           </p>
         </div>
 
@@ -461,9 +484,9 @@ export default function VideoFormsPage() {
             {/* Step 1: Basic Details */}
             <div className={`video-forms-form-step ${currentStep === 0 ? 'active' : ''}`}>
               <div className="video-forms-form-group">
-                <label className="video-forms-form-label">Duración del video</label>
+                <label className="video-forms-form-label">Video Duration</label>
                 <p className="video-forms-form-description">
-                  Selecciona la duración que mejor se adapte a tu contenido
+                  Select the duration that best suits your content
                 </p>
                 <div className="video-forms-duration-options">
                   {Object.entries(DURATION_LIMITS).map(([key, value]) => (
@@ -480,7 +503,7 @@ export default function VideoFormsPage() {
 
               <div className="video-forms-form-group">
                 <label htmlFor="videoTitle" className="video-forms-form-label">
-                  Título del video
+                  Video Title
                 </label>
                 <input
                   type="text"
@@ -489,14 +512,14 @@ export default function VideoFormsPage() {
                   value={formData.videoTitle}
                   onChange={handleChange}
                   className="video-forms-input"
-                  placeholder="Escribe un título atractivo para tu video"
+                  placeholder="Write an attractive title for your video"
                   required
                 />
               </div>
 
               <div className="video-forms-form-group">
                 <label htmlFor="description" className="video-forms-form-label">
-                  Descripción del video
+                  Video Description
                 </label>
                 <textarea
                   id="description"
@@ -504,11 +527,11 @@ export default function VideoFormsPage() {
                   value={formData.description}
                   onChange={handleChange}
                   className="video-forms-textarea"
-                  placeholder="Escribe una descripción detallada del video"
+                  placeholder="Write a detailed description for the video"
                   maxLength={600}
                 />
                 <div className="video-forms-char-counter">
-                  {formData.description.length}/600 caracteres
+                  {formData.description.length}/600 characters
                 </div>
               </div>
             </div>
@@ -516,9 +539,9 @@ export default function VideoFormsPage() {
             {/* Step 2: Call to Action */}
             <div className={`video-forms-form-step ${currentStep === 1 ? 'active' : ''}`}>
               <div className="video-forms-form-group">
-                <label className="video-forms-form-label">Llamado a la acción</label>
+                <label className="video-forms-form-label">Call to Action</label>
                 <p className="video-forms-form-description">
-                  Selecciona qué acción quieres que realicen los espectadores
+                  Select what action you want viewers to take
                 </p>
                 <div className="video-forms-cta-options">
                   {CALL_TO_ACTION_OPTIONS.map((option) => (
@@ -536,10 +559,10 @@ export default function VideoFormsPage() {
 
               <div className="video-forms-form-group">
                 <label htmlFor="specificCallToAction" className="video-forms-form-label">
-                  Texto personalizado del CTA
+                  Custom CTA Text
                 </label>
                 <p className="video-forms-form-description">
-                  Personaliza el mensaje de tu llamado a la acción
+                  Customize your call to action message
                 </p>
                 <textarea
                   id="specificCallToAction"
@@ -547,7 +570,7 @@ export default function VideoFormsPage() {
                   value={formData.specificCallToAction}
                   onChange={handleChange}
                   className="video-forms-textarea"
-                  placeholder="Escribe aquí tu mensaje personalizado..."
+                  placeholder="Write your custom message here..."
                   rows={4}
                 />
               </div>
@@ -557,10 +580,10 @@ export default function VideoFormsPage() {
             <div className={`video-forms-form-step ${currentStep === 2 ? 'active' : ''}`}>
               <div className="video-forms-form-group">
                 <label htmlFor="topic" className="video-forms-form-label">
-                  Tema principal
+                  Main Topic
                 </label>
                 <p className="video-forms-form-description">
-                  Describe de qué quieres que trate tu video
+                  Describe what you want your video to be about
                 </p>
                 <textarea
                   id="topic"
@@ -568,23 +591,23 @@ export default function VideoFormsPage() {
                   value={formData.topic}
                   onChange={handleChange}
                   className="video-forms-textarea"
-                  placeholder="Ejemplo: Quiero que trate sobre el mundial de clubes"
+                  placeholder="Example: I want it to be about the Club World Cup"
                   maxLength={500}
                 />
                 <div className="video-forms-char-counter">
-                  {formData.topic.length}/500 caracteres
+                  {formData.topic.length}/500 characters
                 </div>
               </div>
 
               <div className="video-forms-form-group">
-                <label htmlFor="tone" className="video-forms-form-label">Tono</label>
+                <label htmlFor="tone" className="video-forms-form-label">Tone</label>
                 <div className="relative" ref={toneDropdownRef}>
                   <button
                     type="button"
                     className="voice-select text-left"
                     onClick={() => setIsToneDropdownOpen(!isToneDropdownOpen)}
                   >
-                    {TONE_OPTIONS.find(o => o.value === formData.tone)?.label || 'Selecciona un tono'}
+                    {TONE_OPTIONS.find(o => o.value === formData.tone)?.label || 'Select a tone'}
                   </button>
                   {isToneDropdownOpen && (
                     <div className="voice-options-container">
@@ -603,14 +626,21 @@ export default function VideoFormsPage() {
                 </div>
               </div>
               <div className="video-forms-form-group">
-                <label htmlFor="voiceId" className="video-forms-form-label">Voz</label>
+                <label htmlFor="voiceId" className="video-forms-form-label">
+                  Voice
+                  <span className="video-forms-plan-indicator">
+                    {userPlan === 'free' && ' (Free Plan: 20 voices)'}
+                    {userPlan === 'premium' && ' (Basic Plan: 100 voices)'}
+                    {userPlan === 'pro' && ' (Pro Plan: All voices)'}
+                  </span>
+                </label>
                 <div className="relative" ref={voiceDropdownRef}>
                   <button
                     type="button"
                     className="voice-select text-left"
                     onClick={() => setIsVoiceDropdownOpen(!isVoiceDropdownOpen)}
                   >
-                    {formData.voiceDetails ? `${formData.voiceDetails.name} - ${formData.voiceDetails.language}` : 'Selecciona una voz'}
+                    {formData.voiceDetails ? `${formData.voiceDetails.name} - ${formData.voiceDetails.language}` : 'Select a voice'}
                   </button>
                   {isVoiceDropdownOpen && (
                     <div className="voice-options-container">
@@ -635,14 +665,23 @@ export default function VideoFormsPage() {
                     </div>
                   )}
                 </div>
+                {userPlan !== 'pro' && (
+                  <div className="video-forms-plan-upgrade-hint">
+                    <span className="video-forms-upgrade-icon">💡</span>
+                    <span>
+                      {userPlan === 'free' && 'Upgrade to Pro to access all available voices'}
+                      {userPlan === 'premium' && 'Upgrade to Pro to access all available voices'}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="video-forms-form-group">
                 <label className="video-forms-form-label">Avatar</label>
                  {loadingAvatars ? (
-                  <p>Cargando avatares...</p>
+                  <p>Loading avatars...</p>
                 ) : (
                       <GroupedAvatarsDropdown
-                    avatarGroups={[{ title: 'Avatares Disponibles', options: avatarOptions }]}
+                    avatarGroups={[{ title: 'Available Avatars', options: avatarOptions }]}
                         selectedAvatarId={selectedAvatar?.id || null}
                         onSelect={handleAvatarSelect}
                       />
@@ -654,10 +693,20 @@ export default function VideoFormsPage() {
             <div className="video-forms-navigation">
               <div className="video-forms-credits-info">
                 <div className="video-forms-credits-icon">💎</div>
-                <span>{currentCost} créditos</span>
+                <span>{currentCost} credits</span>
+                {/* {userPlan !== 'pro' && (
+                  <div className="video-forms-upgrade-plan-button">
+                    <Link 
+                      href="/account-setting?section=pricing" 
+                      className="video-forms-upgrade-link"
+                    >
+                      🚀 Actualizar Plan
+                    </Link>
+                  </div>
+                )} */}
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem' }}>
+              <div className="flex items-center gap-4">
                 {currentStep > 0 && (
                   <button
                     type="button"
@@ -665,27 +714,39 @@ export default function VideoFormsPage() {
                     disabled={isLoading}
                     className="video-forms-nav-button video-forms-nav-button-secondary"
                   >
-                    ← Atrás
+                    ← Back
                   </button>
                 )}
                 
-                {currentStep < STEPS.length - 1 ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    disabled={isLoading || !canAffordCurrent}
-                    className="video-forms-nav-button video-forms-nav-button-primary"
-                  >
-                    Siguiente →
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={isLoading || !canAffordCurrent}
-                    className="video-forms-nav-button video-forms-nav-button-primary"
-                  >
-                    {isLoading ? 'Enviando...' : '🚀 Crear Video'}
-                  </button>
+                {currentStep < STEPS.length - 1 && (
+                  <div className="tooltip-container">
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      disabled={!isCurrentStepValid || !canAffordCurrent}
+                      className="video-forms-nav-button video-forms-nav-button-primary"
+                    >
+                      Next →
+                    </button>
+                    {!isCurrentStepValid && (
+                      <span className="tooltip-text">Please fill in all fields to continue</span>
+                    )}
+                  </div>
+                )}
+
+                {currentStep === STEPS.length - 1 && (
+                  <div className="tooltip-container">
+                    <button
+                      type="submit"
+                      disabled={isLoading || !isCurrentStepValid || !canAffordCurrent}
+                      className="video-forms-nav-button video-forms-nav-button-primary"
+                    >
+                      {isLoading ? "Creating..." : "🚀 Create Video"}
+                    </button>
+                    {!isCurrentStepValid && (
+                      <span className="tooltip-text">Please fill in all fields to create the video</span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

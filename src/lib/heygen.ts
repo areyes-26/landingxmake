@@ -9,82 +9,6 @@ export interface HeyGenVoice {
   preview_url?: string;
 }
 
-// Voces predefinidas seleccionadas manualmente
-const SELECTED_VOICES: HeyGenVoice[] = [
-  // --- Voces Masculinas ---
-  {
-    "id": "ef5765a5c2ee49e58f7dd942e67fb6f2",
-    "name": "Jaidev - Profesional",
-    "language": "Hindi",
-    "gender": "male",
-    "preview_url": "https://static.heygen.ai/voice_preview/f76b718088c54b22bb8da12dbcb78a0f.wav"
-  },
-  {
-    "id": "fa4de0d162464cdf9311f73e83a556d7",
-    "name": "Marcus - Natural",
-    "language": "Swedish",
-    "gender": "male",
-    "preview_url": "https://static.heygen.ai/voice_preview/BvAUkFVWyJPVoCNBaQ39LD.wav"
-  },
-  {
-    "id": "3533a1e04173432e9f88c835b642a8b9",
-    "name": "Alex - Conversational",
-    "language": "English (US)",
-    "gender": "male",
-    "preview_url": "https://static.heygen.ai/voice_preview/565d7ae217984f7b886c23b207a99f36.wav"
-  },
-  {
-    "id": "2d1a63c647b24340a6311e3b6801905a",
-    "name": "Luis - Neutral",
-    "language": "Spanish (Spain)",
-    "gender": "male",
-    "preview_url": "https://static.heygen.ai/voice_preview/e7f13010b9874c8f936f44d82a170f80.wav"
-  },
-  {
-    "id": "18fdd967353f4dd88a531e0a29f73359",
-    "name": "Klaus - Calm",
-    "language": "German",
-    "gender": "male",
-    "preview_url": "https://static.heygen.ai/voice_preview/e78982a7f0524f73a382583fd215b2e6.wav"
-  },
-  // --- Voces Femeninas ---
-  {
-    "id": "dcf69bbbab5b41f2b75b9f86316c06c5",
-    "name": "Aruna - Natural",
-    "language": "Hindi",
-    "gender": "female",
-    "preview_url": "https://static.heygen.ai/voice_preview/b1303134695d4d0e8d6308ac7d22bd3e.wav"
-  },
-  {
-    "id": "ceebaab47af040a49edcbd27dc8f7dbe",
-    "name": "Luningnig - Gentle",
-    "language": "Filipino",
-    "gender": "female",
-    "preview_url": "https://resource.heygen.ai/text_to_speech/htZTETbhCoDCsCYKDUmnw6.mp3"
-  },
-  {
-    "id": "2e3c231758414a1e941712a2a9a72b38",
-    "name": "Ana - Friendly",
-    "language": "Portuguese (Brazil)",
-    "gender": "female",
-    "preview_url": "https://static.heygen.ai/voice_preview/b929285038b340578619d44391694f71.wav"
-  },
-  {
-    "id": "53cb5fde8b1e42f58e4a7b5a41551b9e",
-    "name": "Clara - Cheerful",
-    "language": "Italian",
-    "gender": "female",
-    "preview_url": "https://static.heygen.ai/voice_preview/a3791338d8234393965a3d702d9c1527.wav"
-  },
-  {
-    "id": "a3b11e2be3b244d2a6a62c8f85f5e27a",
-    "name": "Noelle - Pleasant",
-    "language": "French",
-    "gender": "female",
-    "preview_url": "https://static.heygen.ai/voice_preview/2452309873a44ec2b2fb0a82b5753065.wav"
-  }
-];
-
 export async function getVoices(): Promise<HeyGenVoice[]> {
   console.log('API Key present:', !!HEYGEN_API_KEY);
   
@@ -92,8 +16,37 @@ export async function getVoices(): Promise<HeyGenVoice[]> {
     throw new Error('HeyGen API key is not configured');
   }
 
-  // En lugar de hacer la llamada a la API, retornamos las voces predefinidas
-  return SELECTED_VOICES;
+  const response = await fetch(`${HEYGEN_API_URL}/voices`, {
+    headers: {
+      'x-api-key': HEYGEN_API_KEY,
+    },
+  });
+
+  if (!response.ok) {
+    console.error('Failed to fetch voices from HeyGen API:', await response.text());
+    throw new Error(`Failed to fetch voices from HeyGen API: ${response.statusText}`);
+  }
+
+  const jsonResponse = await response.json();
+  // The API documentation shows the list under a 'data' object.
+  const allApiVoices = jsonResponse.data.voices as any[];
+
+  if (!allApiVoices) {
+    console.error("No 'voices' array found in HeyGen API response:", jsonResponse);
+    return [];
+  }
+
+  const filteredAndMappedVoices: HeyGenVoice[] = allApiVoices
+    .filter(voice => voice.preview_audio && typeof voice.preview_audio === 'string' && voice.preview_audio.includes('resource.heygen.ai'))
+    .map(voice => ({
+      id: voice.voice_id,
+      name: voice.name,
+      language: voice.language,
+      gender: voice.gender,
+      preview_url: voice.preview_audio,
+    }));
+  
+  return filteredAndMappedVoices;
 }
 
 interface HeyGenConfig {

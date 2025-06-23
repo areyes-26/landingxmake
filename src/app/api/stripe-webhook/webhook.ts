@@ -71,12 +71,12 @@ export async function POST(req: NextRequest) {
           if (credits && (email || userId)) {
             let userDoc: FirebaseFirestore.DocumentSnapshot | undefined;
 
-            if (email) {
-              const query = await db.collection('user_data').where('email', '==', email).limit(1).get();
-              if (!query.empty) userDoc = query.docs[0];
-            } else if (userId) {
+            if (userId) {
               const ref = await db.collection('user_data').doc(userId).get();
               if (ref.exists) userDoc = ref;
+            } else if (email) {
+              const query = await db.collection('user_data').where('email', '==', email).limit(1).get();
+              if (!query.empty) userDoc = query.docs[0];
             }
 
             if (userDoc) {

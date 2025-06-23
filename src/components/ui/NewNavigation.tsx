@@ -97,7 +97,7 @@ export function NewNavigation() {
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 rounded-lg transition-colors"
             >
-              <span className="text-white/70">Mi cuenta</span>
+              <span className="text-white/70">My Account</span>
               <ChevronDown className="w-4 h-4 text-white/70" />
             </button>
 

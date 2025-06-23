@@ -34,9 +34,9 @@ export default function CreditCounter() {
   return (
     <div
       className="h-9 px-4 flex items-center rounded-lg bg-[rgba(14,165,233,0.1)] text-[#0ea5e9] font-medium text-base select-none border border-[rgba(14,165,233,0.2)] gap-2"
-      title="Créditos disponibles"
+      title="Available Credits"
     >
-      💎 {credits} créditos
+      💎 {credits} credits
     </div>
   );
 } 

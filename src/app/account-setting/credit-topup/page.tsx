@@ -30,6 +30,7 @@ export default function CreditTopupPage() {
           credits: pack.credits,
           stripePriceId: pack.stripePriceId,
           email: user?.email,
+          userId: user?.uid,
         }),
       });
       const data = await res.json();

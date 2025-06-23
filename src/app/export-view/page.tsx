@@ -36,19 +36,29 @@ export default function ExportViewPage() {
         return;
       }
       const data = docSnap.data() as VideoData;
-      setVideoData((prev) => ({ ...prev, ...data, id: docSnap.id }));
+      setVideoData({ ...data, id: docSnap.id });
+
+      // Fetch copys only after we have the main video data
+      fetch(`/api/videos/${videoId}`)
+        .then(res => {
+          if (res.ok) return res.json();
+          throw new Error('Could not fetch copies');
+        })
+        .then(copyData => {
+          setVideoData(prevData => {
+            if (!prevData) return null;
+            // Merge copies without overwriting existing fields like createdAt
+            return {
+              ...prevData,
+              shortCopy: copyData.shortCopy,
+              longCopy: copyData.longCopy,
+            };
+          });
+        })
+        .catch(err => {
+          console.error('Error fetching copies:', err);
+        });
     });
-    const fetchCopys = async () => {
-      try {
-        const res = await fetch(`/api/videos/${videoId}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        setVideoData((prev) => ({ ...prev, ...data, id: videoId }));
-      } catch (err) {
-        console.error('Could not fetch copies:', err);
-      }
-    };
-    fetchCopys();
 
     return () => unsubscribe();
   }, [videoId]);
@@ -115,12 +125,29 @@ export default function ExportViewPage() {
     return copy;
     }
 
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return 'N/A';
-    if (timestamp.seconds) {
-      return new Date(timestamp.seconds * 1000).toLocaleDateString('en-US');
+  const formatDate = (timestamp: any): string => {
+    if (!timestamp) return 'Invalid Date';
+    
+    // Handle Firebase Timestamp object
+    if (timestamp && typeof timestamp.seconds === 'number') {
+      return new Date(timestamp.seconds * 1000).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
     }
-    return new Date(timestamp).toLocaleDateString('en-US');
+  
+    // Handle ISO string or other date strings
+    const date = new Date(timestamp);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+  
+    return 'Invalid Date';
   }
 
   if (!videoData) {
@@ -139,10 +166,10 @@ export default function ExportViewPage() {
 
   return (
     <>
-      <div className="container" style={{ background: 'linear-gradient(135deg, #0c0d1f 0%, #151629 50%, #1a1b35 100%)', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'}}>
+      <div className="container export-view-container">
           <Button
             variant="ghost"
-            className="mb-6 absolute top-8 left-8 text-white hover:text-sky-400"
+            className="back-to-dashboard-btn"
             onClick={() => router.push('/dashboard')}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

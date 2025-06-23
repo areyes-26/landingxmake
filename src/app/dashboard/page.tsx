@@ -9,6 +9,7 @@ import type { VideoData } from '@/types/video';
 import { useAuth } from '@/hooks/useAuth';
 import CreditCounter from '@/components/CreditCounter';
 import styles from './dashboard.module.css';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Helper function to format dates
 const formatDate = (date: any) => {
@@ -16,6 +17,47 @@ const formatDate = (date: any) => {
   const d = date.toDate ? date.toDate() : new Date(date);
   return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
 };
+
+const DashboardSkeleton = () => (
+  <div className={styles.container}>
+    <div className={styles.pageHeader}>
+      <div className={styles.pageTitleSection}>
+        <Skeleton className="h-12 w-1/3" />
+      </div>
+      <div className={styles.statusFilters}>
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-8 w-24" />
+      </div>
+    </div>
+    <div className={styles.controls}>
+      <div className={styles.controlsLeft}>
+        <Skeleton className="h-10 w-48" />
+      </div>
+      <div className={styles.actionButtons}>
+        <Skeleton className="h-10 w-32" />
+        <Skeleton className="h-10 w-40" />
+      </div>
+    </div>
+    <div className={styles.videosGrid}>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div key={index} className={styles.videoCard}>
+          <div className={styles.videoHeader}>
+            <Skeleton className="h-6 w-3/4" />
+          </div>
+          <div className={styles.videoMeta}>
+            <Skeleton className="h-4 w-1/4 mb-2" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full mt-1" />
+          </div>
+          <div className={styles.videoActions}>
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -178,7 +220,7 @@ export default function DashboardPage() {
   };
 
   if (authLoading || loading) {
-    return <div>Loading...</div>; // Replace with a proper skeleton loader if desired
+    return <DashboardSkeleton />;
   }
 
     return (

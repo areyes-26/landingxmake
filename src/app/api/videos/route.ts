@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
     let firestoreDocId;
     try {
       console.log("💾 Preparando datos para Firestore...");
-      const videoData = {
+      const videoData: any = {
         videoTitle,
         description,
         topic,
@@ -168,12 +168,15 @@ export async function POST(req: NextRequest) {
         email,
         duration,
         voiceId,
-        voiceDetails,
         status: 'pending',
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
         userId
       };
+
+      if (voiceDetails) {
+        videoData.voiceDetails = voiceDetails;
+      }
 
       console.log("💾 Guardando en Firestore con datos:", videoData);
       const videoDocRef = await db.collection('videos').add(videoData);

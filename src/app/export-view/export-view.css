@@ -663,4 +663,31 @@ body {
 
 .btn-secondary:hover {
     background: rgba(255, 255, 255, 0.2);
+}
+
+/* General Container Styling */
+.export-view-container {
+    padding-top: 80px; /* Adjust based on the actual height of your navbar */
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-bottom: 2rem;
+    background: linear-gradient(135deg, #0c0d1f 0%, #151629 50%, #1a1b35 100%);
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.back-to-dashboard-btn {
+    position: absolute;
+    top: 110px; /* Increased spacing from the top */
+    left: 2rem;
+    z-index: 10;
+    color: white;
+}
+
+.back-to-dashboard-btn:hover {
+    color: #38bdf8; /* sky-400 */
+}
+
+.page-header {
+    margin-bottom: 2rem;
 } 

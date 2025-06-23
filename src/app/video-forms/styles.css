@@ -43,14 +43,15 @@
 
 .video-forms-progress-steps {
   display: flex;
-  justify-content: center;
-  gap: 2rem;
+  gap: 0.5rem;
   margin-bottom: 2rem;
 }
 
 .video-forms-step {
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-grow: 1;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   border-radius: 25px;
@@ -351,6 +352,31 @@
   font-size: 0.7rem;
 }
 
+.video-forms-upgrade-plan-button {
+  margin-left: 1rem;
+}
+
+.video-forms-upgrade-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #7c3aed, #0ea5e9);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.video-forms-upgrade-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+}
+
 /* Status Message */
 .video-forms-status {
   display: flex;
@@ -537,25 +563,21 @@
     width: 100%;
     justify-content: center;
   }
-} 
+  
+  .video-forms-plan-indicator {
+    display: block;
+    margin-left: 0;
+    margin-top: 0.25rem;
+  }
+}
 
 .voice-select {
-  padding: 1rem;
   width: 100%;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  background-size: 1em;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  padding: 10px;
+  background-color: #1e293b;
   color: white;
-  transition: all 0.3s ease;
-  font-family: inherit;
-  cursor: pointer;
+  border-radius: 10px;
+  border: 2px solid #1e293b;
 }
 
 .voice-select option {
@@ -595,7 +617,7 @@
 }
 
 .voice-option:hover {
-  background-color: #635bff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .voice-option-text {
@@ -638,4 +660,93 @@
   background-color: #4b5563;
   border-radius: 10px;
   border: 2px solid #1e293b;
+}
+
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+}
+
+.video-forms-nav-button.video-forms-nav-button-primary:disabled {
+  cursor: not-allowed;
+}
+
+.tooltip-container .tooltip-text {
+  visibility: hidden;
+  width: 220px;
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  text-align: center;
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  position: absolute;
+  z-index: 10;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.tooltip-container .tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: hsl(var(--card)) transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Voice Selection Plan Indicator */
+.video-forms-plan-indicator {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
+.video-forms-plan-upgrade-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(14, 165, 233, 0.05);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.video-forms-upgrade-icon {
+  font-size: 1rem;
+}
+
+/* Custom Scrollbar for Voice Dropdown */
+.voice-options-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.voice-options-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.voice-options-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.voice-options-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 } 
