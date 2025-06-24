@@ -1,67 +1,73 @@
 import * as functions from 'firebase-functions/v1';
-import { admin, db } from '../lib/firebase-admin';
+import { db } from '../lib/firebase-admin';
 import axios from 'axios';
-import { InstagramAuthResponse } from './types';
 
-// Simple cookie parser function
+// Cookie parser
 function parseCookies(cookieHeader: string | undefined): Record<string, string> {
   const cookies: Record<string, string> = {};
   if (!cookieHeader) return cookies;
-  
+
   cookieHeader.split(';').forEach(cookie => {
     const [name, value] = cookie.trim().split('=');
     if (name && value) {
       cookies[name] = decodeURIComponent(value);
     }
   });
-  
+
   return cookies;
 }
 
-export const instagramCallback = functions.https.onRequest(async (req: any, res: any) => {
-  // Config desde Firebase - movido dentro del handler
-  const cfg = (functions.config() as any).instagram;
-  const CLIENT_ID = cfg.client_id as string;
-  const CLIENT_SECRET = cfg.client_secret as string;
-  const REDIRECT_URI = cfg.redirect_uri as string;
+export const instagramCallback = functions.https.onRequest(async (req, res) => {
+  const cfg = functions.config().instagram;
+  const { client_id, client_secret, redirect_uri } = cfg;
 
   const cookies = parseCookies(req.headers.cookie);
   const { code, state } = req.query as { code?: string; state?: string };
 
   if (!code || !state) {
-    res.status(400).json({ error: 'Missing code or state parameter' });
+    res.status(400).json({ error: 'Missing code or state' });
     return;
   }
+
   if (cookies.instagram_state !== state) {
-    res.status(401).json({ error: 'Invalid state parameter' });
+    res.status(403).json({ error: 'Invalid state value' });
     return;
   }
 
   try {
-    const { data } = await axios.post<InstagramAuthResponse>(
-      'https://api.instagram.com/oauth/access_token',
-      new URLSearchParams({
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        grant_type: 'authorization_code',
-        redirect_uri: REDIRECT_URI,
-        code: code.toString(),
-      }),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-    );
+    // Paso 1: Intercambiar el code por un access token
+    const tokenResponse = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+      params: {
+        client_id,
+        client_secret,
+        redirect_uri,
+        code,
+      },
+    });
 
-    await db.collection('instagram_tokens').doc(data.user_id).set({
-      accessToken: data.access_token,
-      userId: data.user_id,
-      expiresAt: Date.now() + 3_600_000,
+    const { access_token } = tokenResponse.data;
+
+    // Paso 2: Obtener la cuenta de usuario vinculada al token
+    const meResponse = await axios.get('https://graph.facebook.com/v18.0/me', {
+      params: {
+        access_token,
+        fields: 'id,name',
+      },
+    });
+
+    const { id, name } = meResponse.data;
+
+    // Paso 3: Guardar token y datos en Firestore
+    await db.collection('instagram_tokens').doc(id).set({
+      accessToken: access_token,
+      userId: id,
+      name,
       createdAt: Date.now(),
     });
 
-    res.redirect('/instagram/success');
-  } catch (err) {
-    console.error('Instagram callback error:', err);
-    res.status(500).json({
-      error: err instanceof Error ? err.message : 'Internal server error',
-    });
+    res.redirect('/instagram/success'); // O la ruta que desees
+  } catch (error: any) {
+    console.error('Error handling Instagram callback:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Error exchanging code or retrieving profile' });
   }
 });

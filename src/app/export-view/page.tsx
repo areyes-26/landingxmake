@@ -91,6 +91,24 @@ export default function ExportViewPage() {
       toast.error('Error downloading video');
     }
   };
+
+  const handleInstagramConnect = () => {
+    const state = crypto.randomUUID();
+    document.cookie = `instagram_state=${state}; path=/; max-age=600`;
+  
+    const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
+    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/instagramCallbackFn');
+    const scope = 'instagram_business_basic,instagram_business_content_publish';
+  
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth` +
+      `?client_id=${clientId}` +
+      `&redirect_uri=${redirectUri}` +
+      `&scope=${scope}` +
+      `&response_type=code` +
+      `&state=${state}`;
+  
+    window.location.href = authUrl;
+  };  
   
   const handleCopyText = (text: string, type: 'short' | 'long') => {
     navigator.clipboard.writeText(text);
@@ -242,7 +260,7 @@ export default function ExportViewPage() {
 
             <div className="actions-section">
               <div className="share-buttons">
-                <button className="share-btn share-btn-instagram" title="Share on Instagram" onClick={handleInstagramShare}>
+              <button className="share-btn share-btn-instagram" title="Connect Instagram" onClick={handleInstagramConnect}>
                   <Instagram className="w-6 h-6" />
                 </button>
                 <button className="share-btn share-btn-twitter" title="Share on Twitter" disabled>
