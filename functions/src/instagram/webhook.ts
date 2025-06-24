@@ -34,20 +34,26 @@ const COLLECTIONS = {
   MEDIA: 'instagram_media',
 } as const;
 
+function removeUndefined(obj: any) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+
 function logWebhookEvent(
   eventType: string,
   data: any,
   error?: Error
 ) {
-  const event = {
+  const event = removeUndefined({
     type: eventType,
     data,
     timestamp: admin.firestore.FieldValue.serverTimestamp(),
     error: error?.message,
-  };
+  });
   db.collection(COLLECTIONS.WEBHOOK_EVENTS)
     .add(event)
     .catch((err) => console.error('Error logging webhook event:', err));
+  console.log('event', event);
 }
 
 async function processMedia(changeValue: InstagramWebhookChange['value']) {
@@ -56,15 +62,15 @@ async function processMedia(changeValue: InstagramWebhookChange['value']) {
     const snap = await ref.get();
 
     if (!snap.exists) {
-      await ref.set({
+      await ref.set(removeUndefined({
         ...changeValue,
         processed: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      }));
     } else {
-      await ref.update({
+      await ref.update(removeUndefined({
         lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      }));
     }
 
     logWebhookEvent('media_processed', changeValue);
@@ -73,6 +79,7 @@ async function processMedia(changeValue: InstagramWebhookChange['value']) {
     logWebhookEvent('media_processing_error', changeValue, err instanceof Error ? err : undefined);
   }
 }
+
 
 export const instagramWebhook = functions
     .region('us-central1')
