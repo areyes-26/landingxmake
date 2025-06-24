@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, Timestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { VideoData } from '@/types/video';
 import './video-preview.css';
+
+const pollingIntervalMs = 2000;
+const maxPollingTimeMs = 60000; // 1 minuto máximo
 
 export default function VideoSettingsPage() {
   const params = useParams();
@@ -22,15 +25,40 @@ export default function VideoSettingsPage() {
   const [scriptCharCount, setScriptCharCount] = useState(0);
   const [shortCopyCharCount, setShortCopyCharCount] = useState(0);
   const [longCopyCharCount, setLongCopyCharCount] = useState(0);
+  const [showContent, setShowContent] = useState(false);
+  const [pollingError, setPollingError] = useState<string | null>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingStartTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (params.id) {
-      fetchVideoSettings(params.id as string);
-    } else {
-      setIsLoading(false);
-      setError('Video ID not found.');
+    let cancelled = false;
+    async function fetchAndMaybePoll() {
+      await fetchVideoSettings(params.id as string);
+      // Si no hay completion, iniciar polling
+      if (!hasCompletionFields(videoSettings)) {
+        pollingStartTimeRef.current = Date.now();
+        pollingRef.current = setInterval(async () => {
+          if (cancelled) return;
+          await fetchVideoSettings(params.id as string);
+        }, pollingIntervalMs);
+      }
     }
+    if (params.id) {
+      fetchAndMaybePoll();
+    }
+    return () => {
+      cancelled = true;
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, [params.id]);
+
+  // Nuevo efecto: detener polling cuando los datos estén completos
+  useEffect(() => {
+    if (hasCompletionFields(videoSettings) && pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, [videoSettings]);
 
   useEffect(() => {
     if (videoSettings) {
@@ -47,6 +75,26 @@ export default function VideoSettingsPage() {
     }
   }, [videoSettings, params.id, router]);
 
+  useEffect(() => {
+    function getCopyValue(copy: any) {
+      if (!copy) return '';
+      if (typeof copy === 'string') return copy;
+      if (typeof copy === 'object' && 'content' in copy) return copy.content;
+      return '';
+    }
+    const hasScript = !!getCopyValue(videoSettings?.script);
+    const hasShortCopy = !!getCopyValue(videoSettings?.shortCopy);
+    const hasLongCopy = !!getCopyValue(videoSettings?.longCopy);
+
+    console.log('Check showContent:', { hasScript, hasShortCopy, hasLongCopy, videoSettings });
+
+    if (hasScript && hasShortCopy && hasLongCopy) {
+      setShowContent(true);
+    } else {
+      setShowContent(false);
+    }
+  }, [videoSettings]);
+
   const fetchVideoSettings = async (videoId: string) => {
     try {
       setIsLoading(true);
@@ -57,16 +105,21 @@ export default function VideoSettingsPage() {
         return;
       }
       const data = videoDoc.data() as VideoData;
+      console.log('Video doc:', data);
       
       const completionRef = doc(db, 'completion_results_videos', videoId);
       const completionDoc = await getDoc(completionRef);
       if (completionDoc.exists()) {
         const completionData = completionDoc.data();
+        console.log('Completion doc:', completionData);
         data.script = completionData.script || data.script;
         data.shortCopy = completionData.shortCopy || data.shortCopy;
         data.longCopy = completionData.longCopy || data.longCopy;
+      } else {
+        console.log('No completion doc found');
       }
       setVideoSettings(data);
+      console.log('Set videoSettings:', data);
     } catch (error) {
       console.error('Error fetching video settings:', error);
       setError('Error loading video settings.');
@@ -227,26 +280,24 @@ export default function VideoSettingsPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-[#0c0d1f]">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
+  function hasCompletionFields(settings: any) {
+    function getCopyValue(copy: any) {
+      if (!copy) return '';
+      if (typeof copy === 'string') return copy;
+      if (typeof copy === 'object' && 'content' in copy) return copy.content;
+      return '';
+    }
+    return !!(settings && getCopyValue(settings.script) && getCopyValue(settings.shortCopy) && getCopyValue(settings.longCopy));
   }
 
-  if (error) {
+  if (isLoading || !showContent) {
     return (
-      <div className="flex justify-center items-center h-screen bg-[#0c0d1f]">
-        <div className="text-red-500">{error}</div>
-      </div>
-    );
-  }
-
-  if (!videoSettings) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-[#0c0d1f]">
-        <div className="text-white">Video data could not be loaded.</div>
+      <div className="generating-modern-bg">
+        <div className="generating-modern-center">
+          <div className="generating-modern-spinner" />
+          <div className="generating-modern-title">Generating your video content...</div>
+          <div className="generating-modern-sub">This may take a few seconds. Please wait while we prepare your script and social content.</div>
+        </div>
       </div>
     );
   }
@@ -255,9 +306,20 @@ export default function VideoSettingsPage() {
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">Video Preview</h1>
-        <button className="save-btn" onClick={handleSave} disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Save Changes'}
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {videoSettings && videoSettings.script && videoSettings.shortCopy && videoSettings.longCopy && !showContent && (
+            <button
+              className="reload-btn"
+              onClick={() => fetchVideoSettings(params.id as string)}
+              style={{ background: 'linear-gradient(90deg, #0ea5e9, #7c3aed)', color: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem 1.25rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(14,165,233,0.15)' }}
+            >
+              ⟳ Reload
+            </button>
+          )}
+          <button className="save-btn" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
       </div>
 
       <div className="section title-section">

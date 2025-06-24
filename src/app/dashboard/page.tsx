@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { VideoData } from '@/types/video';
 import { useAuth } from '@/hooks/useAuth';
@@ -75,6 +75,13 @@ export default function DashboardPage() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [videoToDownload, setVideoToDownload] = useState<VideoData | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingLoading, setOnboardingLoading] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [profession, setProfession] = useState('');
+  const [onboardingError, setOnboardingError] = useState<string | null>(null);
+  const [onboardingSuccess, setOnboardingSuccess] = useState<string | null>(null);
 
   // Fetch videos from Firestore
   useEffect(() => {
@@ -219,6 +226,49 @@ export default function DashboardPage() {
     }
   };
 
+  // Onboarding check
+  useEffect(() => {
+    if (!user) return;
+    const checkProfile = async () => {
+      const userRef = doc(db, 'user_data', user.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        if (!data.firstName || !data.lastName || !data.profession) {
+          setFirstName(data.firstName || '');
+          setLastName(data.lastName || '');
+          setProfession(data.profession || '');
+          setShowOnboarding(true);
+        }
+      }
+    };
+    checkProfile();
+  }, [user]);
+
+  const handleOnboardingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setOnboardingLoading(true);
+    setOnboardingError(null);
+    setOnboardingSuccess(null);
+    try {
+      const userRef = doc(db, 'user_data', user.uid);
+      await updateDoc(userRef, {
+        firstName,
+        lastName,
+        profession,
+      });
+      setOnboardingSuccess('Profile completed!');
+      setTimeout(() => {
+        setShowOnboarding(false);
+      }, 1000);
+    } catch (err: any) {
+      setOnboardingError('Error saving profile. Please try again.');
+    } finally {
+      setOnboardingLoading(false);
+    }
+  };
+
   if (authLoading || loading) {
     return <DashboardSkeleton />;
   }
@@ -259,7 +309,16 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className={styles.videosGrid}>
+        <div
+          className={styles.videosGrid}
+          style={processedVideos.length === 0 ? {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '50vh',
+            width: '100%',
+          } : {}}
+        >
           {processedVideos.length > 0 ? (
             processedVideos.map(video => (
               <div key={video.id} className={styles.videoCard}>
@@ -288,12 +347,38 @@ export default function DashboardPage() {
               </div>
             ))
           ) : (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}>🎬</div>
-              <h2>No videos found</h2>
-              <p>Start by creating a new video.</p>
-          </div>
-        )}
+            <div
+              className={styles.emptyState + ' enhanced-empty-state'}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '60vh',
+                width: '100%',
+                textAlign: 'center',
+              }}
+            >
+              <div
+                className={styles.emptyIcon + ' enhanced-empty-emoji'}
+                style={{ fontSize: '96px', marginBottom: '32px', opacity: 0.9, textAlign: 'center' }}
+              >
+                🎬
+              </div>
+              <h2
+                className="enhanced-empty-title"
+                style={{ fontSize: '2.75rem', fontWeight: 800, color: '#fff', marginBottom: '18px', letterSpacing: '0.5px', textAlign: 'center' }}
+              >
+                No videos found
+              </h2>
+              <p
+                className="enhanced-empty-desc"
+                style={{ fontSize: '1.5rem', color: '#b3b3b3', marginBottom: 0, fontWeight: 500, textAlign: 'center' }}
+              >
+                Start by creating a new video.
+              </p>
+            </div>
+          )}
         </div>
       </div>
       {showDeleteModal && (
@@ -318,6 +403,58 @@ export default function DashboardPage() {
             </div>
           </div>
     </div>
+      )}
+      {showOnboarding && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent} style={{ maxWidth: 420 }}>
+            <h2 className={styles.modalTitle}>Complete your profile</h2>
+            <p className={styles.modalText}>Please complete your profile to continue using the platform.</p>
+            <form onSubmit={handleOnboardingSubmit} className="space-y-4">
+              <div>
+                <label className="block text-base font-medium text-white/70 mb-1">First Name</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={e => setFirstName(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] text-white/90 focus:outline-none focus:border-[#0ea5e9] transition-colors"
+                  placeholder="Enter your first name"
+                />
+              </div>
+              <div>
+                <label className="block text-base font-medium text-white/70 mb-1">Last Name</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={e => setLastName(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] text-white/90 focus:outline-none focus:border-[#0ea5e9] transition-colors"
+                  placeholder="Enter your last name"
+                />
+              </div>
+              <div>
+                <label className="block text-base font-medium text-white/70 mb-1">Profession</label>
+                <input
+                  type="text"
+                  value={profession}
+                  onChange={e => setProfession(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] text-white/90 focus:outline-none focus:border-[#0ea5e9] transition-colors"
+                  placeholder="Enter your profession"
+                />
+              </div>
+              {onboardingError && <div className="text-red-400 text-center text-sm">{onboardingError}</div>}
+              {onboardingSuccess && <div className="text-green-400 text-center text-sm">{onboardingSuccess}</div>}
+              <button
+                type="submit"
+                className="w-full py-3 px-6 mt-2 bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white rounded-lg shadow-[0_4px_15px_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_8px_25px_rgba(14,165,233,0.4)] transition-all duration-300 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                disabled={onboardingLoading}
+              >
+                {onboardingLoading ? 'Saving...' : 'Complete profile'}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
     </>
   );

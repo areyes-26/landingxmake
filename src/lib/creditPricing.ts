@@ -5,7 +5,7 @@ export const CREDIT_COSTS = {
   baseVideo: 1,
   durations: {
     '30s': 0,
-    '1min': 2,
+    '1min': 1,
     '1.5min': 3
   },
   extras: {

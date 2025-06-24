@@ -13,6 +13,8 @@ import {
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import { doc, updateDoc, getDocs, query, collection, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function AuthPage() {
     const [isLogin, setIsLogin] = useState(true);
@@ -67,9 +69,9 @@ export default function AuthPage() {
                 const user = userCredential.user;
                 
                 await sendEmailVerification(user);
-                toast.success('Cuenta creada exitosamente. Por favor, verifica tu email.');
-                
-                await auth.signOut();
+                toast.success('Account created successfully. Please check your email to verify.');
+                const idToken = await user.getIdToken(true);
+                await handleSessionLogin(idToken);
                 setIsLogin(true);
                 setEmail('');
                 setPassword('');
@@ -143,10 +145,14 @@ export default function AuthPage() {
                 >
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
-                Volver al inicio
+                Back to home
             </button>
 
-            <div className="w-full max-w-2xl p-12 mx-4 bg-[#0c0d1f] rounded-2xl shadow-[0_8px_40px_rgba(14,165,233,0.15)] border border-[rgba(14,165,233,0.15)]">
+            <div className="w-full max-w-[95vw] mx-auto p-12 bg-[#0c0d1f] rounded-2xl shadow-[0_8px_40px_rgba(14,165,233,0.15)] border border-[rgba(14,165,233,0.15)]
+                sm:p-2
+                md:max-w-lg md:p-8
+                lg:max-w-2xl lg:p-12
+            ">
                 <div className="flex justify-center mb-12">
                     <div className="flex items-center gap-4 text-4xl font-semibold text-[#0ea5e9]">
                         <div className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] rounded-lg flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(14,165,233,0.3)]">
@@ -235,7 +241,7 @@ export default function AuthPage() {
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-[#0c0d1f] px-2 text-white/50">
-                                O continúa con
+                                OR CONTINUE WITH
                             </span>
                         </div>
                     </div>
@@ -280,12 +286,12 @@ export default function AuthPage() {
                 <div className="text-center mt-8 space-y-2">
                     {isLogin && (
                     <p className="text-sm text-white/50">
-                        ¿Olvidaste tu contraseña?{' '}
+                        Forgot your password?{' '}
                         <button
                             onClick={() => router.push('/auth/forgot-password')}
                             className="text-[#0ea5e9] hover:underline"
                         >
-                            Recuperar contraseña
+                            Recover password
                         </button>
                     </p>
                     )}

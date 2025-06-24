@@ -136,6 +136,11 @@ export default function VideoFormsPage() {
 
   const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showInsufficientCreditsModal, setShowInsufficientCreditsModal] = useState(false);
+  const [insufficientCreditsData, setInsufficientCreditsData] = useState<{
+    required: number;
+    current: number;
+  } | null>(null);
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarOption | null>(null);
   const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>([]);
   const [loadingAvatars, setLoadingAvatars] = useState(true);
@@ -214,7 +219,8 @@ export default function VideoFormsPage() {
 
       if (!response.ok) {
         if (response.status === 403 && data.error === 'Not enough credits') {
-          setStatus(`You don't have enough credits to create this video. Required credits: ${data.required}, your credits: ${data.current}`);
+          setShowInsufficientCreditsModal(true);
+          setInsufficientCreditsData({ required: data.required, current: data.current });
           setIsLoading(false);
           return;
         }
@@ -444,6 +450,27 @@ export default function VideoFormsPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isToneDropdownOpen]);
+
+  // Cerrar modal con Escape
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && showInsufficientCreditsModal) {
+        setShowInsufficientCreditsModal(false);
+      }
+    }
+    
+    if (showInsufficientCreditsModal) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [showInsufficientCreditsModal]);
 
   return (
     <div className="video-forms-container">
@@ -694,6 +721,18 @@ export default function VideoFormsPage() {
               <div className="video-forms-credits-info">
                 <div className="video-forms-credits-icon">💎</div>
                 <span>{currentCost} credits</span>
+                {creditsWarning && (
+                  <div className="video-forms-low-credits-warning">
+                    <span className="video-forms-warning-icon">⚠️</span>
+                    <span className="video-forms-warning-text">Low credits</span>
+                    <Link 
+                      href="/account-setting/credit-topup" 
+                      className="video-forms-topup-link"
+                    >
+                      Top up
+                    </Link>
+                  </div>
+                )}
                 {/* {userPlan !== 'pro' && (
                   <div className="video-forms-upgrade-plan-button">
                     <Link 
@@ -763,6 +802,61 @@ export default function VideoFormsPage() {
             }`}>
               {status}
             </p>
+          </div>
+        )}
+
+        {/* Insufficient Credits Modal */}
+        {showInsufficientCreditsModal && insufficientCreditsData && (
+          <div 
+            className="video-forms-modal-overlay"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowInsufficientCreditsModal(false);
+              }
+            }}
+          >
+            <div className="video-forms-modal">
+              <div className="video-forms-modal-header">
+                <div className="video-forms-modal-icon">💎</div>
+                <h3 className="video-forms-modal-title">Insufficient Credits</h3>
+              </div>
+              
+              <div className="video-forms-modal-content">
+                <p className="video-forms-modal-message">
+                  You don't have enough credits to create this video.
+                </p>
+                
+                <div className="video-forms-credits-breakdown">
+                  <div className="video-forms-credit-item">
+                    <span className="video-forms-credit-label">Required:</span>
+                    <span className="video-forms-credit-value required">{insufficientCreditsData.required} credits</span>
+                  </div>
+                  <div className="video-forms-credit-item">
+                    <span className="video-forms-credit-label">Your balance:</span>
+                    <span className="video-forms-credit-value current">{insufficientCreditsData.current} credits</span>
+                  </div>
+                  <div className="video-forms-credit-item">
+                    <span className="video-forms-credit-label">Missing:</span>
+                    <span className="video-forms-credit-value missing">{insufficientCreditsData.required - insufficientCreditsData.current} credits</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="video-forms-modal-actions">
+                <button
+                  onClick={() => setShowInsufficientCreditsModal(false)}
+                  className="video-forms-modal-button secondary"
+                >
+                  Cancel
+                </button>
+                <Link
+                  href="/account-setting/credit-topup"
+                  className="video-forms-modal-button primary"
+                >
+                  💎 Top Up Credits
+                </Link>
+              </div>
+            </div>
           </div>
         )}
       </div>

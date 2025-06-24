@@ -83,31 +83,12 @@ export async function POST(req: NextRequest) {
       .filter(([_, value]) => !value)
       .map(([key]) => key);
 
-    // Si faltan campos requeridos, guardar como draft y NO generar script
+    // Si faltan campos requeridos, retornar error y NO guardar nada
     if (missingFields.length > 0) {
-      const draftData = {
-        videoTitle,
-        description,
-        topic,
-        avatarId,
-        callToAction,
-        specificCallToAction,
-        tone,
-        email,
-        duration,
-        voiceId,
-        voiceDetails,
-        status: 'draft',
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-        userId
-      };
-      const draftDocRef = await db.collection('videos').add(draftData);
       return NextResponse.json({
-        success: true,
-        message: 'Draft saved successfully',
-        firestoreId: draftDocRef.id
-      });
+        error: 'Missing required fields',
+        missingFields
+      }, { status: 400 });
     }
 
     // 4.1) Leer créditos del usuario y calcular costo
@@ -130,14 +111,14 @@ export async function POST(req: NextRequest) {
       baseVideo: 1,
       durations: {
         '30s': 0,
-        '1min': 2,
+        '1min': 1,
         '1.5min': 3
       }
     };
     let videoDuration = duration;
     if (videoDuration === '60s') videoDuration = '1min';
     if (videoDuration === '90s') videoDuration = '1.5min';
-    const durationCost = CREDIT_COSTS.durations[videoDuration as keyof typeof CREDIT_COSTS.durations] || 1;
+    const durationCost = CREDIT_COSTS.durations[videoDuration as keyof typeof CREDIT_COSTS.durations] || 0;
     const totalCost = CREDIT_COSTS.baseVideo + durationCost;
 
     if (userCredits < totalCost) {
