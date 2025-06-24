@@ -6,7 +6,7 @@ import * as crypto from 'crypto';
 import axios from 'axios';
 import { instagramCallback } from './instagram/callback';
 import { checkVideoStatus } from './instagram/videoStatusChecker';
-import { instagramWebhook } from './instagram/webhook';
+import { instagramWebhook as instagramWebhookHandler} from './instagram/webhook';
 import { HeyGenAPI } from './lib/heygen';
 
 console.log('Firebase Functions loaded.');
@@ -78,10 +78,10 @@ export const instagramCallbackFn = functions
   .https.onRequest(instagramCallback);
 
 // === Instagram Webhook POST (procesa media) ===
-export const instagramWebhookFn = functions
+export const instagramWebhook = functions
   .region('us-central1')
   .runWith({ timeoutSeconds: 60 })
-  .https.onRequest(instagramWebhook);
+  .https.onRequest(instagramWebhookHandler);
 
 // === Firestore Trigger: nuevo video ===
 export { onVideoCreated } from './onVideoCreated';

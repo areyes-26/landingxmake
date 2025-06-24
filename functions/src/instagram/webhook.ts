@@ -92,12 +92,17 @@ export const instagramWebhook = functions
 
     // VERIFICACIÓN (GET)
     if (req.method === 'GET') {
-      const mode = req.query['hub.mode'];
-      const token = req.query['hub.verify_token'];
-      const challenge = req.query['hub.challenge'];
+      const mode = String(req.query['hub.mode']);
+      const token = String(req.query['hub.verify_token']);
+      const challenge = String(req.query['hub.challenge']);
+      console.log('mode', mode);
+      console.log('token', token);
+      console.log('challenge', challenge);  
+      console.log('cfg.verify_token', cfg.verify_token);
 
       if (mode !== 'subscribe' || token !== cfg.verify_token) {
         logWebhookEvent('verification_error', { mode, token });
+        console.log('verification_error', { mode, token });
         res.status(403).send('Forbidden');
         return;
       }
