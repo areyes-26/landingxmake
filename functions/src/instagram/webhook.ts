@@ -115,10 +115,15 @@ export const instagramWebhook = functions
     // RECEPCIÓN DE EVENTOS (POST)
     if (req.method === 'POST') {
       // Firma HMAC SHA256
-      const signatureHeader = req.headers['x-hub-signature-256'];
-      const signature = Array.isArray(signatureHeader)
-        ? signatureHeader[0]
-        : signatureHeader;
+      const rawSignatureHeader = req.headers['x-hub-signature-256'];
+      const signatureHeader = typeof rawSignatureHeader === 'string'
+        ? rawSignatureHeader
+        : Array.isArray(rawSignatureHeader)
+          ? rawSignatureHeader[0]
+          : undefined;
+      console.log('signatureHeader', signatureHeader);
+      const signature = signatureHeader;
+      console.log('signature', signature);
 
       if (!signature) {
         logWebhookEvent('signature_error', { error: 'Missing signature' });
@@ -145,11 +150,15 @@ export const instagramWebhook = functions
         .update(bodyString)
         .digest('hex');
 
-      if (hash !== expected) {
-        logWebhookEvent('signature_error', { error: 'Hash mismatch', body: req.body });
-        res.status(401).send('Unauthorized');
-        return;
-      }
+        if (hash !== expected) {
+          logWebhookEvent('signature_error', {
+            error: 'Hash mismatch',
+            ...(signatureHeader && { header: signatureHeader }),
+            ...(req.body && { body: req.body }),
+          });
+          res.status(401).send('Unauthorized');
+          return;
+        }
 
       // Acknowledge receipt
       res.status(200).send('EVENT_RECEIVED');
