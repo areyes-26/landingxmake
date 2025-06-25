@@ -2,40 +2,17 @@ import * as functions from 'firebase-functions/v1';
 import { db } from '../lib/firebase-admin';
 import axios from 'axios';
 
-// Cookie parser
-function parseCookies(cookieHeader: string | undefined): Record<string, string> {
-  const cookies: Record<string, string> = {};
-  if (!cookieHeader) return cookies;
-
-  cookieHeader.split(';').forEach(cookie => {
-    const [name, value] = cookie.trim().split('=');
-    if (name && value) {
-      cookies[name] = decodeURIComponent(value);
-    }
-  });
-
-  return cookies;
-}
-
 export const instagramCallback = functions.https.onRequest(async (req, res) => {
   const cfg = functions.config().instagram;
   const { client_id, client_secret, redirect_uri } = cfg;
 
-  const cookies = parseCookies(req.headers.cookie);
   const { code, state } = req.query as { code?: string; state?: string };
 
-  // LOGS antes de la validación
-console.log('[instagramCallback] code:', code);
-console.log('[instagramCallback] state:', state);
-console.log('[instagramCallback] cookies:', cookies);
+  console.log('[instagramCallback] code:', code);
+  console.log('[instagramCallback] state:', state);
 
   if (!code || !state) {
     res.status(400).json({ error: 'Missing code or state' });
-    return;
-  }
-
-  if (cookies.instagram_state !== state) {
-    res.status(403).json({ error: 'Invalid state value' });
     return;
   }
 
@@ -52,7 +29,7 @@ console.log('[instagramCallback] cookies:', cookies);
 
     const { access_token } = tokenResponse.data;
 
-    // Paso 2: Obtener la cuenta de usuario vinculada al token
+    // Paso 2: Obtener el perfil del usuario
     const meResponse = await axios.get('https://graph.facebook.com/v18.0/me', {
       params: {
         access_token,
@@ -62,7 +39,7 @@ console.log('[instagramCallback] cookies:', cookies);
 
     const { id, name } = meResponse.data;
 
-    // Paso 3: Guardar token y datos en Firestore
+    // Paso 3: Guardar en Firestore
     await db.collection('instagram_tokens').doc(id).set({
       accessToken: access_token,
       userId: id,
@@ -70,7 +47,8 @@ console.log('[instagramCallback] cookies:', cookies);
       createdAt: Date.now(),
     });
 
-    res.redirect('/instagram/success'); // O la ruta que desees
+    // 🔁 Redirigir correctamente al frontend
+    res.redirect('https://landing-videos-generator-06--landing-x-make.us-central1.web.app/instagram/success');
   } catch (error: any) {
     console.error('Error handling Instagram callback:', error.response?.data || error.message);
     res.status(500).json({ error: 'Error exchanging code or retrieving profile' });
