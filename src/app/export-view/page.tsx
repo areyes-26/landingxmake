@@ -97,7 +97,7 @@ export default function ExportViewPage() {
     document.cookie = `instagram_state=${state}; path=/; max-age=600`;
   
     const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
-    const redirectUri = 'https://us-central1-landing-x-make.cloudfunctions.net/instagramCallbackFn';
+    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/instagramCallbackFn');
     const scope = 'instagram_business_basic,instagram_business_content_publish';
   
     const authUrl = `https://www.facebook.com/v18.0/dialog/oauth` +
@@ -108,7 +108,8 @@ export default function ExportViewPage() {
       `&state=${state}`;
   
     window.location.href = authUrl;
-  };  
+  };
+   
   
   const handleCopyText = (text: string, type: 'short' | 'long') => {
     navigator.clipboard.writeText(text);

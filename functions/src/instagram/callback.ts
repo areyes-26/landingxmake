@@ -24,6 +24,11 @@ export const instagramCallback = functions.https.onRequest(async (req, res) => {
   const cookies = parseCookies(req.headers.cookie);
   const { code, state } = req.query as { code?: string; state?: string };
 
+  // LOGS antes de la validación
+console.log('[instagramCallback] code:', code);
+console.log('[instagramCallback] state:', state);
+console.log('[instagramCallback] cookies:', cookies);
+
   if (!code || !state) {
     res.status(400).json({ error: 'Missing code or state' });
     return;
