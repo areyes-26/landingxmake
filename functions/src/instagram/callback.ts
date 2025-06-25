@@ -10,7 +10,6 @@ export const instagramCallback = functions.https.onRequest(async (req, res) => {
 
   console.log('[instagramCallback] code:', code);
   console.log('[instagramCallback] state:', state);
-  console.log('[instagramCallback] redirect_uri:', redirect_uri);
 
   if (!code || !state) {
     console.error('[ERROR] Missing code or state');
@@ -19,8 +18,8 @@ export const instagramCallback = functions.https.onRequest(async (req, res) => {
   }
 
   try {
-    console.log('[STEP] Exchanging code for token...');
-    const tokenResponse = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+    console.log('[STEP] Exchanging code for access token...');
+    const tokenRes = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
       params: {
         client_id,
         client_secret,
@@ -29,40 +28,28 @@ export const instagramCallback = functions.https.onRequest(async (req, res) => {
       },
     });
 
-    console.log('[TOKEN RESPONSE]', tokenResponse.data);
-
-    const access_token = tokenResponse.data.access_token;
+    const { access_token, token_type, expires_in } = tokenRes.data;
+    console.log('[TOKEN RESPONSE]', tokenRes.data);
 
     if (!access_token) {
-      console.error('[ERROR] No access_token in tokenResponse');
+      console.error('[ERROR] No access_token received');
       res.status(500).json({ error: 'No access_token returned' });
       return;
     }
 
-    console.log('[STEP] Fetching user profile...');
-    const meResponse = await axios.get('https://graph.facebook.com/v18.0/me', {
-      params: {
-        access_token,
-        fields: 'id,name',
-      },
-    });
-
-    console.log('[PROFILE RESPONSE]', meResponse.data);
-
-    const { id, name } = meResponse.data;
-
-    await db.collection('instagram_tokens').doc(id).set({
+    // Guardamos token básico asociado a un ID de sesión (por ahora sin perfil)
+    await db.collection('instagram_tokens').doc(state).set({
       accessToken: access_token,
-      userId: id,
-      name,
+      tokenType: token_type,
+      expiresIn: expires_in,
       createdAt: Date.now(),
     });
 
-    console.log('[SUCCESS] Token and profile saved. Redirecting...');
+    console.log('[SUCCESS] Token saved. Redirecting...');
     res.redirect('https://landing-videos-generator-06--landing-x-make.us-central1.web.app/instagram/success');
   } catch (error: any) {
     const raw = error.response?.data || error.message;
     console.error('[ERROR] Failed during OAuth flow:', raw);
-    res.status(500).json({ error: 'Error exchanging code or retrieving profile', detail: raw });
+    res.status(500).json({ error: 'Error exchanging code', detail: raw });
   }
 });

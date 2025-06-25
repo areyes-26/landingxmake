@@ -1,25 +1,73 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function InstagramSuccessPage() {
   const router = useRouter();
+  const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
+  const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      router.push('/dashboard');
-    }, 3000);
+    const fetchInstagramToken = async () => {
+      const state = localStorage.getItem('instagram_oauth_state');
+      if (!state) {
+        setStatus('error');
+        return;
+      }
 
-    return () => clearTimeout(timeout);
+      try {
+        const docRef = doc(db, 'instagram_tokens', state);
+        const snapshot = await getDoc(docRef);
+
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setName(data.name || null);
+          setStatus('done');
+
+          // Redirigir automáticamente
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 3000);
+        } else {
+          setStatus('error');
+        }
+      } catch (err) {
+        console.error('Error fetching Instagram token:', err);
+        setStatus('error');
+      }
+    };
+
+    fetchInstagramToken();
   }, [router]);
+
+  if (status === 'loading') {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-center px-4">
+        <h1 className="text-xl font-semibold">Conectando con Instagram...</h1>
+        <p className="text-muted-foreground">Un momento, por favor.</p>
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-center px-4">
+        <h1 className="text-xl font-bold text-red-600">❌ Error al conectar con Instagram</h1>
+        <p className="text-muted-foreground">Intenta nuevamente más tarde.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center h-screen text-center px-4">
-      <h1 className="text-3xl font-bold mb-4">✅ Instagram connected successfully</h1>
-      <p className="text-muted-foreground">
-        You’ll be redirected shortly...
+      <h1 className="text-3xl font-bold mb-4">✅ Cuenta conectada</h1>
+      <p className="text-muted-foreground mb-2">
+        Bienvenido, {name || 'usuario'}.
       </p>
+      <p className="text-muted-foreground">Serás redirigido en unos segundos...</p>
     </div>
   );
 }
