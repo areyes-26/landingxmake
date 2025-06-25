@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, doc as docFS } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ import { RiTwitterXFill } from 'react-icons/ri';
 import type { VideoData } from '@/types/video';
 import './custom-scrollbar.css';
 import './export-view.css';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ExportViewPage() {
   const router = useRouter();
@@ -23,6 +24,11 @@ export default function ExportViewPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [copied, setCopied] = useState<'short' | 'long' | null>(null);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const { user } = useAuth();
+  const [showYouTubeModal, setShowYouTubeModal] = useState(false);
+  const [ytTitle, setYtTitle] = useState('');
+  const [ytDescription, setYtDescription] = useState('');
+  const [ytLoading, setYtLoading] = useState(false);
 
   useEffect(() => {
     if (!videoId) {
@@ -92,35 +98,6 @@ export default function ExportViewPage() {
     }
   };
 
-  const handleInstagramConnect = () => {
-    const state = crypto.randomUUID();
-    localStorage.setItem('instagram_oauth_state', state); // ✅ Guardamos el estado
-  
-    const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
-    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/instagramCallbackFn');
-  
-    const scope = ['public_profile', 'email'].join(',');
-  
-    const authUrl =
-      `https://www.facebook.com/v18.0/dialog/oauth` +
-      `?client_id=${clientId}` +
-      `&redirect_uri=${redirectUri}` +
-      `&scope=${scope}` +
-      `&response_type=code` +
-      `&state=${state}`;
-  
-    window.location.href = authUrl;
-  };
-  
-   
-  
-  const handleCopyText = (text: string, type: 'short' | 'long') => {
-    navigator.clipboard.writeText(text);
-    setCopied(type);
-    toast.success('Text copied to clipboard');
-    setTimeout(() => setCopied(null), 2000);
-  };
-
   const handleInstagramShare = () => {
     window.open('https://www.instagram.com/', '_blank');
   };
@@ -171,6 +148,79 @@ export default function ExportViewPage() {
   
     return 'Invalid Date';
   }
+
+  const handleYouTubeExport = () => {
+    if (!user) {
+      toast.error('You must be logged in to export to YouTube.');
+      return;
+    }
+    if (!videoData) {
+      toast.error('No video data available.');
+      return;
+    }
+    setYtTitle(videoData.videoTitle || 'Video from LandingXMake');
+    let shortCopy: any = videoData.shortCopy;
+    if (shortCopy && typeof shortCopy === 'object' && 'content' in shortCopy) {
+      shortCopy = shortCopy.content;
+    }
+    setYtDescription(shortCopy || '');
+    setShowYouTubeModal(true);
+  };
+
+  const confirmYouTubeExport = async () => {
+    if (!user || !videoData) return;
+    setYtLoading(true);
+    try {
+      const downloadUrl = videoData.heygenResults?.videoUrl || videoData.videoUrl;
+      if (!downloadUrl) {
+        toast.error('No video available for upload.');
+        setYtLoading(false);
+        return;
+      }
+      let descriptionToSend: any = ytDescription;
+      if (descriptionToSend && typeof descriptionToSend === 'object' && 'content' in descriptionToSend) {
+        descriptionToSend = descriptionToSend.content;
+      }
+      const res = await fetch('/api/youtube/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoUrl: downloadUrl,
+          title: ytTitle,
+          description: descriptionToSend,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'YouTube upload failed');
+      }
+      setShowYouTubeModal(false);
+      toast.success(
+        <span>
+          Video uploaded to YouTube!<br />
+          <a href={data.videoUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>
+            View on YouTube
+          </a><br />
+          <a href={`https://studio.youtube.com/video/${data.videoId}/edit`} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>
+            Edit in YouTube Studio
+          </a>
+        </span>,
+        { duration: 12000 }
+      );
+    } catch (err: any) {
+      console.error('YouTube upload error:', err);
+      toast.error('Failed to upload video to YouTube: ' + (err.message || err));
+    } finally {
+      setYtLoading(false);
+    }
+  };
+
+  const handleCopyText = (text: string, type: 'short' | 'long') => {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    toast.success('Text copied to clipboard');
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   if (!videoData) {
     return (
@@ -264,7 +314,7 @@ export default function ExportViewPage() {
 
             <div className="actions-section">
               <div className="share-buttons">
-              <button className="share-btn share-btn-instagram" title="Connect Instagram" onClick={handleInstagramConnect}>
+              <button className="share-btn share-btn-instagram" title="Connect Instagram" disabled>
                   <Instagram className="w-6 h-6" />
                 </button>
                 <button className="share-btn share-btn-twitter" title="Share on Twitter" disabled>
@@ -276,7 +326,7 @@ export default function ExportViewPage() {
                 <button className="share-btn share-btn-tiktok" title="Share on TikTok" onClick={handleTikTokShare}>
                   <SiTiktok className="w-6 h-6" />
                 </button>
-                <button className="share-btn share-btn-youtube" title="Share on YouTube" disabled>
+                <button className="share-btn share-btn-youtube" title="Export to YouTube" onClick={handleYouTubeExport}>
                   <SiYoutube className="w-6 h-6" />
                 </button>
               </div>
@@ -298,6 +348,48 @@ export default function ExportViewPage() {
             </div>
           </div>
     </div>
+      )}
+      {showYouTubeModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#23263a', borderRadius: 18, padding: 32, minWidth: 380, maxWidth: 500, boxShadow: '0 8px 32px #000a', color: '#fff', display: 'flex', flexDirection: 'column', gap: 18, border: '1.5px solid #31344b' }}>
+            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, textAlign: 'center', letterSpacing: 0.2 }}>Export to YouTube</h3>
+            <label style={{ fontWeight: 500, fontSize: 15, marginBottom: 2 }}>Title</label>
+            <input
+              style={{ padding: '0.5rem', borderRadius: 8, border: '1.5px solid #31344b', background: '#181c2a', color: '#fff', fontSize: 15, marginBottom: 8, outline: 'none', fontWeight: 500 }}
+              value={ytTitle}
+              onChange={e => setYtTitle(e.target.value)}
+              maxLength={100}
+            />
+            <label style={{ fontWeight: 500, fontSize: 15, marginBottom: 2 }}>Description</label>
+            <textarea
+              className="custom-scrollbar"
+              style={{ padding: '0.5rem', borderRadius: 8, border: '1.5px solid #31344b', background: '#181c2a', color: '#fff', fontSize: 15, minHeight: 220, marginBottom: 8, outline: 'none', fontWeight: 500, resize: 'none', maxHeight: 400 }}
+              value={ytDescription}
+              onChange={e => setYtDescription(e.target.value)}
+              maxLength={5000}
+            />
+            <div style={{ fontSize: 13, color: '#a3a3a3', marginBottom: 8, textAlign: 'center' }}>
+              You can edit the video in YouTube Studio after upload.<br />
+              The video will be uploaded as <b>private</b> by default.
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 8, justifyContent: 'center' }}>
+              <button
+                onClick={confirmYouTubeExport}
+                disabled={ytLoading}
+                style={{ background: 'linear-gradient(90deg,#e52d27,#b31217)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.5rem', fontWeight: 600, minWidth: 140, cursor: ytLoading ? 'not-allowed' : 'pointer', opacity: ytLoading ? 0.7 : 1, fontSize: 16, boxShadow: '0 2px 8px #0002' }}
+              >
+                {ytLoading ? 'Exporting...' : 'Confirm export'}
+              </button>
+              <button
+                onClick={() => setShowYouTubeModal(false)}
+                disabled={ytLoading}
+                style={{ background: 'transparent', color: '#fff', border: '1.5px solid #fff', borderRadius: 8, padding: '0.5rem 1.5rem', fontWeight: 600, minWidth: 110, cursor: ytLoading ? 'not-allowed' : 'pointer', opacity: ytLoading ? 0.7 : 1, fontSize: 16 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

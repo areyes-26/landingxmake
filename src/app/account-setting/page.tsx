@@ -8,10 +8,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import "./stripe-buy-button-fix.css";
 import { useAuth } from "@/hooks/useAuth";
 import { db, auth } from "@/lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { toast } from 'sonner';
 import './account-setting.css';
+import { Instagram, Power } from 'lucide-react';
+import { SiYoutube } from 'react-icons/si';
 
 const AccountSettings = ({ user, handlePasswordReset, showPasswordAlert }: any) => {
     const [firstName, setFirstName] = useState("");
@@ -190,67 +192,305 @@ const Pricing = ({ user, userPlan, isLoading, handleStripeCheckout, handleSelect
     </section>
 )};
 
+// Handler para conectar Instagram (migrado desde export-view)
+const handleInstagramConnect = () => {
+    const state = crypto.randomUUID();
+    localStorage.setItem('instagram_oauth_state', state);
+    const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
+    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/instagramCallbackFn');
+    const scope = ['public_profile', 'email'].join(',');
+    const authUrl =
+        `https://www.facebook.com/v18.0/dialog/oauth` +
+        `?client_id=${clientId}` +
+        `&redirect_uri=${redirectUri}` +
+        `&scope=${scope}` +
+        `&response_type=code` +
+        `&state=${state}`;
+    window.location.href = authUrl;
+};
+
+const handleYouTubeConnect = () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const isLocal = process.env.NODE_ENV === 'development';
+  
+    const redirectUri = encodeURIComponent(
+      isLocal
+        ? 'http://localhost:3000/api/youtube/callback'
+        : 'https://landing-videos-generator-06--landing-x-make.us-central1.web.app/api/youtube/callback' // dominio real de producción
+    );
+  
+    const scope = encodeURIComponent(
+      'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/userinfo.profile'
+    );
+  
+    const state = crypto.randomUUID();
+  
+    const authUrl =
+      `https://accounts.google.com/o/oauth2/v2/auth` +
+      `?client_id=${clientId}` +
+      `&redirect_uri=${redirectUri}` +
+      `&response_type=code` +
+      `&scope=${scope}` +
+      `&access_type=offline` +
+      `&prompt=consent` +
+      `&state=${state}`;
+  
+    window.location.href = authUrl;
+  };
+  
+
+const badgeBase = {
+    padding: '0.25rem 0.9rem',
+    borderRadius: '999px',
+    fontSize: '0.95rem',
+    fontWeight: 500,
+    display: 'flex',
+    alignItems: 'center',
+    border: '1px solid',
+    minWidth: 120,
+    justifyContent: 'center',
+    letterSpacing: 0.2,
+};
+
+const Connections = () => {
+    const { user } = useAuth();
+    const [youtubeConnected, setYoutubeConnected] = useState(false);
+    const [youtubeProfile, setYoutubeProfile] = useState<any>(null);
+    // Instagram: placeholder
+    const [instagramConnected, setInstagramConnected] = useState(false);
+    const [instagramProfile, setInstagramProfile] = useState<any>(null);
+
+    useEffect(() => {
+        if (!user) return;
+        // YouTube: consultar Firestore
+        const fetchYouTube = async () => {
+            const ytRef = doc(db, "youtube_tokens", user.uid);
+            const ytSnap = await getDoc(ytRef);
+            if (ytSnap.exists()) {
+                setYoutubeConnected(true);
+                setYoutubeProfile(ytSnap.data().profile || null);
+            } else {
+                setYoutubeConnected(false);
+                setYoutubeProfile(null);
+            }
+        };
+        fetchYouTube();
+        // Instagram: placeholder (futuro: consultar Firestore)
+    }, [user]);
+
+    const handleYouTubeDisconnect = async () => {
+        if (!user) return;
+        await deleteDoc(doc(db, "youtube_tokens", user.uid));
+        setYoutubeConnected(false);
+        setYoutubeProfile(null);
+        toast.success("YouTube disconnected!");
+    };
+
+    // Instagram: placeholder de desconexión
+    const handleInstagramDisconnect = async () => {
+        setInstagramConnected(false);
+        setInstagramProfile(null);
+        toast.success("Instagram disconnected!");
+    };
+
+    // Estilos inline para el rediseño
+    const infoStyle = { display: 'flex', flexDirection: 'column' as const, gap: 2 };
+    const titleStyle = { display: 'flex', alignItems: 'center', fontWeight: 500, fontSize: 18, gap: 8 };
+    const accountStyle = { fontSize: 13, color: '#a3a3a3', marginLeft: 2 };
+    const actionsStyle = { display: 'flex', alignItems: 'center', gap: 12 };
+    const badgeConnected = {
+        background: '#23263a',
+        color: '#4ade80',
+        border: '1px solid #4ade80',
+        borderRadius: '999px',
+        padding: '0.18rem 0.8rem',
+        fontSize: '0.92rem',
+        fontWeight: 500,
+    };
+    const disconnectBtn = {
+        background: 'transparent',
+        color: '#ef4444',
+        border: '1.5px solid #ef4444',
+        borderRadius: 8,
+        padding: '0.35rem 1.1rem',
+        fontWeight: 500,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        transition: 'background 0.2s, color 0.2s',
+        cursor: 'pointer',
+    };
+    const disconnectBtnHover = {
+        background: '#ef4444',
+        color: '#fff',
+    };
+
+    return (
+        <section className="content-section active" id="connections">
+            <h2 className="section-title">Connections</h2>
+            <p className="section-description">Connect your social media accounts and other platforms.</p>
+            <div className="integrations-list" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 500 }}>
+                {/* Instagram (placeholder, preparado para futuro) */}
+                <div className="integration-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#181c2a', padding: '1rem', borderRadius: 12, flexWrap: 'wrap', gap: 12 }}>
+                    <div style={infoStyle}>
+                        <span style={titleStyle}>
+                            <Instagram style={{ color: '#E1306C' }} className="w-6 h-6" /> Instagram
+                        </span>
+                        {instagramConnected && (
+                            <span style={accountStyle}>
+                                Account: <b>{instagramProfile?.name || 'Instagram User'}</b>
+                            </span>
+                        )}
+                    </div>
+                    <div style={actionsStyle}>
+                        {instagramConnected ? (
+                            <>
+                                <span style={badgeConnected}>Connected</span>
+                                <button
+                                    style={disconnectBtn}
+                                    onClick={handleInstagramDisconnect}
+                                    onMouseOver={e => Object.assign(e.currentTarget.style, disconnectBtnHover)}
+                                    onMouseOut={e => Object.assign(e.currentTarget.style, disconnectBtn)}
+                                >
+                                    <Power size={16} style={{ marginRight: 4 }} /> Disconnect
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                className="integration-btn"
+                                style={{
+                                    background: 'linear-gradient(90deg,#1a2980,#26d0ce)',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: 6,
+                                    padding: '0.5rem 1.2rem',
+                                    fontWeight: 500,
+                                    minWidth: 100,
+                                    cursor: 'pointer',
+                                }}
+                                onClick={() => {
+                                    setInstagramConnected(true);
+                                    // handleInstagramConnect(); // Cuando esté lista la integración real
+                                }}
+                            >
+                                Connect
+                            </button>
+                        )}
+                    </div>
+                </div>
+                {/* YouTube */}
+                <div className="integration-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#181c2a', padding: '1rem', borderRadius: 12, flexWrap: 'wrap', gap: 12 }}>
+                    <div style={infoStyle}>
+                        <span style={titleStyle}>
+                            <SiYoutube style={{ color: '#FF0000' }} className="w-6 h-6" /> YouTube
+                        </span>
+                        {youtubeConnected && youtubeProfile && (
+                            <span style={accountStyle}>
+                                Account: <b>{youtubeProfile.name || youtubeProfile.email || youtubeProfile.id}</b>
+                            </span>
+                        )}
+                    </div>
+                    <div style={actionsStyle}>
+                        {youtubeConnected ? (
+                            <>
+                                <span style={badgeConnected}>Connected</span>
+                                <button
+                                    style={disconnectBtn}
+                                    onClick={handleYouTubeDisconnect}
+                                    onMouseOver={e => Object.assign(e.currentTarget.style, disconnectBtnHover)}
+                                    onMouseOut={e => Object.assign(e.currentTarget.style, disconnectBtn)}
+                                >
+                                    <Power size={16} style={{ marginRight: 4 }} /> Disconnect
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                className="integration-btn"
+                                style={{
+                                    background: 'linear-gradient(90deg,#232526,#414345)',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: 6,
+                                    padding: '0.5rem 1.2rem',
+                                    fontWeight: 500,
+                                    minWidth: 100,
+                                    cursor: 'pointer',
+                                }}
+                                onClick={() => {
+                                    handleYouTubeConnect();
+                                }}
+                            >
+                                Connect
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
 function AccountSettingPageContent() {
     const searchParams = useSearchParams();
     const initialSection = searchParams.get('section') || 'account';
     const [section, setSection] = useState(initialSection);
-  const { user } = useAuth();
-  const [userPlan, setUserPlan] = useState<string | null>(null);
+    const { user } = useAuth();
+    const [userPlan, setUserPlan] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-  const [showConfirmFree, setShowConfirmFree] = useState(false);
-  const [pendingFree, setPendingFree] = useState(false);
+    const [showConfirmFree, setShowConfirmFree] = useState(false);
+    const [pendingFree, setPendingFree] = useState(false);
     const [showPasswordAlert, setShowPasswordAlert] = useState(false);
 
-  useEffect(() => {
-    if (user) {
+    useEffect(() => {
+        if (user) {
             const fetchUserData = async () => {
-        const userRef = doc(db, "user_data", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
+                const userRef = doc(db, "user_data", user.uid);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
                     setUserPlan(userSnap.data().plan || 'free');
-        } else {
+                } else {
                     setUserPlan('free');
-        }
-      };
+                }
+            };
             fetchUserData();
-    }
-  }, [user]);
+        }
+    }, [user]);
 
-  const handleStripeCheckout = async (plan: string) => {
-    if (!user) {
-          toast.error("You must be logged in to purchase a plan.");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/create-stripe-session', {
-        method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid, plan }),
-      });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-            toast.error('Error creating payment session.');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-          toast.error('Error processing payment.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const handleStripeCheckout = async (plan: string) => {
+        if (!user) {
+            toast.error("You must be logged in to purchase a plan.");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/create-stripe-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.uid, plan }),
+            });
+            const data = await response.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                toast.error('Error creating payment session.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            toast.error('Error processing payment.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  const handleSelectFree = () => {
-    if (userPlan === "premium" || userPlan === "pro") {
-      setShowConfirmFree(true);
-    }
-  };
+    const handleSelectFree = () => {
+        if (userPlan === "premium" || userPlan === "pro") {
+            setShowConfirmFree(true);
+        }
+    };
 
-  const confirmChangeToFree = async () => {
-    if (!user) return;
-    setPendingFree(true);
+    const confirmChangeToFree = async () => {
+        if (!user) return;
+        setPendingFree(true);
         const userRef = doc(db, "user_data", user.uid);
         try {
             await updateDoc(userRef, { plan: 'free' });
@@ -259,8 +499,8 @@ function AccountSettingPageContent() {
         } catch (error) {
             toast.error("Failed to change plan. Please try again.");
             console.error(error);
-    } finally {
-      setPendingFree(false);
+        } finally {
+            setPendingFree(false);
             setShowConfirmFree(false);
         }
     };
@@ -277,10 +517,10 @@ function AccountSettingPageContent() {
         } catch (error) {
             console.error("Error sending password reset email:", error);
             toast.error("Failed to send reset email. Please try again.");
-    }
-  };
+        }
+    };
 
-  return (
+    return (
         <div className="main-container">
             <aside className="sidebar">
                 <h1 className="sidebar-title">Settings</h1>
@@ -295,9 +535,13 @@ function AccountSettingPageContent() {
                             Plans and Pricing
                         </a>
                     </li>
+                    <li className="nav-item">
+                        <a href="#connections" className={`nav-link ${section === 'connections' ? 'active' : ''}`} onClick={(e) => {e.preventDefault(); setSection('connections')}}>
+                            Connections
+                        </a>
+                    </li>
                 </ul>
-        </aside>
-
+            </aside>
             <main className="content">
                 {section === 'account' && (
                     <AccountSettings 
@@ -306,7 +550,6 @@ function AccountSettingPageContent() {
                         showPasswordAlert={showPasswordAlert}
                     />
                 )}
-
                 {section === 'pricing' && (
                     <Pricing 
                         user={user}
@@ -319,9 +562,12 @@ function AccountSettingPageContent() {
                         confirmChangeToFree={confirmChangeToFree}
                         pendingFree={pendingFree}
                     />
-          )}
-        </main>
-      </div>
+                )}
+                {section === 'connections' && (
+                    <Connections />
+                )}
+            </main>
+        </div>
     );
 }
 
@@ -330,5 +576,5 @@ export default function AccountSettingPage() {
         <Suspense fallback={<div>Loading...</div>}>
             <AccountSettingPageContent />
         </Suspense>
-  );
+    );
 } 
