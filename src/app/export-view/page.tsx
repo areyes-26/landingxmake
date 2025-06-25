@@ -95,11 +95,18 @@ export default function ExportViewPage() {
   const handleInstagramConnect = () => {
     const state = crypto.randomUUID();
     const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
-    const redirectUri = 'https://us-central1-landing-x-make.cloudfunctions.net/instagramCallbackFn'; // ❌ Sin encodeURIComponent
-    const scope = 'instagram_business_basic,instagram_business_content_publish';
+    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/instagramCallbackFn');
+    const scope = [
+      'instagram_basic',
+      'pages_show_list',
+      'instagram_content_publish',
+      'pages_read_engagement',
+      'pages_manage_posts'
+    ].join(',');
+  
     const authUrl = `https://www.facebook.com/v18.0/dialog/oauth` +
       `?client_id=${clientId}` +
-      `&redirect_uri=${redirectUri}` + // 👈 Sin codificar
+      `&redirect_uri=${redirectUri}` +
       `&scope=${scope}` +
       `&response_type=code` +
       `&state=${state}`;
