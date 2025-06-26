@@ -3,13 +3,16 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, Bell, Settings, ArrowLeft } from "lucide-react";
+import { ChevronDown, Bell, Settings, ArrowLeft, X } from "lucide-react";
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import CreditCounter from '@/components/CreditCounter';
+import { useNotifications } from '@/hooks/useNotifications';
+import { doc, deleteDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export function NewNavigation() {
   const router = useRouter();
@@ -27,6 +30,8 @@ export function NewNavigation() {
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  const { notifications, unreadCount, loading: notifLoading } = useNotifications();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -62,6 +67,15 @@ export function NewNavigation() {
       router.push('/dashboard');
     } else {
       router.push('/inicio');
+    }
+  };
+
+  const handleDeleteNotification = async (notifId: string) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, 'users', user.uid, 'notifications', notifId));
+    } catch (err) {
+      console.error('Error deleting notification:', err);
     }
   };
 
@@ -133,12 +147,15 @@ export function NewNavigation() {
             <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/5 rounded-lg transition-colors relative"
               >
                 <Bell className="w-5 h-5 text-white/70" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-gray-900" style={{boxShadow: '0 0 8px 2px rgba(239,68,68,0.5)'}}></span>
+                )}
               </button>
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-96 bg-gray-900/90 border border-blue-500/20 rounded-lg shadow-lg backdrop-blur-xl text-white">
+                <div className="absolute right-0 mt-2 w-96 bg-[rgba(20,22,40,0.85)] border border-blue-500/20 rounded-lg shadow-lg backdrop-blur-md text-white transition-all duration-300">
                   <div className="flex justify-between items-center p-3 border-b border-blue-500/20">
                     <div className="flex items-center gap-2">
                       {showNotifSettings && (
@@ -180,23 +197,70 @@ export function NewNavigation() {
                     <>
                       <div className="p-2 bg-gray-900/50">
                         <div className="flex space-x-2">
-                          <button 
+                          <button
                             onClick={() => setNotifTab('videos')}
-                            className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors ${notifTab === 'videos' ? 'bg-blue-600 text-white font-semibold' : 'bg-transparent text-gray-400 hover:bg-white/10'}`}
+                            className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-all duration-200 ${notifTab === 'videos' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold shadow-md' : 'bg-transparent text-blue-200 hover:bg-blue-500/10'}`}
                           >
                             Videos
                           </button>
-                          <button 
+                          <button
                             onClick={() => setNotifTab('system')}
-                            className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors ${notifTab === 'system' ? 'bg-blue-600 text-white font-semibold' : 'bg-transparent text-gray-400 hover:bg-white/10'}`}
+                            className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-all duration-200 ${notifTab === 'system' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold shadow-md' : 'bg-transparent text-blue-200 hover:bg-blue-500/10'}`}
                           >
                             System
                           </button>
                         </div>
                       </div>
-                      <div className="p-2 max-h-80 overflow-y-auto">
-                        {notifTab === 'videos' && <div className="p-4 text-center text-gray-500">No new video notifications.</div>}
-                        {notifTab === 'system' && <div className="p-4 text-center text-gray-500">No new system notifications.</div>}
+                      <div className="p-2 max-h-80 overflow-y-auto relative">
+                        <div className="transition-all duration-300 ease-in-out" style={{position: 'relative', minHeight: '120px'}}>
+                          <div
+                            className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${notifTab === 'videos' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+                          >
+                            {notifTab === 'videos' && (
+                              notifLoading ? (
+                                <div className="p-4 text-center text-gray-500">Loading notifications...</div>
+                              ) : notifications.length === 0 ? (
+                                <div className="p-4 text-center text-gray-500">No new video notifications.</div>
+                              ) : (
+                                <ul className="space-y-2">
+                                  {notifications.filter(n => n.type === 'video_ready' || n.type === 'youtube_export').map(n => (
+                                    <li key={n.id} className={`p-3 rounded-lg ${!n.read ? 'bg-blue-900/40' : 'bg-gray-800/40'} border border-blue-500/10 flex flex-col gap-1 relative`}>
+                                      <button
+                                        className="absolute left-2 top-2 text-gray-400 hover:text-red-500 transition-colors z-10"
+                                        title="Delete notification"
+                                        onClick={() => handleDeleteNotification(n.id)}
+                                        style={{padding: 0, background: 'none', border: 'none'}}
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                      {n.createdAt?.toDate && (
+                                        <span className="absolute right-2 top-2 text-xs text-gray-400 z-10">
+                                          {n.createdAt.toDate().toLocaleString()}
+                                        </span>
+                                      )}
+                                      <div className="pt-6">
+                                        <span className="text-sm block mb-1">{n.message}</span>
+                                        {n.type === 'video_ready' && n.videoId && (
+                                          <Link href={`/videos/${n.videoId}`} className="text-xs text-blue-400 hover:underline">View video</Link>
+                                        )}
+                                        {n.type === 'youtube_export' && n.url && (
+                                          <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-xs text-red-400 hover:underline block">Click here to watch on YouTube</a>
+                                        )}
+                                      </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )
+                            )}
+                          </div>
+                          <div
+                            className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${notifTab === 'system' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+                          >
+                            {notifTab === 'system' && (
+                              <div className="p-4 text-center text-gray-500">No new system notifications.</div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </>
                   )}

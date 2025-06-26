@@ -117,8 +117,12 @@ interface GenerateVideoParams {
   videoTitle: string;
   voiceId: string;
   avatarId: string;
+  lookId?: string;
   tone: string;
   duration: string;
+  orientation?: 'vertical' | 'horizontal';
+  resolution?: 'hd' | 'fullhd';
+  dimension?: { width: number; height: number };
 }
 
 interface GenerateVideoResponse {
@@ -636,17 +640,27 @@ export class HeyGenAPI {
   async generateVideo(params: GenerateVideoParams): Promise<GenerateVideoResponse> {
     try {
       console.log('Generating video with params:', params);
+      // Determinar dimension
+      let dimension = params.dimension || { width: 720, height: 1280 };
+      
+      // Preparar el objeto character
+      const character: any = {
+        type: "avatar",
+        avatar_id: params.avatarId,
+        avatar_style: "normal"
+      };
+      
+      // Agregar look_id si está presente
+      if (params.lookId) {
+        character.look_id = params.lookId;
+      }
       
       const response = await this.request('/v2/video/generate', {
         method: 'POST',
         body: JSON.stringify({
           video_inputs: [
             {
-              character: {
-                type: "avatar",
-                avatar_id: params.avatarId,
-                avatar_style: "normal"
-              },
+              character,
               voice: {
                 type: "text",
                 input_text: params.script,
@@ -655,10 +669,7 @@ export class HeyGenAPI {
               }
             }
           ],
-          dimension: {
-            width: 1280,
-            height: 720
-          }
+          dimension
         })
       });
 

@@ -157,14 +157,13 @@ export default function DashboardPage() {
 
   const confirmDelete = async () => {
     if (!videoToDelete) return;
+    setShowDeleteModal(false);
+    setVideoToDelete(null);
     try {
         await deleteDoc(doc(db, 'videos', videoToDelete));
     } catch (error) {
         console.error("Error deleting video: ", error);
         alert('Failed to delete video.');
-    } finally {
-        setShowDeleteModal(false);
-        setVideoToDelete(null);
     }
   };
 
@@ -282,13 +281,14 @@ export default function DashboardPage() {
           </div>
           
           <div className={styles.statusFilters}>
-            {Object.entries(statusCounts).map(([status, count]) => (
-              <div 
+            {['all', 'completed', 'processing', 'error', 'pending'].map((status) => (
+              <div
                 key={status}
-                className={`${styles.statusFilter} ${activeFilter === status ? styles.active : ''} ${styles[status]}`}
+                className={`${styles.statusFilter} ${activeFilter === status ? styles.active : ''} ${styles[status]} transition-all duration-200`}
                 onClick={() => setActiveFilter(status)}
+                style={{ cursor: 'pointer' }}
               >
-                {`${status.charAt(0).toUpperCase() + status.slice(1)}: ${count}`}
+                {status.charAt(0).toUpperCase() + status.slice(1)}
               </div>
             ))}
           </div>
@@ -347,37 +347,59 @@ export default function DashboardPage() {
               </div>
             ))
           ) : (
-            <div
-              className={styles.emptyState + ' enhanced-empty-state'}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '60vh',
-                width: '100%',
-                textAlign: 'center',
-              }}
-            >
+            videos.length === 0 ? (
               <div
-                className={styles.emptyIcon + ' enhanced-empty-emoji'}
-                style={{ fontSize: '96px', marginBottom: '32px', opacity: 0.9, textAlign: 'center' }}
+                className={styles.emptyState + ' enhanced-empty-state'}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: '60vh',
+                  width: '100%',
+                  textAlign: 'center',
+                }}
               >
-                🎬
+                <div
+                  className={styles.emptyIcon + ' enhanced-empty-emoji'}
+                  style={{ fontSize: '96px', marginBottom: '32px', opacity: 0.9, textAlign: 'center' }}
+                >
+                  🎬
+                </div>
+                <h2
+                  className="enhanced-empty-title"
+                  style={{ fontSize: '2.75rem', fontWeight: 800, color: '#fff', marginBottom: '18px', letterSpacing: '0.5px', textAlign: 'center' }}
+                >
+                  No videos found
+                </h2>
+                <p
+                  className="enhanced-empty-desc"
+                  style={{ fontSize: '1.5rem', color: '#b3b3b3', marginBottom: 0, fontWeight: 500, textAlign: 'center' }}
+                >
+                  Start by creating a new video.
+                </p>
               </div>
-              <h2
-                className="enhanced-empty-title"
-                style={{ fontSize: '2.75rem', fontWeight: 800, color: '#fff', marginBottom: '18px', letterSpacing: '0.5px', textAlign: 'center' }}
+            ) : (
+              <div
+                className={styles.emptyState + ' enhanced-empty-state'}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: '30vh',
+                  width: '100%',
+                  textAlign: 'center',
+                }}
               >
-                No videos found
-              </h2>
-              <p
-                className="enhanced-empty-desc"
-                style={{ fontSize: '1.5rem', color: '#b3b3b3', marginBottom: 0, fontWeight: 500, textAlign: 'center' }}
-              >
-                Start by creating a new video.
-              </p>
-            </div>
+                <h2
+                  className="enhanced-empty-title"
+                  style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', marginBottom: '10px', letterSpacing: '0.5px', textAlign: 'center' }}
+                >
+                  No videos match this filter.
+                </h2>
+              </div>
+            )
           )}
         </div>
       </div>

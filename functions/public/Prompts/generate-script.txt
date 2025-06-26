@@ -9,10 +9,11 @@ Quiero que generes un guion para un video que será narrado por un avatar virtua
 🧩 Estructura obligatoria:
 1. **Gancho (Hook)**: captá la atención en los primeros 3 segundos.
 2. **Desarrollo**: explicá el contenido de forma atractiva, fluida y sin relleno.
-3. **Cierre**: concluí con una llamada a la acción breve y convincente.
+3. **Cierre**: el usuario seleccionó este Call to action para redirigir la atención de los espectadores: "{{cta}}". Basate en ese CTA y personalizalo basándote en lo ingresado por el usuario en {{specificcta}}.
 
 📌 Tema: {{topic}}
 📌 Descripción base: {{description}}
 📌 Título del video: {{videoTitle}}
 
 🎯 Resultado: Generá solo el guion (sin explicaciones, sin encabezados).
+Recuerda respetar la estructura propuesta para el video, para que tenga coherencia.

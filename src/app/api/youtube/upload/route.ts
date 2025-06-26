@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '@/lib/firebase-admin';
+import { sendNotificationToUser } from '@/lib/notifications';
 
 export const runtime = 'nodejs'; // Asegura que se use Node para manejar blobs grandes
 
@@ -124,6 +125,13 @@ export async function POST(req: NextRequest) {
     }
     const data = await uploadRes.json();
     console.log('[YouTube] Upload successful, videoId:', data.id);
+    // Notificación al usuario
+    await sendNotificationToUser(userId, {
+      type: 'youtube_export',
+      message: 'Your video has been published on YouTube!',
+      videoId: data.id,
+      url: `https://www.youtube.com/watch?v=${data.id}`
+    });
     return NextResponse.json({ success: true, videoId: data.id, videoUrl: `https://www.youtube.com/watch?v=${data.id}` });
   } catch (err: any) {
     console.log('[YouTube] General error:', err);

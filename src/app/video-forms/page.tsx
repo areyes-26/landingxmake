@@ -14,6 +14,7 @@ import { useUserPlan } from '@/hooks/useUserPlan';
 import { useCreditValidator } from '@/hooks/useCreditValidator';
 import { calculateCreditCost, type VideoOptions } from '@/lib/creditPricing';
 import './styles.css';
+import { AvatarSelector } from '@/components/ui/AvatarSelector';
 
 interface AvatarOption {
   id: string;
@@ -32,6 +33,7 @@ interface FormData {
   description: string;
   topic: string;
   avatarId: string;
+  lookId?: string;
   callToAction: string;
   specificCallToAction: string;
   tone: string;
@@ -44,6 +46,8 @@ interface FormData {
     gender: string;
     preview_url?: string;
   };
+  resolution?: 'hd' | 'fullhd';
+  orientation?: 'vertical' | 'horizontal';
 }
 
 interface Step {
@@ -87,6 +91,26 @@ const DURATION_LIMITS = {
   '1.5min': { label: '1:30 minutes', limit: 600 },
 };
 
+const DESCRIPTION_LIMITS: Record<string, number> = {
+  '30s': 200,
+  '1min': 400,
+  '1.5min': 600,
+};
+
+const MAIN_TOPIC_LIMIT = 120;
+
+// SVGs para orientación
+const VerticalIcon = () => (
+  <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="4" width="24" height="32" rx="6" stroke="#38bdf8" strokeWidth="2.5" fill="none" />
+  </svg>
+);
+const HorizontalIcon = () => (
+  <svg width="40" height="28" viewBox="0 0 40 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="4" width="32" height="20" rx="6" stroke="#38bdf8" strokeWidth="2.5" fill="none" />
+  </svg>
+);
+
 export default function VideoFormsPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -111,12 +135,15 @@ export default function VideoFormsPage() {
     description: '',
     topic: '',
     avatarId: '',
+    lookId: undefined,
     callToAction: '',
     specificCallToAction: '',
     tone: '',
     email: '',
     duration: '30s',
     voiceId: '',
+    resolution: 'hd',
+    orientation: 'vertical',
   });
 
   useEffect(() => {
@@ -196,6 +223,20 @@ export default function VideoFormsPage() {
     setIsLoading(true);
     setStatus('Sending...');
 
+    // Calcular dimension antes de enviar
+    let dimension = { width: 720, height: 1280 };
+    if (formData.orientation && formData.resolution) {
+      if (formData.orientation === 'vertical' && formData.resolution === 'hd') {
+        dimension = { width: 720, height: 1280 };
+      } else if (formData.orientation === 'vertical' && formData.resolution === 'fullhd') {
+        dimension = { width: 1080, height: 1920 };
+      } else if (formData.orientation === 'horizontal' && formData.resolution === 'hd') {
+        dimension = { width: 1280, height: 720 };
+      } else if (formData.orientation === 'horizontal' && formData.resolution === 'fullhd') {
+        dimension = { width: 1920, height: 1080 };
+      }
+    }
+
     try {
       console.log('Sending data:', formData);
 
@@ -211,7 +252,7 @@ export default function VideoFormsPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, dimension }),
       });
 
       const data = await response.json();
@@ -240,43 +281,6 @@ export default function VideoFormsPage() {
 
   // Efectos para cargar datos
   useEffect(() => {
-    const fetchAvatarsData = async () => {
-      try {
-        setLoadingAvatars(true);
-        const response = await fetch('/api/avatars', { cache: 'no-store' });
-        if (response.ok) {
-          const data = await response.json();
-          
-          const apiAvatars = data.data.avatars || [];
-          const apiTalkingPhotos = data.data.talking_photos || [];
-
-          const formattedAvatars: AvatarOption[] = apiAvatars.map((avatar: any) => ({
-            id: avatar.avatar_id,
-            name: avatar.avatar_name,
-            imageUrl: avatar.preview_image_url,
-            dataAiHint: 'avatar-image'
-          }));
-
-          const formattedTalkingPhotos: AvatarOption[] = apiTalkingPhotos.map((photo: any) => ({
-            id: photo.talking_photo_id,
-            name: photo.talking_photo_name,
-            imageUrl: photo.preview_image_url,
-            dataAiHint: 'avatar-image'
-          }));
-          
-          setAvatarOptions([...formattedAvatars, ...formattedTalkingPhotos]);
-        } else {
-            toast.error("Error loading avatars.");
-            console.error("Failed to fetch avatars");
-        }
-      } catch (error) {
-        console.error('Error fetching avatars:', error);
-        toast.error("There was a problem loading the avatars.");
-      } finally {
-        setLoadingAvatars(false);
-      }
-    };
-
     const fetchVoices = async () => {
       try {
         setLoadingVoices(true);
@@ -297,7 +301,6 @@ export default function VideoFormsPage() {
       }
     };
 
-    fetchAvatarsData();
     fetchVoices();
   }, [userPlan]);
 
@@ -376,6 +379,14 @@ export default function VideoFormsPage() {
 
   const handleCallToActionChange = (cta: string) => {
     setFormData(prev => ({ ...prev, callToAction: cta }));
+  };
+
+  const handleResolutionChange = (resolution: 'hd' | 'fullhd') => {
+    setFormData(prev => ({ ...prev, resolution }));
+  };
+
+  const handleOrientationChange = (orientation: 'vertical' | 'horizontal') => {
+    setFormData(prev => ({ ...prev, orientation }));
   };
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -528,6 +539,90 @@ export default function VideoFormsPage() {
                 </div>
               </div>
 
+              {/* Orientation + Quality Selector juntos */}
+              <div className="video-forms-form-group">
+                <div className="video-forms-orientation-quality-row">
+                  <div style={{ flex: 1 }}>
+                    <label className="video-forms-form-label">Orientation</label>
+                    {(userPlan === 'pro' || userPlan === 'premium') ? (
+                      <div className="video-forms-orientation-options">
+                        <div
+                          onClick={() => handleOrientationChange('vertical')}
+                          className={`video-forms-orientation-option ${formData.orientation === 'vertical' ? 'selected' : ''}`}
+                        >
+                          <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><VerticalIcon /></span>
+                          <div className="video-forms-duration-time">Vertical (9:16)</div>
+                        </div>
+                        <div
+                          onClick={() => handleOrientationChange('horizontal')}
+                          className={`video-forms-orientation-option ${formData.orientation === 'horizontal' ? 'selected' : ''}`}
+                        >
+                          <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><HorizontalIcon /></span>
+                          <div className="video-forms-duration-time">Horizontal (16:9)</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="video-forms-orientation-options">
+                        <div
+                          className={`video-forms-orientation-option ${formData.orientation === 'vertical' ? 'selected' : ''}`}
+                          style={{ cursor: 'default' }}
+                        >
+                          <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><VerticalIcon /></span>
+                          <div className="video-forms-duration-time">Vertical (9:16)</div>
+                        </div>
+                        <div
+                          className="video-forms-orientation-option"
+                          style={{ cursor: 'not-allowed', opacity: 0.7 }}
+                        >
+                          <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><HorizontalIcon /></span>
+                          <div className="video-forms-duration-time">Horizontal (16:9)</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label className="video-forms-form-label">Quality</label>
+                    {userPlan === 'pro' ? (
+                      <div className="video-forms-orientation-options">
+                        <div
+                          onClick={() => handleResolutionChange('hd')}
+                          className={`video-forms-orientation-option ${formData.resolution === 'hd' ? 'selected' : ''}`}
+                        >
+                          <div className="video-forms-duration-time">HD (720p)</div>
+                        </div>
+                        <div
+                          onClick={() => handleResolutionChange('fullhd')}
+                          className={`video-forms-orientation-option ${formData.resolution === 'fullhd' ? 'selected' : ''}`}
+                        >
+                          <div className="video-forms-duration-time">Full HD (1080p)</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="video-forms-orientation-options">
+                        <div
+                          className={`video-forms-orientation-option ${formData.resolution === 'hd' ? 'selected' : ''}`}
+                          style={{ cursor: 'default' }}
+                        >
+                          <div className="video-forms-duration-time">HD (720p)</div>
+                        </div>
+                        <div
+                          className="video-forms-orientation-option"
+                          style={{ cursor: 'not-allowed', opacity: 0.7 }}
+                        >
+                          <div className="video-forms-duration-time">Full HD (1080p)</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {userPlan === 'free' && (
+                  <div className="video-forms-plan-upgrade-hint">
+                    <span className="video-forms-upgrade-icon">💡</span>
+                    <span>Upgrade to Pro to change orientation and quality</span>
+                  </div>
+                )}
+              </div>
+
               <div className="video-forms-form-group">
                 <label htmlFor="videoTitle" className="video-forms-form-label">
                   Video Title
@@ -552,13 +647,19 @@ export default function VideoFormsPage() {
                   id="description"
                   name="description"
                   value={formData.description}
-                  onChange={handleChange}
+                  onChange={e => {
+                    const max = DESCRIPTION_LIMITS[formData.duration] || 200;
+                    let value = e.target.value;
+                    if (value.length > max) value = value.slice(0, max);
+                    setFormData(prev => ({ ...prev, description: value }));
+                  }}
                   className="video-forms-textarea"
                   placeholder="Write a detailed description for the video"
-                  maxLength={600}
+                  maxLength={DESCRIPTION_LIMITS[formData.duration] || 200}
+                  style={{ resize: 'none' }}
                 />
                 <div className="video-forms-char-counter">
-                  {formData.description.length}/600 characters
+                  {formData.description.length}/{DESCRIPTION_LIMITS[formData.duration] || 200} characters
                 </div>
               </div>
             </div>
@@ -598,7 +699,7 @@ export default function VideoFormsPage() {
                   onChange={handleChange}
                   className="video-forms-textarea"
                   placeholder="Write your custom message here..."
-                  rows={4}
+                  style={{ resize: 'none' }}
                 />
               </div>
             </div>
@@ -616,13 +717,18 @@ export default function VideoFormsPage() {
                   id="topic"
                   name="topic"
                   value={formData.topic}
-                  onChange={handleChange}
+                  onChange={e => {
+                    let value = e.target.value;
+                    if (value.length > MAIN_TOPIC_LIMIT) value = value.slice(0, MAIN_TOPIC_LIMIT);
+                    setFormData(prev => ({ ...prev, topic: value }));
+                  }}
                   className="video-forms-textarea"
                   placeholder="Example: I want it to be about the Club World Cup"
-                  maxLength={500}
+                  maxLength={MAIN_TOPIC_LIMIT}
+                  style={{ resize: 'none', height: '56px' }}
                 />
                 <div className="video-forms-char-counter">
-                  {formData.topic.length}/500 characters
+                  {formData.topic.length}/{MAIN_TOPIC_LIMIT} characters
                 </div>
               </div>
 
@@ -704,15 +810,17 @@ export default function VideoFormsPage() {
               </div>
               <div className="video-forms-form-group">
                 <label className="video-forms-form-label">Avatar</label>
-                 {loadingAvatars ? (
-                  <p>Loading avatars...</p>
-                ) : (
-                      <GroupedAvatarsDropdown
-                    avatarGroups={[{ title: 'Available Avatars', options: avatarOptions }]}
-                        selectedAvatarId={selectedAvatar?.id || null}
-                        onSelect={handleAvatarSelect}
-                      />
-                  )}
+                <AvatarSelector
+                  onAvatarSelect={(avatarId, lookId) => {
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      avatarId, 
+                      lookId 
+                    }));
+                  }}
+                  selectedAvatarId={formData.avatarId}
+                  selectedLookId={formData.lookId}
+                />
               </div>
             </div>
 

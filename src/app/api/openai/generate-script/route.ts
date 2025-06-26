@@ -47,13 +47,39 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
+    // Leer datos completos del video desde Firestore para obtener los campos CTA
+    console.log('[generate-script] 🔍 Leyendo datos completos del video desde Firestore...');
+    const videoDoc = await db.collection('videos').doc(generationId).get();
+    
+    if (!videoDoc.exists) {
+      console.error('[generate-script] ❌ No se encontró el documento del video en Firestore');
+      return NextResponse.json({
+        error: 'Video not found in Firestore',
+        status: 404
+      }, { status: 404 });
+    }
+    
+    const completeVideoData = videoDoc.data();
+    console.log('[generate-script] 📋 Datos completos del video:', completeVideoData);
+    
+    // Combinar datos del frontend con datos completos de Firestore
+    const finalVideoData = {
+      ...videoData,
+      callToAction: completeVideoData?.callToAction,
+      specificCallToAction: completeVideoData?.specificCallToAction
+    };
+    
+    console.log('[generate-script] 📋 Datos finales para el prompt:', finalVideoData);
+
     const promptTemplate = await readPromptTemplate('generate-script');
     const prompt = replacePromptPlaceholders(promptTemplate, {
-      duration: videoData.duration,
-      tone: videoData.tone,
-      topic: videoData.topic,
-      description: videoData.description,
-      videoTitle: videoData.videoTitle
+      duration: finalVideoData.duration,
+      tone: finalVideoData.tone,
+      topic: finalVideoData.topic,
+      description: finalVideoData.description,
+      videoTitle: finalVideoData.videoTitle,
+      cta: finalVideoData.callToAction,
+      specificcta: finalVideoData.specificCallToAction
     });
 
     console.log('[generate-script] ✏️ Prompt generado:', prompt);

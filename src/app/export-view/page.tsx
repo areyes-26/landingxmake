@@ -195,18 +195,18 @@ export default function ExportViewPage() {
         throw new Error(data.error || 'YouTube upload failed');
       }
       setShowYouTubeModal(false);
-      toast.success(
-        <span>
-          Video uploaded to YouTube!<br />
-          <a href={data.videoUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>
-            View on YouTube
-          </a><br />
-          <a href={`https://studio.youtube.com/video/${data.videoId}/edit`} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>
-            Edit in YouTube Studio
-          </a>
-        </span>,
-        { duration: 12000 }
-      );
+      // toast.success(
+      //   <span>
+      //     Video uploaded to YouTube!<br />
+      //     <a href={data.videoUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>
+      //       View on YouTube
+      //     </a><br />
+      //     <a href={`https://studio.youtube.com/video/${data.videoId}/edit`} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>
+      //       Edit in YouTube Studio
+      //     </a>
+      //   </span>,
+      //   { duration: 12000 }
+      // );
     } catch (err: any) {
       console.error('YouTube upload error:', err);
       toast.error('Failed to upload video to YouTube: ' + (err.message || err));
@@ -350,8 +350,8 @@ export default function ExportViewPage() {
     </div>
       )}
       {showYouTubeModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#23263a', borderRadius: 18, padding: 32, minWidth: 380, maxWidth: 500, boxShadow: '0 8px 32px #000a', color: '#fff', display: 'flex', flexDirection: 'column', gap: 18, border: '1.5px solid #31344b' }}>
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ minWidth: 380, maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 18 }}>
             <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, textAlign: 'center', letterSpacing: 0.2 }}>Export to YouTube</h3>
             <label style={{ fontWeight: 500, fontSize: 15, marginBottom: 2 }}>Title</label>
             <input
@@ -372,18 +372,18 @@ export default function ExportViewPage() {
               You can edit the video in YouTube Studio after upload.<br />
               The video will be uploaded as <b>private</b> by default.
             </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 8, justifyContent: 'center' }}>
+            <div className="modal-actions">
               <button
                 onClick={confirmYouTubeExport}
                 disabled={ytLoading}
-                style={{ background: 'linear-gradient(90deg,#e52d27,#b31217)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.5rem', fontWeight: 600, minWidth: 140, cursor: ytLoading ? 'not-allowed' : 'pointer', opacity: ytLoading ? 0.7 : 1, fontSize: 16, boxShadow: '0 2px 8px #0002' }}
+                className="modal-btn modal-btn-primary"
               >
                 {ytLoading ? 'Exporting...' : 'Confirm export'}
               </button>
               <button
                 onClick={() => setShowYouTubeModal(false)}
                 disabled={ytLoading}
-                style={{ background: 'transparent', color: '#fff', border: '1.5px solid #fff', borderRadius: 8, padding: '0.5rem 1.5rem', fontWeight: 600, minWidth: 110, cursor: ytLoading ? 'not-allowed' : 'pointer', opacity: ytLoading ? 0.7 : 1, fontSize: 16 }}
+                className="modal-btn modal-btn-secondary"
               >
                 Cancel
               </button>

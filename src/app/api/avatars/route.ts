@@ -24,4 +24,4 @@ export async function GET() {
     else if (typeof error === 'string') message = error;
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+} 

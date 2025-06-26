@@ -988,4 +988,102 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* Orientation Selector - más fino y compacto */
+.video-forms-orientation-options {
+  display: flex;
+  gap: 1rem;
+}
+
+.video-forms-orientation-option {
+  width: 130px;
+  height: 92px;
+  padding: 0;
+  border: 1.5px solid rgba(14, 165, 233, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.01);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.video-forms-orientation-option svg {
+  margin-bottom: 0.25rem;
+  height: 32px;
+  width: 32px;
+  display: block;
+}
+
+.video-forms-orientation-option .video-forms-duration-time {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  justify-content: center;
+  width: 100%;
+}
+
+.video-forms-orientation-option.selected {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.10);
+}
+
+@media (max-width: 700px) {
+  .video-forms-orientation-option {
+    width: 100%;
+    min-width: 0;
+    height: 70px;
+  }
+}
+
+.video-forms-orientation-quality-row {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 700px) {
+  .video-forms-orientation-quality-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+.video-forms-avatar-select {
+  width: 100%;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+  padding-right: 3rem;
+}
+
+.video-forms-avatar-select:focus {
+  outline: none;
+  border-color: rgba(14, 165, 233, 0.5);
+  background: rgba(14, 165, 233, 0.05);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
+}
+
+.video-forms-avatar-select option {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+  padding: 12px 10px;
 } 

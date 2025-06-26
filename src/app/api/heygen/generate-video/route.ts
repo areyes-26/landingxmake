@@ -11,8 +11,11 @@ export async function POST(req: Request) {
       videoTitle,
       voiceId,
       avatarId,
+      lookId,
       tone,
       duration,
+      orientation,
+      resolution,
     } = body;
 
     if (!videoId || !videoTitle || !voiceId || !avatarId) {
@@ -45,14 +48,21 @@ export async function POST(req: Request) {
 
     const heygen = getHeyGenClient();
 
+    // Leer dimension del documento de Firestore
+    const videoDoc = await db.collection('videos').doc(videoId).get();
+    const videoData = videoDoc.data();
+    const dimension = videoData?.dimension;
+
     // Iniciar la generación del video con Heygen
     const result = await heygen.generateVideo({
       script,
       videoTitle,
       voiceId,
-      avatarId,
+      avatarId: lookId || avatarId, // Si hay lookId, usarlo como avatarId
+      lookId: undefined, // No enviar lookId separado
       tone,
       duration,
+      dimension
     });
 
     // Verificar que tenemos un video_id válido

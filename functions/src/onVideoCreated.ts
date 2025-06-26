@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import type { DocumentSnapshot } from 'firebase-functions/v1/firestore';
 import * as fs from 'fs';
 import * as path from 'path';
+import { sendNotificationToUser } from './lib/notifications';
 
 // Función para crear el cliente OpenAI solo cuando se necesite
 function getOpenAIClient() {
@@ -29,13 +30,14 @@ async function readPromptTemplate(fileName: string): Promise<string> {
 🧩 Estructura obligatoria:
 1. **Gancho (Hook)**: captá la atención en los primeros 3 segundos.
 2. **Desarrollo**: explicá el contenido de forma atractiva, fluida y sin relleno.
-3. **Cierre**: concluí con una llamada a la acción breve y convincente.
+3. **Cierre**: el usuario seleccionó este Call to action para redirigir la atención de los espectadores: "{{cta}}". Basate en ese CTA y personalizalo basándote en lo ingresado por el usuario en {{specificcta}}.
 
 📌 Tema: {{topic}}
 📌 Descripción base: {{description}}
 📌 Título del video: {{videoTitle}}
 
-🎯 Resultado: Generá solo el guion (sin explicaciones, sin encabezados).`,
+🎯 Resultado: Generá solo el guion (sin explicaciones, sin encabezados).
+Recuerda respetar la estructura propuesta para el video, para que tenga coherencia.`,
     
     'copy-corto': `[REDES_SOCIALES]
 
@@ -120,13 +122,23 @@ Evitá repetir las palabras clave como hashtags. No incluyas ningún tipo de exp
 // Función para reemplazar placeholders (simplificada)
 function replacePromptPlaceholders(template: string, replacements: Record<string, string | undefined>): string {
   let result = template;
+  console.log(`[replacePromptPlaceholders] 🔍 Template original:`, template);
+  console.log(`[replacePromptPlaceholders] 🔍 Replacements recibidos:`, replacements);
+  
   for (const [key, value] of Object.entries(replacements)) {
+    console.log(`[replacePromptPlaceholders] 🔄 Procesando placeholder: {{${key}}} = "${value}"`);
     if (value === undefined || value === null) {
-      console.warn(`[onVideoCreated] ⚠️ Missing value for placeholder: ${key}`);
+      console.warn(`[replacePromptPlaceholders] ⚠️ Missing value for placeholder: ${key}`);
       continue;
     }
-    result = result.replace(new RegExp(`{{${key}}}`, 'g'), value);
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    const beforeReplace = result;
+    result = result.replace(regex, value);
+    console.log(`[replacePromptPlaceholders] ✅ Reemplazado {{${key}}} por "${value}"`);
+    console.log(`[replacePromptPlaceholders] 📝 Resultado parcial:`, result.substring(0, 200) + '...');
   }
+  
+  console.log(`[replacePromptPlaceholders] 🎯 Resultado final:`, result);
   return result;
 }
 
@@ -134,8 +146,17 @@ export const onVideoCreated = functions.firestore
   .document('videos/{videoId}')
   .onCreate(async (snapshot: DocumentSnapshot, context: any) => {
     const videoId = context.params.videoId;
-    const videoData = snapshot.data();
-
+    
+    // Leer datos directamente de Firestore para evitar problemas de timing
+    console.log(`[onVideoCreated] 🔍 Leyendo datos directamente de Firestore para ${videoId}`);
+    const videoDoc = await db.collection('videos').doc(videoId).get();
+    
+    if (!videoDoc.exists) {
+      console.error(`[onVideoCreated] ❌ No se encontró el documento ${videoId} en Firestore`);
+      return;
+    }
+    
+    const videoData = videoDoc.data();
     if (!videoData) {
       console.error(`[onVideoCreated] ❌ No hay datos para el video ${videoId}`);
       return;
@@ -144,6 +165,30 @@ export const onVideoCreated = functions.firestore
     console.log(`[onVideoCreated] ✅ Trigger activado para ${videoId}`);
     console.log(`[onVideoCreated] 📦 Video creado con datos:`, videoData);
 
+    // Validar que los campos CTA existan
+    if (!videoData.callToAction || !videoData.specificCallToAction) {
+      console.warn(`[onVideoCreated] ⚠️ Campos CTA faltantes para ${videoId}:`);
+      console.warn(`[onVideoCreated] ⚠️ callToAction: "${videoData.callToAction}"`);
+      console.warn(`[onVideoCreated] ⚠️ specificCallToAction: "${videoData.specificCallToAction}"`);
+      
+      // Esperar un poco y reintentar una vez más
+      console.log(`[onVideoCreated] ⏳ Esperando 2 segundos y reintentando...`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const retryDoc = await db.collection('videos').doc(videoId).get();
+      if (retryDoc.exists) {
+        const retryData = retryDoc.data();
+        if (retryData?.callToAction && retryData?.specificCallToAction) {
+          console.log(`[onVideoCreated] ✅ Campos CTA encontrados en reintento`);
+          videoData.callToAction = retryData.callToAction;
+          videoData.specificCallToAction = retryData.specificCallToAction;
+        } else {
+          console.error(`[onVideoCreated] ❌ Campos CTA siguen faltando después del reintento`);
+          return;
+        }
+      }
+    }
+
     try {
       // Crear cliente OpenAI solo cuando se necesite
       const openai = getOpenAIClient();
@@ -151,13 +196,20 @@ export const onVideoCreated = functions.firestore
       // Generar script
       console.log(`[onVideoCreated] 🚀 Generando script...`);
       
+      // Log específico para CTA
+      console.log(`[onVideoCreated] 📋 CTA values from videoData:`);
+      console.log(`[onVideoCreated] 📋 callToAction: "${videoData.callToAction}"`);
+      console.log(`[onVideoCreated] 📋 specificCallToAction: "${videoData.specificCallToAction}"`);
+      
       const promptTemplate = await readPromptTemplate('generate-script');
       const prompt = replacePromptPlaceholders(promptTemplate, {
         duration: videoData.duration,
         tone: videoData.tone,
         topic: videoData.topic,
         description: videoData.description,
-        videoTitle: videoData.videoTitle
+        videoTitle: videoData.videoTitle,
+        cta: videoData.callToAction,
+        specificcta: videoData.specificCallToAction
       });
 
       console.log(`[onVideoCreated] ✏️ Prompt generado:`, prompt);
@@ -241,6 +293,17 @@ export const onVideoCreated = functions.firestore
         status: 'completed',
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
+
+      // Notificar al usuario que el video está listo
+      if (videoData.userId) {
+        await sendNotificationToUser(videoData.userId, {
+          type: 'video_ready',
+          message: '¡Tu video ya está listo! Haz clic para verlo en tu dashboard.',
+          videoId
+        });
+      } else {
+        console.warn(`[onVideoCreated] ⚠️ userId no encontrado en videoData, no se pudo enviar notificación.`);
+      }
 
       console.log(`[onVideoCreated] ✅ Generación completa exitosa para ${videoId}`);
 

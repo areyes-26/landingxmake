@@ -15,6 +15,7 @@ export interface VideoData {
   description: string;
   topic: string;
   avatarId: string;
+  lookId?: string;
   callToAction: string;
   specificCallToAction: string;
   tone: string;

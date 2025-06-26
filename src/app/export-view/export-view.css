@@ -595,25 +595,25 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(12, 13, 31, 0.7);
-    backdrop-filter: blur(10px);
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
 }
 
 .modal-content {
-    background: rgba(26, 27, 53, 0.9);
-    padding: 2.5rem;
+    background: rgba(26,27,53,0.78);
+    padding: 2rem 2.5rem;
     border-radius: 16px;
-    border: 1px solid rgba(14, 165, 233, 0.2);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    min-width: 320px;
+    max-width: 95vw;
     text-align: center;
-    max-width: 400px;
-    width: 90%;
+    border: 1px solid rgba(14, 165, 233, 0.2);
 }
 
 .modal-title {
@@ -630,39 +630,40 @@ body {
 
 .modal-actions {
     display: flex;
-    gap: 1rem;
     justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
 }
 
-.btn {
-    padding: 0.75rem 1.5rem;
+.modal-btn {
+    padding: 0.85rem 2rem;
+    border-radius: 10px;
     border: none;
-    border-radius: 8px;
     font-weight: 600;
+    font-size: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.9rem;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(14,165,233,0.10);
 }
 
-.btn-primary {
+.modal-btn-primary {
     background: linear-gradient(135deg, #0ea5e9, #7c3aed);
     color: white;
-    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+}
+.modal-btn-primary:hover {
+    background: linear-gradient(135deg, #7c3aed, #0ea5e9);
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 6px 18px rgba(14,165,233,0.18);
 }
 
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4);
+.modal-btn-secondary {
+    background: rgba(255,255,255,0.08);
+    color: #e5e7eb;
+    border: 1px solid rgba(255,255,255,0.13);
 }
-
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
+.modal-btn-secondary:hover {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
 }
 
 /* General Container Styling */

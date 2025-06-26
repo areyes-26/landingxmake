@@ -61,13 +61,15 @@ export async function POST(req: NextRequest) {
       description,
       topic,
       avatarId,
+      lookId,
       callToAction,
       tone,
       email,
       specificCallToAction,
       duration,
       voiceId,
-      voiceDetails
+      voiceDetails,
+      dimension
     } = body;
 
     // Validación de campos requeridos
@@ -152,7 +154,9 @@ export async function POST(req: NextRequest) {
         status: 'pending',
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
-        userId
+        userId,
+        ...(dimension && { dimension }),
+        ...(lookId && { lookId })
       };
 
       if (voiceDetails) {

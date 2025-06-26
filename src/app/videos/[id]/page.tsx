@@ -358,11 +358,8 @@ export default function VideoSettingsPage() {
               <textarea
                 className="content-textarea"
                 value={videoSettings?.script || ''}
-                onChange={(e) => {
-                  setVideoSettings(prev => prev ? { ...prev, script: e.target.value } : null);
-                  setScriptCharCount(e.target.value.length);
-                }}
                 placeholder="Your generated script will appear here..."
+                readOnly
               />
             </div>
           </div>
@@ -379,8 +376,8 @@ export default function VideoSettingsPage() {
               <textarea
                 className="content-textarea short-copy"
                 value={typeof videoSettings?.shortCopy === 'object' ? (videoSettings.shortCopy as any)?.content || '' : videoSettings?.shortCopy || ''}
-                onChange={(e) => setVideoSettings(prev => prev ? { ...prev, shortCopy: e.target.value } : null)}
                 placeholder="Short copy for social media..."
+                readOnly
               />
             </div>
             <div className="copy-section">
@@ -388,8 +385,8 @@ export default function VideoSettingsPage() {
               <textarea
                 className="content-textarea long-copy"
                 value={typeof videoSettings?.longCopy === 'object' ? (videoSettings.longCopy as any)?.content || '' : videoSettings?.longCopy || ''}
-                onChange={(e) => setVideoSettings(prev => prev ? { ...prev, longCopy: e.target.value } : null)}
                 placeholder="Long copy for social media..."
+                readOnly
               />
             </div>
           </div>
