@@ -122,3 +122,27 @@ env:
     availability:
       - BUILD
       - RUNTIME
+#necesarios para youtube export
+  - variable: GOOGLE_CLIENT_ID
+    secret: GOOGLE_CLIENT_ID
+    availability:
+    - BUILD
+    - RUNTIME
+
+  - variable: GOOGLE_CLIENT_SECRET
+    secret: GOOGLE_CLIENT_SECRET
+    availability:
+    - BUILD
+    - RUNTIME
+
+  - variable: GOOGLE_REDIRECT_URI
+    secret: GOOGLE_REDIRECT_URI
+    availability:
+    - BUILD
+    - RUNTIME
+
+  - variable: NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    availability:
+    - BUILD
+    - RUNTIME
