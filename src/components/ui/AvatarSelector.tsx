@@ -2,128 +2,150 @@
 
 import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from './avatar';
-import { Button } from './button';
-import { Card, CardContent } from './card';
-import { Badge } from './badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserPlan } from '@/hooks/useUserPlan';
+import { AvatarModalSelector } from './AvatarModalSelector';
+import { Button } from './button';
 
 interface AvatarLook {
-  look_id: string;
-  look_name: string;
-  preview_url: string;
-  avatar_type: 'standard' | 'premium' | 'talking_photo';
-  gender: string;
-  premium: boolean;
+  avatar_id: string;
+  avatar_name: string;
+  preview_image_url: string;
+}
+
+interface TalkingPhotoLook {
+  talking_photo_id: string;
+  talking_photo_name: string;
+  preview_image_url: string;
 }
 
 interface AvatarGroup {
-  base_name: string;
-  base_type: 'standard' | 'premium' | 'talking_photo';
-  gender: string;
-  premium: boolean;
+  avatar_id: string;
+  avatar_name: string;
+  preview_image_url: string;
   looks: AvatarLook[];
+}
+
+interface TalkingPhotoGroup {
+  talking_photo_id: string;
+  talking_photo_name: string;
+  preview_image_url: string;
+  looks: TalkingPhotoLook[];
+}
+
+interface AvatarData {
+  avatars: AvatarGroup[];
+  talking_photos: TalkingPhotoGroup[];
 }
 
 interface AvatarSelectorProps {
   onAvatarSelect: (avatarId: string, lookId?: string) => void;
   selectedAvatarId?: string;
   selectedLookId?: string;
+  isModalOpen?: boolean;
+  setIsModalOpen?: (open: boolean) => void;
 }
 
-export function AvatarSelector({ onAvatarSelect, selectedAvatarId, selectedLookId }: AvatarSelectorProps) {
-  const [avatarGroups, setAvatarGroups] = useState<AvatarGroup[]>([]);
+export function AvatarSelector({ onAvatarSelect, selectedAvatarId, selectedLookId, isModalOpen, setIsModalOpen }: AvatarSelectorProps) {
+  const [selectedGroup, setSelectedGroup] = useState<AvatarGroup | TalkingPhotoGroup | null>(null);
+  const [selectedLook, setSelectedLook] = useState<AvatarLook | TalkingPhotoLook | null>(null);
+  const [avatarData, setAvatarData] = useState<AvatarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedGroup, setSelectedGroup] = useState<AvatarGroup | null>(null);
-  const [selectedLook, setSelectedLook] = useState<AvatarLook | null>(null);
+  const [internalModalOpen, setInternalModalOpen] = useState(false);
+  const modalOpen = typeof isModalOpen === 'boolean' ? isModalOpen : internalModalOpen;
+  const setModalOpen = setIsModalOpen || setInternalModalOpen;
   const { user } = useAuth();
   const { userPlan } = useUserPlan();
 
+  // Cargar datos según el plan del usuario
   useEffect(() => {
-    fetchAvatarGroups();
-  }, []);
-
-  const fetchAvatarGroups = async () => {
-    try {
-      setLoading(true);
-      const plan = userPlan || 'basic';
-      const response = await fetch(`/api/avatars-with-looks?plan=${plan}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch avatar groups: ${response.status}`);
-      }
-      const data = await response.json();
-      setAvatarGroups(data.avatar_groups || []);
-      // Set selected group if provided
-      if (selectedAvatarId) {
-        // Find the group that contains the look with this id
-        const group = (data.avatar_groups || []).find((g: AvatarGroup) => g.looks.some((l: AvatarLook) => l.look_id === selectedAvatarId));
-        if (group) {
-          setSelectedGroup(group);
-          const look = group.looks.find((l: AvatarLook) => l.look_id === selectedAvatarId);
-          if (look) setSelectedLook(look);
+    const loadAvatarData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        let jsonFile = '';
+        switch (userPlan) {
+          case 'free':
+            jsonFile = '/avatar-list/freeplan.json';
+            break;
+          case 'premium':
+            jsonFile = '/avatar-list/basicplan.json';
+            break;
+          case 'pro':
+            jsonFile = '/avatar-list/proplan.json';
+            break;
+          default:
+            jsonFile = '/avatar-list/freeplan.json';
         }
+
+        const response = await fetch(jsonFile);
+        if (!response.ok) {
+          throw new Error(`Failed to load avatar data: ${response.status}`);
+        }
+        
+        const data: AvatarData = await response.json();
+        setAvatarData(data);
+        
+        // Set selected group if provided
+        if (selectedAvatarId) {
+          // Buscar en avatars
+          const avatarGroup = data.avatars.find(g => g.looks.some(l => l.avatar_id === selectedAvatarId));
+          if (avatarGroup) {
+            setSelectedGroup(avatarGroup);
+            const look = avatarGroup.looks.find(l => l.avatar_id === selectedAvatarId);
+            if (look) setSelectedLook(look);
+          } else {
+            // Buscar en talking photos
+            const talkingPhotoGroup = data.talking_photos.find(g => g.looks.some(l => l.talking_photo_id === selectedAvatarId));
+            if (talkingPhotoGroup) {
+              setSelectedGroup(talkingPhotoGroup);
+              const look = talkingPhotoGroup.looks.find(l => l.talking_photo_id === selectedAvatarId);
+              if (look) setSelectedLook(look);
+            }
+          }
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error loading avatar data');
+        console.error('Error loading avatar data:', err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error fetching avatar groups');
-    } finally {
-      setLoading(false);
+    };
+
+    if (userPlan) {
+      loadAvatarData();
     }
+  }, [userPlan, selectedAvatarId]);
+
+  const handleAvatarSelect = (avatarId: string, lookId?: string) => {
+    onAvatarSelect(avatarId, lookId);
   };
 
-  const handleGroupChange = (baseName: string) => {
-    const group = avatarGroups.find(g => g.base_name === baseName);
-    setSelectedGroup(group || null);
-    if (group && group.looks.length > 0) {
-      setSelectedLook(group.looks[0]);
-      onAvatarSelect(group.looks[0].look_id);
+  const getGroupName = (group: AvatarGroup | TalkingPhotoGroup) => {
+    if ('avatar_id' in group) {
+      return group.avatar_name;
     } else {
-      setSelectedLook(null);
-      onAvatarSelect('', undefined);
+      return group.talking_photo_name;
     }
   };
 
-  const handleLookChange = (lookId: string) => {
-    if (selectedGroup) {
-      const look = selectedGroup.looks.find(l => l.look_id === lookId);
-      setSelectedLook(look || null);
-      if (look) onAvatarSelect(look.look_id);
+  const getLookName = (look: AvatarLook | TalkingPhotoLook) => {
+    if ('avatar_id' in look) {
+      return look.avatar_name;
+    } else {
+      return look.talking_photo_name;
     }
   };
 
-  const getAvatarTypeLabel = (type: string, premium?: boolean) => {
-    switch (type) {
-      case 'premium':
-        return 'Premium';
-      case 'standard':
-        return 'Standard';
-      case 'talking_photo':
-        return 'Talking Photo';
-      default:
-        return type;
-    }
-  };
-
-  const getAvatarTypeColor = (type: string) => {
-    switch (type) {
-      case 'premium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'standard':
-        return 'bg-blue-100 text-blue-800';
-      case 'talking_photo':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const getGroupType = (group: AvatarGroup | TalkingPhotoGroup) => {
+    return 'avatar_id' in group ? 'Avatar' : 'Talking Photo';
   };
 
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-          <div className="h-10 bg-gray-200 rounded"></div>
-        </div>
         <div className="animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
           <div className="h-10 bg-gray-200 rounded"></div>
@@ -136,80 +158,84 @@ export function AvatarSelector({ onAvatarSelect, selectedAvatarId, selectedLookI
     return (
       <div className="text-center py-8">
         <p className="text-red-500 mb-4">{error}</p>
-        <Button onClick={fetchAvatarGroups}>Retry</Button>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!avatarData) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No avatar data available</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Avatar Group Selection Dropdown */}
+      {/* Avatar Selection Button */}
       <div>
         <label className="video-forms-form-label">
           Selecciona un Avatar
         </label>
-        <select
-          value={selectedGroup?.base_name || ''}
-          onChange={(e) => handleGroupChange(e.target.value)}
-          className="video-forms-avatar-select"
+        <Button
+          onClick={() => setModalOpen(true)}
+          variant="outline"
+          className="w-full h-12 text-left justify-start bg-gray-800/50 border-gray-700 hover:bg-gray-700/50"
         >
-          <option value="">Selecciona un avatar...</option>
-          {avatarGroups.map((group) => (
-            <option key={group.base_name} value={group.base_name}>
-              {group.base_name.charAt(0).toUpperCase() + group.base_name.slice(1)} ({getAvatarTypeLabel(group.base_type, group.premium)})
-            </option>
-          ))}
-        </select>
+          {selectedLook ? (
+            <div className="flex items-center gap-3 w-full">
+              <Avatar className="h-8 w-8">
+                <AvatarImage 
+                  src={selectedLook.preview_image_url} 
+                  alt={getLookName(selectedLook)}
+                />
+                <AvatarFallback>
+                  {getLookName(selectedLook).charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 text-left">
+                <div className="font-medium text-white">
+                  {selectedGroup ? getGroupName(selectedGroup) : getLookName(selectedLook)}
+                </div>
+                <div className="text-sm text-gray-400">
+                  {selectedGroup && getGroupType(selectedGroup)} • {getLookName(selectedLook)}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <span className="text-gray-400">Haz clic para seleccionar un avatar...</span>
+          )}
+        </Button>
       </div>
-
-      {/* Look Selection Dropdown */}
-      {selectedGroup && selectedGroup.looks.length > 0 && (
-        <div>
-          <label className="video-forms-form-label">
-            Selecciona un Look
-          </label>
-          <select
-            value={selectedLook?.look_id || ''}
-            onChange={(e) => handleLookChange(e.target.value)}
-            className="video-forms-avatar-select"
-          >
-            <option value="">Selecciona un look...</option>
-            {selectedGroup.looks.map((look) => (
-              <option key={look.look_id} value={look.look_id}>
-                {look.look_name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
 
       {/* Selection Preview */}
       {selectedLook && selectedGroup && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '2rem',
-          marginTop: '2rem',
-          background: 'none',
-          boxShadow: 'none',
-          padding: 0
-        }}>
-          <Avatar style={{ width: 96, height: 96, minWidth: 96, minHeight: 96 }}>
+        <div className="flex items-center gap-4 p-4 bg-gray-800/30 rounded-lg border border-gray-700">
+          <Avatar className="h-16 w-16">
             <AvatarImage 
-              src={selectedLook.preview_url} 
-              alt={selectedLook.look_name}
-              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              src={selectedLook.preview_image_url} 
+              alt={getLookName(selectedLook)}
+              className="object-cover"
             />
-            <AvatarFallback style={{ fontSize: 32 }}>
-              {selectedLook.look_name.charAt(0)}
+            <AvatarFallback className="text-lg">
+              {getLookName(selectedLook).charAt(0)}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '1.3rem', color: 'white', marginBottom: 4 }}>
-              {selectedGroup.base_name.charAt(0).toUpperCase() + selectedGroup.base_name.slice(1)}
+          <div className="flex-1">
+            <div className="font-semibold text-white text-lg">
+              {getGroupName(selectedGroup)}
             </div>
-            <div style={{ fontSize: '1rem', color: '#cbd5e1' }}>
-              {selectedLook.look_name}
+            <div className="text-gray-300">
+              {getLookName(selectedLook)}
+            </div>
+            <div className="text-sm text-gray-400">
+              {getGroupType(selectedGroup)}
             </div>
           </div>
         </div>

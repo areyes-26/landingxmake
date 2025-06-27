@@ -29,6 +29,8 @@ export default function ExportViewPage() {
   const [ytTitle, setYtTitle] = useState('');
   const [ytDescription, setYtDescription] = useState('');
   const [ytLoading, setYtLoading] = useState(false);
+  const [showTikTokModal, setShowTikTokModal] = useState(false);
+  const [tiktokLoading, setTiktokLoading] = useState(false);
 
   useEffect(() => {
     if (!videoId) {
@@ -103,7 +105,7 @@ export default function ExportViewPage() {
   };
 
   const handleTikTokShare = () => {
-    window.open('https://www.tiktok.com/tiktokstudio/upload', '_blank');
+    setShowTikTokModal(true);
   };
 
   const togglePlay = () => {
@@ -220,6 +222,37 @@ export default function ExportViewPage() {
     setCopied(type);
     toast.success('Text copied to clipboard');
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const confirmTikTokExport = async () => {
+    if (!videoData) return;
+    setTiktokLoading(true);
+    try {
+      const downloadUrl = videoData.heygenResults?.videoUrl || videoData.videoUrl;
+      if (!downloadUrl) {
+        toast.error('No video available for download');
+        setTiktokLoading(false);
+        return;
+      }
+      // Descargar el video
+      const response = await fetch(downloadUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${videoData.videoTitle}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      // Redirigir a TikTok Studio
+      window.open('https://www.tiktok.com/tiktokstudio/upload', '_blank');
+      setShowTikTokModal(false);
+    } catch (error) {
+      toast.error('Error downloading video');
+    } finally {
+      setTiktokLoading(false);
+    }
   };
 
   if (!videoData) {
@@ -383,6 +416,35 @@ export default function ExportViewPage() {
               <button
                 onClick={() => setShowYouTubeModal(false)}
                 disabled={ytLoading}
+                className="modal-btn modal-btn-secondary"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showTikTokModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ minWidth: 380, maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, textAlign: 'center', letterSpacing: 0.2 }}>Export to TikTok</h3>
+            <div style={{ fontSize: 15, color: '#a3a3a3', marginBottom: 8, textAlign: 'center' }}>
+              Direct TikTok export is not yet available.<br />
+              By confirming, your video will be downloaded and the TikTok Studio upload page will open in a new tab.<br />
+              There you can upload your downloaded video and paste the generated copies from this page.
+            </div>
+            <div className="modal-actions">
+              <button
+                onClick={confirmTikTokExport}
+                disabled={tiktokLoading}
+                className="modal-btn modal-btn-primary"
+                style={{ background: 'linear-gradient(135deg, #0ea5e9, #7c3aed)', color: 'white' }}
+              >
+                {tiktokLoading ? 'Preparing...' : 'Confirm and open TikTok'}
+              </button>
+              <button
+                onClick={() => setShowTikTokModal(false)}
+                disabled={tiktokLoading}
                 className="modal-btn modal-btn-secondary"
               >
                 Cancel

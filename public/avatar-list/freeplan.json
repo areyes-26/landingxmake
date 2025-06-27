@@ -1,0 +1,286 @@
+{
+  "avatars": [
+    {
+      "avatar_id": "Abigail_expressive_2024112501",
+      "avatar_name": "Abigail",
+      "preview_image_url": "https://files2.heygen.ai/avatar/v3/1ad51ab9fee24ae88af067206e14a1d8_44250/preview_target.webp",
+      "looks": [
+        {
+          "avatar_id": "Abigail_standing_office_front",
+          "avatar_name": "Abigail Office Front",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/463208b6cad140d2b263535826838e3a_39240/preview_target.webp"
+        },
+        {
+          "avatar_id": "Abigail_standing_office_side",
+          "avatar_name": "Abigail Office Side",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/9886d46db7f24260bb219c756ca0d759_39250/preview_target.webp"
+        },
+        {
+          "avatar_id": "Abigail_sitting_sofa_front",
+          "avatar_name": "Abigail Sofa Front",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/cfdab85e050048d2abc901bf882c89a7_39220/preview_target.webp"
+        },
+        {
+          "avatar_id": "Abigail_sitting_sofa_side",
+          "avatar_name": "Abigail Sofa Side",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/e5e2683161894616b4cdf73d4f6ed6ea_39230/preview_target.webp"
+        }
+      ]
+    },
+    {
+      "avatar_id": "Adrian_public_3_20240312",
+      "avatar_name": "Adrian",
+      "preview_image_url": "https://files2.heygen.ai/avatar/v3/696e5afe51ee4794aa232753fa703fea_14947/preview_talk_2.webp",
+      "looks": [
+        {
+          "avatar_id": "Adrian_public_3_20240312",
+          "avatar_name": "Adrian in Blue Shirt",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/696e5afe51ee4794aa232753fa703fea_14947/preview_talk_2.webp"
+        },
+        {
+          "avatar_id": "Adrian_public_2_20240312",
+          "avatar_name": "Adrian in Blue Suit",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/25ef6c86b1e946969d9a684870c47dfe_14947/preview_talk_1.webp"
+        },
+        {
+          "avatar_id": "Adrian_public_20240312",
+          "avatar_name": "Adrian in Blue Sweater",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/3e3d8f2231e44f73af86ff2f68b7649a_14947/preview_talk_4.webp"
+        }
+      ]
+    },
+    {
+      "avatar_id": "Adriana_BizTalk_Front_public",
+      "avatar_name": "Adriana",
+      "preview_image_url": "https://files2.heygen.ai/avatar/v3/c3d1baaebbe84752b7a473373c6cd385_42780/preview_target.webp",
+      "looks": [
+        {
+          "avatar_id": "Adriana_BizTalk_Front_public",
+          "avatar_name": "Adriana BizTalk Front",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/c3d1baaebbe84752b7a473373c6cd385_42780/preview_target.webp"
+        },
+        {
+          "avatar_id": "Adriana_BizTalk_Side_public",
+          "avatar_name": "Adriana BizTalk Side",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/5fb6d7ff842944f69d1ba419e15e2d77_42450/preview_talk_2.webp"
+        },
+        {
+          "avatar_id": "Adriana_Business_Front_2_public",
+          "avatar_name": "Adriana Business Front 2",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/88dbd2785def417ca7a2b79d4cf40c6d_42780/preview_talk_3.webp"
+        },
+        {
+          "avatar_id": "Adriana_Business_Front_public",
+          "avatar_name": "Adriana Business Front ",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/2b68bcf81edc44fabdc9070e62ca1f82_42780/preview_talk_2.webp"
+        },
+        {
+          "avatar_id": "Adriana_Business_Side_public",
+          "avatar_name": "Adriana Business Side",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/18f25fd5ce0040a29a954e95165e233a_42770/preview_target.webp"
+        },
+        {
+          "avatar_id": "Adriana_Nurse_Front_2_public",
+          "avatar_name": "Adriana Nurse Front 2",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/e3dfd4ec90884caeae05430db04334dd_42440/preview_target.webp"
+        },
+        {
+          "avatar_id": "Adriana_Nurse_Front_public",
+          "avatar_name": "Adriana Nurse Front",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/79c13347a41a43059ddbad785a5836d6_47140/preview_target.webp"
+        },
+        {
+          "avatar_id": "Adriana_Nurse_Side_2_public",
+          "avatar_name": "Adriana Nurse Side 2",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/599c75d72b0545f9908327b491a9ec36_42450/preview_talk_4.webp"
+        },
+        {
+          "avatar_id": "Adriana_Nurse_Side_public",
+          "avatar_name": "Adriana Nurse Side",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/c6a3c89a0e0f4170be2bdb5e2c3616b3_42450/preview_talk_3.webp"
+        },
+        {
+          "avatar_id": "Adriana_Nurse_Sitting_Side_public",
+          "avatar_name": "Adriana Nurse Sitting Side",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/2ffe91c78a70469696ed793bc01a682b_42450/preview_target.webp"
+        },
+        {
+          "avatar_id": "Adriana_SuitSofa_Front_public",
+          "avatar_name": "Adriana SuitSofa Front",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/ab83416187164ac386f72e7c7288e70b_42780/preview_talk_1.webp"
+        }
+      ]
+    },
+    {
+      "avatar_id": "Aiko_public",
+      "avatar_name": "Aiko",
+      "preview_image_url": "https://files2.heygen.ai/avatar/v3/1cc18796d5e44342b3247c1aa847bc8f_52250/preview_target.webp",
+      "looks": [
+        {
+          "avatar_id": "Aiko_public",
+          "avatar_name": "Aiko",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/1cc18796d5e44342b3247c1aa847bc8f_52250/preview_target.webp"
+        }
+      ]
+    },
+    {
+      "avatar_id": "Amanda_in_Blue_Shirt_Front",
+      "avatar_name": "Amanda",
+      "preview_image_url": "https://files2.heygen.ai/avatar/v3/74982c18df0f43fbbf304133b49b2170_35020/preview_target.webp",
+      "looks": [
+        {
+          "avatar_id": "Amanda_in_Blue_Shirt_Front",
+          "avatar_name": "Amanda in Blue Shirt (Front)",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/74982c18df0f43fbbf304133b49b2170_35020/preview_target.webp"
+        },
+        {
+          "avatar_id": "Amanda_in_Blue_Shirt_Left",
+          "avatar_name": "Amanda in Blue Shirt (Left)",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/df3a17e47a5c4cada4199c4bab4b4cff_35030/preview_target.webp"
+        },
+        {
+          "avatar_id": "Amanda_in_Blue_Shirt_Right",
+          "avatar_name": "Amanda in Blue Shirt (Right)",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/912f2e54677a4f29b1dc877d20e3ce49_35040/preview_target.webp"
+        },
+        {
+          "avatar_id": "Amanda_in_Grey_Shirt_Front",
+          "avatar_name": "Amanda in Grey Shirt (Front)",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/ecd4d2f8ee2b4178929876bb86efa799_35020/preview_talk_1.webp"
+        },
+        {
+          "avatar_id": "Amanda_in_Grey_Shirt_Left",
+          "avatar_name": "Amanda in Grey Shirt (Left)",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/f6f77b67900e45ffaf5f3fe756ba2bc2_35030/preview_talk_1.webp"
+        },
+        {
+          "avatar_id": "Amanda_in_Grey_Shirt_Right",
+          "avatar_name": "Amanda in Grey Shirt (Right)",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/93b2b6e3ceb34ca880a8c053ade3293c_35040/preview_talk_1.webp"
+        },
+        {
+          "avatar_id": "Amanda_Maintenance_Front",
+          "avatar_name": "Amanda in Maintenance (Front)",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/23807df66d6c4a2d89248ed269ef1a14_35020/preview_talk_2.webp"
+        },
+        {
+          "avatar_id": "Amanda_Maintenance_Left",
+          "avatar_name": "Amanda in Maintenance (Left)",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/7736e274ddb24d08a1168653ea5c11b2_35030/preview_talk_2.webp"
+        },
+        {
+          "avatar_id": "Amanda_Maintenance_Right",
+          "avatar_name": "Amanda in Maintenance (Right)",
+          "preview_image_url": "https://files2.heygen.ai/avatar/v3/21a54eff27e54a98acd49ad2b33cc657_35040/preview_talk_2.webp"
+        }
+      ]
+    }
+  ],
+  "talking_photos": [
+    {
+      "talking_photo_id": "20f815d45a20446790deb74355b8bdf8",
+      "talking_photo_name": "Dr. Serene Wisdom",
+      "preview_image_url": "https://files2.heygen.ai/talking_photo/20f815d45a20446790deb74355b8bdf8/42e88c29c35e4a16a3cc8ade34ee8596.WEBP?Expires=1751239958&Signature=FAPVR-4NHforHnlciuU9D8tBk39mu78GkQ0iFl7qYiO9qv3C6sQ1Zx~qUDKFtaELTXRZRw9i3VAvBSu05XDmow1EjToNZKwBNpJKHkVNW1jkfNesb5CPHZrtjQt7-C9uODvTzeqICARtcf~nizpf-FlEe7OZp0M964CCqxMkBaAoQarN5JnA23C3A6Ifl1tBG~5hKqoiSOPV6D4u3~w74hyRf5fYlpsG4zWZb96AD4phaTom09Gzxx1we2QsZfKSCm2ZW~QsHniE~RnADdC7IQ5X8IVOMeCxDW4DeY4MScc~VN~PnyF36MH4Hll5D-7A4PMwgrAi3lW6hDTU3e9GSQ__&Key-Pair-Id=K38HBHX5LX3X2H",
+      "looks": [
+        {
+          "talking_photo_id": "20f815d45a20446790deb74355b8bdf8",
+          "talking_photo_name": "Dr. Serene Wisdom 4",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/20f815d45a20446790deb74355b8bdf8/42e88c29c35e4a16a3cc8ade34ee8596.WEBP?Expires=1751239958&Signature=FAPVR-4NHforHnlciuU9D8tBk39mu78GkQ0iFl7qYiO9qv3C6sQ1Zx~qUDKFtaELTXRZRw9i3VAvBSu05XDmow1EjToNZKwBNpJKHkVNW1jkfNesb5CPHZrtjQt7-C9uODvTzeqICARtcf~nizpf-FlEe7OZp0M964CCqxMkBaAoQarN5JnA23C3A6Ifl1tBG~5hKqoiSOPV6D4u3~w74hyRf5fYlpsG4zWZb96AD4phaTom09Gzxx1we2QsZfKSCm2ZW~QsHniE~RnADdC7IQ5X8IVOMeCxDW4DeY4MScc~VN~PnyF36MH4Hll5D-7A4PMwgrAi3lW6hDTU3e9GSQ__&Key-Pair-Id=K38HBHX5LX3X2H"
+        },
+        {
+          "talking_photo_id": "f01d5d49bb5a44b29a42f10b1e5dba0a",
+          "talking_photo_name": "Dr. Serene Wisdom 3",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/f01d5d49bb5a44b29a42f10b1e5dba0a/3db3082d21ec4ff09c760367dc6c13b4.WEBP?Expires=1751239958&Signature=pFEu9J6uoMzJhzUOmBQ2MOX71YjiqlGdxZ0Jv2GwtM9zgQyRQJdU-iObQniEahTj7jDO-NBKa1qFEkNqy0RpzVVqiGI6gpmfcKkEEIe3uuI48e2nfIFVJMmfFNWGBBtZEHQRFBNhX5kbqm3mcEl6oWDGwNQ1EjBfExGyEvWcVc83ZLU4JIhlLzEwvtQTnVPJM8zGh8Y~FC9I3uQjKjQnCBMKpwwiCM~OpL8h6ZCjwSc-Hrxkm4zYydlP0rxYgUTgyVODOkDnc0H6-hdISVDdUOY8RP70dJrU9ybKVPYo9ovJxRApyEKXtVpt0VFj3jFTWVSRHVCS7bFV54eJUSv7Lw__&Key-Pair-Id=K38HBHX5LX3X2H"
+        },
+        {
+          "talking_photo_id": "50fcc27d78e4409899d213f5f07b5a18",
+          "talking_photo_name": "Dr. Serene Wisdom 2",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/50fcc27d78e4409899d213f5f07b5a18/bd76606bb7034af6bdf626c01fe5596c.WEBP?Expires=1751239958&Signature=kuqzRoT~7yCfSvq2TNZkE9Rs28j-npCsORs0F5FzyxU3XSw8GxkBGxj6Kpd97rw8vfsP8jj~8wuNujIAT3BpvEJCtxLfqytEOGrlhoaGazwLtsUCgE2pPEVD-j6RFOTN76~0aidTWlMm3J0hVxq-kudSD0U3FurvsH3TUaWGU4ZH9J96uggVgejJjb3yZvbrQZPcXnja7pmbufqbM-ehpQz1hZrsrT7~BKRBl39EtjqsZmaQjcmRi8AnUifb85RyYOSc9~4xZ6k8zOQ7fhuirrFFr~Tc9c9mgKasskvb0njuXJvF4wL9MYL3RvOV~UZ41J5pwx4XqeaZpV4~zrzvGg__&Key-Pair-Id=K38HBHX5LX3X2H"
+        },
+        {
+          "talking_photo_id": "5d1a504bafa24d19812865e9aa498f5c",
+          "talking_photo_name": "Dr. Serene Wisdom 1",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/5d1a504bafa24d19812865e9aa498f5c/2d2f8b7662eb482789a1c9ef39472ed3.WEBP?Expires=1751239958&Signature=ZoJcoXFWYfXdgZ~8RM5PHJYV43M~T9tSubELg4zgUhFo~EC37rqX7Y7dh6Z4CcMzPmadp6tiV3BE6LaY~Zz-xstuOHlrNR5wI9Bx0e4HzzrylBk3icaNrRol8oqVZNNZaAFEieE3RkgeCkSMZKiiX-8z0uZd-HojJf-o~ZD5PZkyRrnujrA341v95f5bJhxw0qw-W24a8w5j0YM2aA2ucb5F-uhX0DUKaP1yVPqB7FQYeJnZfeuHdlHC5v3xgKddlLCSxI9U4mt-TmHQfspXe15TLfbIg8enC-j1eGUtZkfphGe3~aEwKzLQ-3w5OOpAbO22oX5VKfN815OA9-kpkw__&Key-Pair-Id=K38HBHX5LX3X2H"
+        }
+      ]
+    },
+    {
+      "talking_photo_id": "83ad47fea296494da07d4c58b3333e5e",
+      "talking_photo_name": "Modern Office Professional",
+      "preview_image_url": "https://files2.heygen.ai/talking_photo/83ad47fea296494da07d4c58b3333e5e/0eee9b45adfe4551a8f79de24ffaf39f.webp?Expires=1751239959&Signature=fGwQ5lRuMMdBUHdLt84uiuq68fDG--G6kf3vjz6DxGwpZ9tCNw5hbyXkIC34beikkZD1IwBaD4Migz0E8Ds-12YFESqUtJTznd1kIe5omIMonrDnbSeSNUcB3TM8sqlpt0-OtfawMWsCbysSSSe7Nc9fgHhuYWp0VKddNsX-YbT6rJ4EFfwbn-GV9V8x4bbKA-MyzOgoquXYx6F9dF9~Al4P9VVVKyg8-CpRg5CawNAbB2bJnaGLgi4KtHscTE2ToDyRvhmcRbE3sPerwKRvKuh7Xp-nGYwPLbmytY8Onf0Cpsi2YeeVgk9q4089EiGcT2ZTtdhgPUOqFeX3kgZQAQ__&Key-Pair-Id=K38HBHX5LX3X2H",
+      "looks": [
+        {
+          "talking_photo_id": "8f265ecbe6a245f89b9e02da73ff5dc7",
+          "talking_photo_name": "Modern Office Professional 4",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/8f265ecbe6a245f89b9e02da73ff5dc7/74694da09ac54adea6d5e5340e07213a.webp?Expires=1751239959&Signature=P6E9bd4msb0zzgldH8lLaRsK2aErVjnMoOgeyZsRLkKaxVosJscV5~1E-mFrM~EzMPq3xfom1TaG8-CACe8~BCzmmX5BZR~5NWgpYjHqAEZl5iiHjimAnA-pCkJycRWi-i2lrPQOiHxLae263qO8c2LKE7O1HZ5OalRaEDLbD1Cf0IkjWp3snD8l3LBpOV57P9K4VYQ7VdJc2cHaMDf3yiJi2jVvcBuloD4YdqSFnfKF7xRw0l9gQ-qJQQmGKdQTmlEWJv3RBurIIDTeVnTnFqpEqdIt64gHDjm7GwnzYZZjY4PvKrfOcNuHJRbON~qyZEN0BJeew6gGjdhmeZkTbw__&Key-Pair-Id=K38HBHX5LX3X2H"
+        },
+        {
+          "talking_photo_id": "66c0c26b6abd427ab97b85f422b580cd",
+          "talking_photo_name": "Modern Office Professional 3",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/66c0c26b6abd427ab97b85f422b580cd/f80af3085760421da93396576b3ca83f.webp?Expires=1751239959&Signature=gahrqun5~sY8sc8GlfMP8qLLrg5jcH2LN0dlEUkOKwdNjDLE0065TfsKV5hD0j08VKAuZBkaiqh28PNCcsK1cvfv0qDUm7X-8tmHiDEMq6xnLABlfx6cIfcbfojm2etkRTIYYXNPin4MQ3bU8zq2smPLGckXQHH~A6KUiqfLjGidL72hBZx0bxcY-RMLBEV6217UMNL1scC-fyjf2AtyXgcyCyfI31jxCX1aJR4dBedk68anxG7BDSfi937cGKQ7rDhuHGVNFhuTNQ8yty9XypOrR8ETExTgctGI5y6et~TEwkXKTjOdOOz6GKk0A79lvx7A9P~J0UVL5hrpGB~nvQ__&Key-Pair-Id=K38HBHX5LX3X2H"
+        },
+        {
+          "talking_photo_id": "48684056468142f58496b46cb6546e8e",
+          "talking_photo_name": "Modern Office Professional 2",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/48684056468142f58496b46cb6546e8e/fcec88e4962643ddaaddbe8801b416cc.webp?Expires=1751239959&Signature=gkHEG82XDFh6RcRirtvIMM9Wy7xHXvKb664TCqYJMQpym0ZFmOn-TkmVJZyYsfHEcZCJucmNo-BR1H4v82xVowoOPxRQ2y626PzWeCj42hmc6QpjkaqW6F98vYoaCgF4PsFm43AXI7yqijigrsC5sB1dKSVgLbhujzd7mXbny23-ZcQDP1RcEDvvZrITJminy-8qb9S6ZP164DgozjhiqJC-Av8QLMLGLug0LCo3dG~ye65J3XEClcFQ-QCYd5IRSUkaGAse9FQ6gKxuZoyjUiVRCWkYyX2DakbGnBIcn7l0PMjcEgWt4UspweqdcD0BwM22gEfmckJQoE8US-QA2Q__&Key-Pair-Id=K38HBHX5LX3X2H"
+        },
+        {
+          "talking_photo_id": "83ad47fea296494da07d4c58b3333e5e",
+          "talking_photo_name": "Modern Office Professional 1",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/83ad47fea296494da07d4c58b3333e5e/0eee9b45adfe4551a8f79de24ffaf39f.webp?Expires=1751239959&Signature=fGwQ5lRuMMdBUHdLt84uiuq68fDG--G6kf3vjz6DxGwpZ9tCNw5hbyXkIC34beikkZD1IwBaD4Migz0E8Ds-12YFESqUtJTznd1kIe5omIMonrDnbSeSNUcB3TM8sqlpt0-OtfawMWsCbysSSSe7Nc9fgHhuYWp0VKddNsX-YbT6rJ4EFfwbn-GV9V8x4bbKA-MyzOgoquXYx6F9dF9~Al4P9VVVKyg8-CpRg5CawNAbB2bJnaGLgi4KtHscTE2ToDyRvhmcRbE3sPerwKRvKuh7Xp-nGYwPLbmytY8Onf0Cpsi2YeeVgk9q4089EiGcT2ZTtdhgPUOqFeX3kgZQAQ__&Key-Pair-Id=K38HBHX5LX3X2H"
+        }
+      ]
+    },
+    {
+      "talking_photo_id": "ba6efc58680743348bece42cc76d62e5",
+      "talking_photo_name": "The Confident Architect",
+      "preview_image_url": "https://files2.heygen.ai/talking_photo/ba6efc58680743348bece42cc76d62e5/4513f57ba42f4853ac39c6b30ab95458.webp?Expires=1751239959&Signature=EzRt8OIQPJtMSO8551bK~5vCTOGcGUccfOvF2I~ScTLcxW869l7rRNeMsUl0L6FeNU3PgknQAs2ogbLSYN2cOAGveS4SWg92hyqcLQaQTGqy3PGkAH0gsR-6U-R1NToNAEvpTeNgqiDIIlvfnSESRODLxdf6glrKiOakr59Icmsu7nu79m5RWOWkIYqNrOSWpGC-OzqWZl0TV3uDCAeMAgDR1Mk11r9il6wRg3znOlm02YAcYe3FFqvuIREabmnWbmaojMnx0MqPvQsggAPgQQZefFbmnRaYBbGjrwEPnj3W213KZaIVDv~VxGHpkmkRKf-1nqx5XwU3c162aDl4vg__&Key-Pair-Id=K38HBHX5LX3X2H",
+      "looks": [
+        {
+          "talking_photo_id": "49c8ec024bea416199fa6201a7c32df5",
+          "talking_photo_name": "The Confident Architect 4",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/49c8ec024bea416199fa6201a7c32df5/92823de053d142c2a6fff3e90b960265.webp?Expires=1751239959&Signature=BtmIaNumxLuJbbk8SeqK-7R3wPRaTA6Afc6WRQh4~gz3PtJUIZatR~6t0SA~mxhAHbrNMp76ItRk6onOvTwsGD5pXBbG0tyuzQrSZxNNg8hHnvxndxWNf-IYcCG8QVkHhd1YWgB1iFdTAZZYTXnvPJKaZjlgeMTwL~OoDPTTsZ-mCz6g1WRJFj9Zd22Q5UfUMTqKbxK3dINcv7Aqy9A~FQxm-Uz1FAAa~eyMIMZRjQc4bsQA7W2CEKG8m3t6O9nHv3E4fsDvm-Y0F~ZJuXnTRqnAYm1kjkYtN6CW1T1eNInO-YCiyN8lch~FBCwUB57mfgqDa79gT9NHv3aYbzSlQw__&Key-Pair-Id=K38HBHX5LX3X2H"
+        },
+        {
+          "talking_photo_id": "fe12141077204da3869dafc304b3b42f",
+          "talking_photo_name": "The Confident Architect 3",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/fe12141077204da3869dafc304b3b42f/b94e9ec6632846a2920fc92578c29b07.webp?Expires=1751239959&Signature=pgJfntYy5OFkcF4v7I9xYlbdcSQhxMKWezou1EEBljm1FyegksUJLSxVPP0kstjii8px4Pf3uJgGe6uTKYyZJ7~LY1PTdU6uZdBnQAIhNmDx6o7kGX4Zr3aHsYxjEVCJ2OJH2WOOted4JK8Af~BWRKc9Q9Uw-W0fPWNFgTQ7T6HmwtVaugoohBVFe~SFx8B0nwgCenjZ2P5HuGk6u-ETcTTYihXtZiRscHLh00PEGQiH8GO5GnsuSyWeGD2HY3I~oLEjqq-YUB2PzdZRqPOefxMK3vvw3Sggb30l-Xye8zS5f3BcdXY1ZkjAnsSHxaUljzK7iBiNsxxcXFUQQB3k7A__&Key-Pair-Id=K38HBHX5LX3X2H"
+        },
+        {
+          "talking_photo_id": "861bb7118e0f46578e47c21b71dfcdb1",
+          "talking_photo_name": "The Confident Architect 2",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/861bb7118e0f46578e47c21b71dfcdb1/9f54adff73fa45d59aee7e7f0e7c46da.webp?Expires=1751239959&Signature=a0JSYExY6OVx-Oes~mtYOwkTd9vgs~qZki9BSr4BMhMqAyq4FXJhCOPMlwJLaDaYnSx4GULHmCp4vRfctFl5keewKo9QVrxd~qWIppLsnF353vNAYja4OHqk0r9ekO4HlRiAp55LDeDjbKge9zFpKECxqolW8rPccGEW8ZFwRc0VzHHfSoYrdqXTD~C7onYD1ABL4DyiQOlpvpBPSzgXfH8p~MOh7FUo0aZ3Ofjdz~zGiWh~wBiKtuDqND22COMYpqjn1BBtlkbStUEWjhmJo4R1Zv-WZCLE2yaBr-q4LU1a3bwuxJjTsQdry6WDZsUT5pL~L9RgNfY8WdslL3GMdA__&Key-Pair-Id=K38HBHX5LX3X2H"
+        },
+        {
+          "talking_photo_id": "ba6efc58680743348bece42cc76d62e5",
+          "talking_photo_name": "The Confident Architect 1",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/ba6efc58680743348bece42cc76d62e5/4513f57ba42f4853ac39c6b30ab95458.webp?Expires=1751239959&Signature=EzRt8OIQPJtMSO8551bK~5vCTOGcGUccfOvF2I~ScTLcxW869l7rRNeMsUl0L6FeNU3PgknQAs2ogbLSYN2cOAGveS4SWg92hyqcLQaQTGqy3PGkAH0gsR-6U-R1NToNAEvpTeNgqiDIIlvfnSESRODLxdf6glrKiOakr59Icmsu7nu79m5RWOWkIYqNrOSWpGC-OzqWZl0TV3uDCAeMAgDR1Mk11r9il6wRg3znOlm02YAcYe3FFqvuIREabmnWbmaojMnx0MqPvQsggAPgQQZefFbmnRaYBbGjrwEPnj3W213KZaIVDv~VxGHpkmkRKf-1nqx5XwU3c162aDl4vg__&Key-Pair-Id=K38HBHX5LX3X2H"
+        }
+      ]
+    },
+    {
+      "talking_photo_id": "c0455114f9434050a9785e8cf42fd271",
+      "talking_photo_name": "Corporate Commander",
+      "preview_image_url": "https://files2.heygen.ai/talking_photo/c0455114f9434050a9785e8cf42fd271/18b47bf6ce2546edb737a006eaab7b7c.webp?Expires=1751239959&Signature=Ne4C-c~I59O~PPExgvDi-5~LGBsZ6~GatLSIDF6zdQ~e4aSBzutFOCFb18TODKqnkONn89lCMFZR3b2LV6bfkj1FR1oivs2vmOuq6Iq0-QJxxFarUIM9ULtOwAimHxDLNnAyqUeA0N-Ur~xBDTQyPTL83Vt98xq2Anwal35ihvmkLuu9oJg86osekmZ89LbcYH4rn48wmg7lAbqY7kVNp~EeBQIjD6gA56QT1bhLBYNZJk4FTHKWF~uhQ81pg62IHIFSCAmMn4q3rSE2sfAMfvqAqgtBdn999TG9hs5xrO0dEiilgi~iII0pJhYGFBdO73Zpdta-Ce6Xaf00mESQew__&Key-Pair-Id=K38HBHX5LX3X2H",
+      "looks": [
+        {
+          "talking_photo_id": "c0455114f9434050a9785e8cf42fd271",
+          "talking_photo_name": "Corporate Commander",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/c0455114f9434050a9785e8cf42fd271/18b47bf6ce2546edb737a006eaab7b7c.webp?Expires=1751239959&Signature=Ne4C-c~I59O~PPExgvDi-5~LGBsZ6~GatLSIDF6zdQ~e4aSBzutFOCFb18TODKqnkONn89lCMFZR3b2LV6bfkj1FR1oivs2vmOuq6Iq0-QJxxFarUIM9ULtOwAimHxDLNnAyqUeA0N-Ur~xBDTQyPTL83Vt98xq2Anwal35ihvmkLuu9oJg86osekmZ89LbcYH4rn48wmg7lAbqY7kVNp~EeBQIjD6gA56QT1bhLBYNZJk4FTHKWF~uhQ81pg62IHIFSCAmMn4q3rSE2sfAMfvqAqgtBdn999TG9hs5xrO0dEiilgi~iII0pJhYGFBdO73Zpdta-Ce6Xaf00mESQew__&Key-Pair-Id=K38HBHX5LX3X2H"
+        }
+      ]
+    },
+    {
+      "talking_photo_id": "b3a8553dea88462cb3ef442b38cc6920",
+      "talking_photo_name": "Confident Professional",
+      "preview_image_url": "https://files2.heygen.ai/talking_photo/b3a8553dea88462cb3ef442b38cc6920/98d74c02f8ac4920aaf3ffea94ac3dbf.webp?Expires=1751239959&Signature=jwYb9zd5R7h5ioz91W1YN7mcSPeIUqIO4~wrsehkJJTWrKpKkirzsrY3S5wTGhatjPYErMNxcrscRDqCIa5Q1MZLNI82sRtwtdng~odvgPqZ-Pe58V0sUdT~J9Wp4yRw6jcGm1POQnYH1Ie6Fe4cZyhxpPI00HMSrFdPMAgbCll6141BnDgVe04X1SSx8IJd5d7A3cQQV4hhtXofP47lfpenuT97wSl70nn-YHstaNtzasoulGv4N8YGodAH4SEVHIWILi6KEnpmPB5nBtCDcDR4rOX82Nid6MySqru5UaYGUyw8uT5Dty7aLRPPX3ySZrEXq9XsalzQTOhq5JTKfw__&Key-Pair-Id=K38HBHX5LX3X2H",
+      "looks": [
+        {
+          "talking_photo_id": "b3a8553dea88462cb3ef442b38cc6920",
+          "talking_photo_name": "Confident Professional",
+          "preview_image_url": "https://files2.heygen.ai/talking_photo/b3a8553dea88462cb3ef442b38cc6920/98d74c02f8ac4920aaf3ffea94ac3dbf.webp?Expires=1751239959&Signature=jwYb9zd5R7h5ioz91W1YN7mcSPeIUqIO4~wrsehkJJTWrKpKkirzsrY3S5wTGhatjPYErMNxcrscRDqCIa5Q1MZLNI82sRtwtdng~odvgPqZ-Pe58V0sUdT~J9Wp4yRw6jcGm1POQnYH1Ie6Fe4cZyhxpPI00HMSrFdPMAgbCll6141BnDgVe04X1SSx8IJd5d7A3cQQV4hhtXofP47lfpenuT97wSl70nn-YHstaNtzasoulGv4N8YGodAH4SEVHIWILi6KEnpmPB5nBtCDcDR4rOX82Nid6MySqru5UaYGUyw8uT5Dty7aLRPPX3ySZrEXq9XsalzQTOhq5JTKfw__&Key-Pair-Id=K38HBHX5LX3X2H"
+        }
+      ]
+    }
+  ]
+}
