@@ -19,7 +19,7 @@ export const instagramCallback = functions.https.onRequest(async (req, res) => {
 
   try {
     console.log('[STEP] Exchanging code for access token...');
-    const tokenRes = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+    const tokenRes = await axios.get('https://graph.facebook.com/v19.0/oauth/access_token', {
       params: {
         client_id,
         client_secret,
@@ -37,15 +37,76 @@ export const instagramCallback = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    // Guardamos token básico asociado a un ID de sesión (por ahora sin perfil)
-    await db.collection('instagram_tokens').doc(state).set({
+    console.log('[STEP] Getting user info...');
+    const userRes = await axios.get('https://graph.facebook.com/v19.0/me', {
+      params: {
+        access_token: access_token,
+        fields: 'id,name,email'
+      }
+    });
+
+    const userId = userRes.data.id;
+    console.log('[USER INFO]', userRes.data);
+
+    console.log('[STEP] Getting user pages...');
+    const pagesRes = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
+      params: {
+        access_token: access_token,
+        fields: 'id,name,access_token,instagram_business_account'
+      }
+    });
+
+    const pages = pagesRes.data.data;
+    console.log('[PAGES RESPONSE]', pages);
+
+    let instagramBusinessAccount = null;
+    let pageId = null;
+    let pageAccessToken = null;
+
+    // Buscar página con cuenta de Instagram Business
+    for (const page of pages) {
+      if (page.instagram_business_account) {
+        console.log('[STEP] Getting Instagram Business Account details...');
+        const igAccountRes = await axios.get(`https://graph.facebook.com/v19.0/${page.instagram_business_account.id}`, {
+          params: {
+            access_token: page.access_token,
+            fields: 'id,username,name,profile_picture_url'
+          }
+        });
+
+        instagramBusinessAccount = igAccountRes.data;
+        pageId = page.id;
+        pageAccessToken = page.access_token;
+        break;
+      }
+    }
+
+    // Guardar información completa en Firestore usando el user ID real
+    const connectionData = {
       accessToken: access_token,
       tokenType: token_type,
       expiresIn: expires_in,
       createdAt: Date.now(),
+      userId: userId,
+      userName: userRes.data.name,
+      userEmail: userRes.data.email,
+      pageId: pageId,
+      pageAccessToken: pageAccessToken,
+      instagramBusinessAccount: instagramBusinessAccount,
+      pages: pages,
+      scopes: ['pages_show_list', 'instagram_basic', 'pages_read_engagement', 'instagram_content_publish']
+    };
+
+    // Guardar usando el user ID real
+    await db.collection('instagram_tokens').doc(userId).set(connectionData);
+
+    // También guardar temporalmente con el state para la página de éxito
+    await db.collection('instagram_tokens').doc(state).set({
+      ...connectionData,
+      tempState: true
     });
 
-    console.log('[SUCCESS] Token saved. Redirecting...');
+    console.log('[SUCCESS] Complete Instagram connection saved. Redirecting...');
     res.redirect('https://landing-videos-generator-06--landing-x-make.us-central1.web.app/instagram/success');
   } catch (error: any) {
     const raw = error.response?.data || error.message;

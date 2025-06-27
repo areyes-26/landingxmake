@@ -8,7 +8,7 @@ import { doc, getDoc } from 'firebase/firestore';
 export default function InstagramSuccessPage() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
-  const [name, setName] = useState<string | null>(null);
+  const [instagramData, setInstagramData] = useState<any>(null);
 
   useEffect(() => {
     const fetchInstagramToken = async () => {
@@ -24,12 +24,15 @@ export default function InstagramSuccessPage() {
 
         if (snapshot.exists()) {
           const data = snapshot.data();
-          setName(data.name || null);
+          setInstagramData(data);
           setStatus('done');
+
+          // Limpiar el state temporal
+          localStorage.removeItem('instagram_oauth_state');
 
           // Redirigir automáticamente
           setTimeout(() => {
-            router.push('/dashboard');
+            router.push('/account-setting');
           }, 3000);
         } else {
           setStatus('error');
@@ -65,8 +68,18 @@ export default function InstagramSuccessPage() {
     <div className="flex flex-col items-center justify-center h-screen text-center px-4">
       <h1 className="text-3xl font-bold mb-4">✅ Cuenta conectada</h1>
       <p className="text-muted-foreground mb-2">
-        Bienvenido, {name || 'usuario'}.
+        Bienvenido, {instagramData?.userName || 'usuario'}.
       </p>
+      {instagramData?.instagramBusinessAccount && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <p className="text-green-800 font-medium">
+            Instagram Business: @{instagramData.instagramBusinessAccount.username}
+          </p>
+          <p className="text-green-600 text-sm">
+            {instagramData.instagramBusinessAccount.name}
+          </p>
+        </div>
+      )}
       <p className="text-muted-foreground">Serás redirigido en unos segundos...</p>
     </div>
   );

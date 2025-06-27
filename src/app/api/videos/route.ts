@@ -155,6 +155,7 @@ export async function POST(req: NextRequest) {
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
         userId,
+        creditsUsed: totalCost,
         ...(dimension && { dimension }),
         ...(lookId && { lookId })
       };

@@ -14,6 +14,8 @@ import type { VideoData } from '@/types/video';
 import './custom-scrollbar.css';
 import './export-view.css';
 import { useAuth } from '@/hooks/useAuth';
+import { useVideoUrlRefresh } from '@/hooks/useVideoUrlRefresh';
+import { UrlExpirationIndicator } from '@/components/UrlExpirationIndicator';
 
 export default function ExportViewPage() {
   const router = useRouter();
@@ -32,6 +34,13 @@ export default function ExportViewPage() {
   const [showTikTokModal, setShowTikTokModal] = useState(false);
   const [tiktokLoading, setTiktokLoading] = useState(false);
 
+  // Usar el hook para manejar el refresco de URLs
+  const { isRefreshingUrl, refreshVideoUrl } = useVideoUrlRefresh({
+    videoData,
+    videoId: videoId || '',
+    onUrlRefreshed: setVideoData,
+  });
+
   useEffect(() => {
     if (!videoId) {
       toast.error('No video ID provided');
@@ -44,7 +53,9 @@ export default function ExportViewPage() {
         return;
       }
       const data = docSnap.data() as VideoData;
-      setVideoData({ ...data, id: docSnap.id });
+      const videoDataWithId = { ...data, id: docSnap.id };
+      
+      setVideoData(videoDataWithId);
 
       // Fetch copys only after we have the main video data
       fetch(`/api/videos/${videoId}`)
@@ -126,30 +137,18 @@ export default function ExportViewPage() {
     return copy;
     }
 
-  const formatDate = (timestamp: any): string => {
-    if (!timestamp) return 'Invalid Date';
-    
-    // Handle Firebase Timestamp object
-    if (timestamp && typeof timestamp.seconds === 'number') {
-      return new Date(timestamp.seconds * 1000).toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric'
-      });
+  // Función helper para formatear fechas de Firebase
+  const formatFirebaseDate = (date: any) => {
+    if (!date) return 'Unknown date';
+    if (typeof date === 'object' && 'toDate' in date) {
+      return date.toDate().toLocaleDateString();
     }
-  
-    // Handle ISO string or other date strings
-    const date = new Date(timestamp);
-    if (!isNaN(date.getTime())) {
-      return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric'
-      });
+    try {
+      return new Date(date).toLocaleDateString();
+    } catch {
+      return 'Unknown date';
     }
-  
-    return 'Invalid Date';
-  }
+  };
 
   const handleYouTubeExport = () => {
     if (!user) {
@@ -260,7 +259,9 @@ export default function ExportViewPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading video...</p>
+          <p className="mt-4 text-muted-foreground">
+            {isRefreshingUrl ? 'Refreshing video URL...' : 'Loading video...'}
+          </p>
         </div>
       </div>
     );
@@ -306,11 +307,25 @@ export default function ExportViewPage() {
                   <div className="play-icon"></div>
                       </div>
               )}
+              {isRefreshingUrl && (
+                <div className="video-refresh-overlay">
+                  <div className="refresh-spinner"></div>
+                  <p>Refreshing video URL...</p>
+                </div>
+              )}
                     </div>
             <div className="video-info">
-              <h3 className="video-title">{videoData.videoTitle}</h3>
-              <p className="video-meta">1080x1920 • Created {formatDate(videoData.createdAt)}</p>
-                      </div>
+              <h1 className="video-title">{videoData.videoTitle}</h1>
+              <div className="video-meta">
+                <span className="video-date">
+                  {formatFirebaseDate(videoData.createdAt)}
+                </span>
+                <UrlExpirationIndicator 
+                  videoUrl={videoData.heygenResults?.videoUrl || videoData.videoUrl}
+                  className="mt-2"
+                />
+              </div>
+            </div>
                     </div>
 
           <div className="copies-section">
@@ -363,9 +378,23 @@ export default function ExportViewPage() {
                   <SiYoutube className="w-6 h-6" />
                 </button>
               </div>
-              <button className="download-btn" onClick={() => setShowDownloadModal(true)} disabled={!(videoData.heygenResults?.videoUrl || videoData.videoUrl)}>
-                Download Video
-              </button>
+              <div className="action-buttons">
+                <button 
+                  className="refresh-btn" 
+                  onClick={refreshVideoUrl} 
+                  disabled={isRefreshingUrl || !videoData.heygenResults?.videoId}
+                  title="Refresh video URL if expired"
+                >
+                  {isRefreshingUrl ? 'Refreshing...' : 'Refresh URL'}
+                </button>
+                <button 
+                  className="download-btn" 
+                  onClick={() => setShowDownloadModal(true)} 
+                  disabled={!(videoData.heygenResults?.videoUrl || videoData.videoUrl)}
+                >
+                  Download Video
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -376,8 +405,8 @@ export default function ExportViewPage() {
             <h2 className="modal-title">Confirm Download</h2>
             <p className="modal-text">Your video will be downloaded in MP4 format.</p>
             <div className="modal-actions">
-              <button onClick={() => setShowDownloadModal(false)} className="btn btn-secondary">Cancel</button>
-              <button onClick={confirmDownload} className="btn btn-primary">Confirm</button>
+              <button onClick={() => setShowDownloadModal(false)} className="modal-btn modal-btn-secondary">Cancel</button>
+              <button onClick={confirmDownload} className="modal-btn modal-btn-primary">Confirm</button>
             </div>
           </div>
     </div>

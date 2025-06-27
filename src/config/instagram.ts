@@ -3,8 +3,10 @@ export const instagramConfig = {
   clientSecret: process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_SECRET,
   redirectUri: process.env.NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI,
   scopes: [
-    'user_profile',
-    'user_media'
+    'pages_show_list',
+    'instagram_basic', 
+    'pages_read_engagement',
+    'instagram_content_publish'
   ],
-  graphApiVersion: 'v18.0'
+  graphApiVersion: 'v19.0'
 };

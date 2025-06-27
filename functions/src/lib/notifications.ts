@@ -8,7 +8,7 @@ export interface NotificationData {
 }
 
 export async function sendNotificationToUser(userId: string, data: NotificationData) {
-  await db.collection('users').doc(userId).collection('notifications').add({
+  await db.collection('Notifications').doc(userId).collection('notifications').add({
     ...data,
     read: false,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),

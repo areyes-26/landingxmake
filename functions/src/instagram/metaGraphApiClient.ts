@@ -3,7 +3,7 @@ import { TokenManager } from './tokenManager';
 import { InstagramToken } from './types';
 
 const tokenManager = new TokenManager();
-const GRAPH_API_VERSION = 'v18.0';
+const GRAPH_API_VERSION = 'v19.0';
 const GRAPH_API_BASE_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
 export interface MetaApiError {
@@ -68,9 +68,36 @@ class MetaGraphApiClient {
     return token.accessToken;
   }
 
+  private async getPageAccessToken(userId: string): Promise<string> {
+    const pageToken = await tokenManager.getPageAccessToken(userId);
+    if (!pageToken) {
+      throw new MetaApiError(
+        'No page access token found',
+        401,
+        undefined,
+        undefined
+      );
+    }
+    return pageToken;
+  }
+
+  private async getInstagramBusinessAccountId(userId: string): Promise<string> {
+    const igAccountId = await tokenManager.getInstagramBusinessAccountId(userId);
+    if (!igAccountId) {
+      throw new MetaApiError(
+        'No Instagram Business Account found',
+        401,
+        undefined,
+        undefined
+      );
+    }
+    return igAccountId;
+  }
+
   private async handleRequest<T>(
     config: AxiosRequestConfig,
-    userId: string
+    userId: string,
+    usePageToken: boolean = false
   ): Promise<T> {
     let attempts = 0;
     const maxAttempts = 3;
@@ -78,7 +105,10 @@ class MetaGraphApiClient {
 
     while (attempts < maxAttempts) {
       try {
-        const accessToken = await this.getAccessToken(userId);
+        const accessToken = usePageToken 
+          ? await this.getPageAccessToken(userId)
+          : await this.getAccessToken(userId);
+          
         const response = await this.axiosInstance.request<MetaApiResponse<T>>({
           ...config,
           params: {
@@ -108,42 +138,24 @@ class MetaGraphApiClient {
 
         return response.data.data;
       } catch (error) {
-        const axiosError = error as AxiosError;
+        attempts++;
+        if (attempts >= maxAttempts) {
+          throw error;
+        }
         
-        if (axiosError.response?.status === 429) {
-          // Rate limit error
-          const delay = initialDelay * Math.pow(2, attempts);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          attempts++;
-          continue;
-        }
-
-        // Type assertion for the error response
-        const errorData = axiosError.response?.data as {
-          error?: {
-            code?: number;
-            message?: string;
-            subcode?: number;
-            type?: string;
-          }
-        };
-
-        if (errorData?.error?.code === 190) {
-          // Invalid access token
+        if (error instanceof MetaApiError && error.code === 401) {
+          // Token expired, try to refresh
           await tokenManager.refreshToken(userId);
-          continue;
         }
-
-        throw new MetaApiError(
-          errorData?.error?.message || axiosError.message,
-          errorData?.error?.code || axiosError.response?.status || 500,
-          errorData?.error?.subcode,
-          errorData?.error?.type
+        
+        // Exponential backoff
+        await new Promise(resolve => 
+          setTimeout(resolve, initialDelay * Math.pow(2, attempts - 1))
         );
       }
     }
-
-    throw new MetaApiError('Max retry attempts exceeded', 500, undefined, undefined);
+    
+    throw new MetaApiError('Max retry attempts reached', 500);
   }
 
   async createVideoContainer(
@@ -151,10 +163,12 @@ class MetaGraphApiClient {
     videoUrl: string,
     caption?: string
   ): Promise<MetaApiResponse<{ id: string }>> {
+    const igAccountId = await this.getInstagramBusinessAccountId(userId);
+    
     return this.handleRequest(
       {
         method: 'POST',
-        url: '/me/media',
+        url: `/${igAccountId}/media`,
         data: {
           media_type: 'VIDEO',
           video_url: videoUrl,
@@ -162,7 +176,8 @@ class MetaGraphApiClient {
           is_carousel_item: false
         }
       },
-      userId
+      userId,
+      true // Use page access token
     );
   }
 
@@ -178,7 +193,8 @@ class MetaGraphApiClient {
           fields: 'status,media_url'
         }
       },
-      userId
+      userId,
+      true // Use page access token
     );
   }
 
@@ -186,15 +202,18 @@ class MetaGraphApiClient {
     userId: string,
     creationId: string
   ): Promise<MetaApiResponse<{ id: string }>> {
+    const igAccountId = await this.getInstagramBusinessAccountId(userId);
+    
     return this.handleRequest(
       {
         method: 'POST',
-        url: '/me/media_publish',
+        url: `/${igAccountId}/media_publish`,
         data: {
           creation_id: creationId
         }
       },
-      userId
+      userId,
+      true // Use page access token
     );
   }
 
@@ -207,7 +226,8 @@ class MetaGraphApiClient {
         method: 'POST',
         url: `/${mediaId}/publish`
       },
-      userId
+      userId,
+      true // Use page access token
     );
   }
 
@@ -221,7 +241,8 @@ class MetaGraphApiClient {
         url: `/${mediaId}`,
         params: { fields: 'status' }
       },
-      userId
+      userId,
+      true // Use page access token
     );
   }
 
@@ -233,6 +254,19 @@ class MetaGraphApiClient {
         method: 'GET',
         url: '/me/accounts',
         params: { fields: 'instagram_business_account' }
+      },
+      userId
+    );
+  }
+
+  async getUserProfile(
+    userId: string
+  ): Promise<MetaApiResponse<{ id: string; name: string; email?: string }>> {
+    return this.handleRequest(
+      {
+        method: 'GET',
+        url: '/me',
+        params: { fields: 'id,name,email' }
       },
       userId
     );

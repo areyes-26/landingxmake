@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import "./stripe-buy-button-fix.css";
 import { useAuth } from "@/hooks/useAuth";
 import { db, auth } from "@/lib/firebase";
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteDoc, collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { toast } from 'sonner';
 import './account-setting.css';
@@ -198,9 +198,9 @@ const handleInstagramConnect = () => {
     localStorage.setItem('instagram_oauth_state', state);
     const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
     const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/instagramCallbackFn');
-    const scope = ['public_profile', 'email'].join(',');
+    const scope = ['pages_show_list', 'instagram_basic', 'pages_read_engagement', 'instagram_content_publish'].join(',');
     const authUrl =
-        `https://www.facebook.com/v18.0/dialog/oauth` +
+        `https://www.facebook.com/v19.0/dialog/oauth` +
         `?client_id=${clientId}` +
         `&redirect_uri=${redirectUri}` +
         `&scope=${scope}` +
@@ -275,7 +275,37 @@ const Connections = () => {
             }
         };
         fetchYouTube();
-        // Instagram: placeholder (futuro: consultar Firestore)
+        
+        // Instagram: consultar endpoint de estado
+        const fetchInstagram = async () => {
+            try {
+                const token = await user.getIdToken();
+                const response = await fetch('/api/instagram/status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.connected) {
+                        setInstagramConnected(true);
+                        setInstagramProfile(data.instagramBusinessAccount);
+                    } else {
+                        setInstagramConnected(false);
+                        setInstagramProfile(null);
+                    }
+                } else {
+                    setInstagramConnected(false);
+                    setInstagramProfile(null);
+                }
+            } catch (error) {
+                console.error('Error fetching Instagram status:', error);
+                setInstagramConnected(false);
+                setInstagramProfile(null);
+            }
+        };
+        fetchInstagram();
     }, [user]);
 
     const handleYouTubeDisconnect = async () => {
@@ -286,8 +316,10 @@ const Connections = () => {
         toast.success("YouTube disconnected!");
     };
 
-    // Instagram: placeholder de desconexión
+    // Instagram: desconexión real
     const handleInstagramDisconnect = async () => {
+        if (!user) return;
+        await deleteDoc(doc(db, "instagram_tokens", user.uid));
         setInstagramConnected(false);
         setInstagramProfile(null);
         toast.success("Instagram disconnected!");
@@ -368,10 +400,7 @@ const Connections = () => {
                                     minWidth: 100,
                                     cursor: 'pointer',
                                 }}
-                                onClick={() => {
-                                    setInstagramConnected(true);
-                                    // handleInstagramConnect(); // Cuando esté lista la integración real
-                                }}
+                                onClick={handleInstagramConnect}
                             >
                                 Connect
                             </button>
@@ -429,6 +458,88 @@ const Connections = () => {
         </section>
     );
 };
+
+function formatDate(date: Date | string | number) {
+  const d = new Date(date);
+  return d.toLocaleString();
+}
+
+function HistorySection({ user }: { user: any }) {
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchHistory = async () => {
+      setLoading(true);
+      // Fetch credit topups
+      const topupQuery = query(
+        collection(db, 'transactions'),
+        where('userId', '==', user.uid),
+        where('type', '==', 'credit_topup'),
+        orderBy('createdAt', 'desc')
+      );
+      const topupSnap = await getDocs(topupQuery);
+      const topups = topupSnap.docs.map(doc => ({
+        id: doc.id,
+        type: 'topup',
+        credits: doc.data().credits,
+        amount: doc.data().amount,
+        currency: doc.data().currency,
+        createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
+      }));
+      console.log('Topups:', topups);
+      // Fetch video spends
+      const videoQuery = query(
+        collection(db, 'videos'),
+        where('userId', '==', user.uid),
+        orderBy('fechaCreacion', 'desc')
+      );
+      const videoSnap = await getDocs(videoQuery);
+      const spends = videoSnap.docs.map(doc => ({
+        id: doc.id,
+        type: 'spend',
+        credits: doc.data().creditsUsed,
+        title: doc.data().videoTitle || 'Video',
+        createdAt: doc.data().fechaCreacion?.toDate ? doc.data().fechaCreacion.toDate() : new Date(),
+      }));
+      console.log('Spends:', spends);
+      // Merge and sort
+      const merged = [...topups, ...spends].sort((a, b) => b.createdAt - a.createdAt);
+      console.log('Merged history:', merged);
+      setHistory(merged);
+      setLoading(false);
+    };
+    fetchHistory();
+  }, [user]);
+
+  return (
+    <section className="content-section active" id="history">
+      <h2 className="section-title">History</h2>
+      <p className="section-description">Track your credit top-ups and video spending.</p>
+      {loading ? (
+        <div>Loading history...</div>
+      ) : history.length === 0 ? (
+        <div>No history found.</div>
+      ) : (
+        <div className="history-list">
+          {history.map(item => (
+            <div className="history-row" key={item.id}>
+              <div className="history-date">{formatDate(item.createdAt)}</div>
+              <div className="history-type">{item.type === 'topup' ? 'Top-up' : 'Spend'}</div>
+              <div className={`history-credits ${item.type === 'topup' ? 'plus' : 'minus'}`}>{item.type === 'topup' ? '+' : '-'}{item.credits}</div>
+              <div className="history-details">
+                {item.type === 'topup'
+                  ? `${item.amount ? `$${(item.amount / 100).toFixed(2)} ${item.currency?.toUpperCase() || ''}` : ''}`
+                  : item.title}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 function AccountSettingPageContent() {
     const searchParams = useSearchParams();
@@ -540,6 +651,11 @@ function AccountSettingPageContent() {
                             Connections
                         </a>
                     </li>
+                    <li className="nav-item">
+                        <a href="#history" className={`nav-link ${section === 'history' ? 'active' : ''}`} onClick={(e) => {e.preventDefault(); setSection('history')}}>
+                            History
+                        </a>
+                    </li>
                 </ul>
             </aside>
             <main className="content">
@@ -565,6 +681,9 @@ function AccountSettingPageContent() {
                 )}
                 {section === 'connections' && (
                     <Connections />
+                )}
+                {section === 'history' && (
+                    <HistorySection user={user} />
                 )}
             </main>
         </div>

@@ -89,14 +89,14 @@ export { checkVideoStatus };
 export { instagramWebhook } from './instagram/webhook';
 
 // === Cloud Function programada para polling de videos en proceso ===
-export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onRun(async (context: any) => {
+export const pollHeygenVideos = functions.pubsub.schedule('every 2 minutes').onRun(async (context: any) => {
   const cfg = functions.config() as any;
   const heygenConfig = cfg.heygen || {};
 
   const heygen = new HeyGenAPI();
   const snapshot = await db.collection('videos').where('status', '==', 'processing').get();
   if (snapshot.empty) {
-    console.log('[pollHeygenVideos] No hay videos en proceso.');
+    console.log('[pollHeygenVideos] No hay videos en proceso. Nada que hacer.');
     return null;
   }
   console.log(`[pollHeygenVideos] Revisando ${snapshot.size} videos en proceso...`);
@@ -106,7 +106,7 @@ export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onR
     // Intentar obtener el ID de la tarea de diferentes fuentes
     const taskId = data.heygenResults?.taskId || data.heygenResults?.videoId || videoId;
     if (!taskId) {
-      console.warn(`[pollHeygenVideos] Video ${videoId} no tiene taskId.`);
+      console.warn(`[pollHeygenVideos] Video ${videoId} no tiene taskId. Saltando.`);
       continue;
     }
 
@@ -132,6 +132,19 @@ export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onR
           updateData.thumbnailUrl = status.thumbnailUrl;
         }
         console.log(`[pollHeygenVideos] Video ${videoId} actualizado a completed con URL: ${status.videoUrl}`);
+        // Enviar notificación al usuario si existe userId
+        if (data.userId) {
+          try {
+            await require('./lib/notifications').sendNotificationToUser(data.userId, {
+              type: 'video_ready',
+              message: 'Your video is ready! Click to view it in your dashboard.',
+              videoId
+            });
+            console.log(`[pollHeygenVideos] Notification sent to user ${data.userId} for video ${videoId}`);
+          } catch (notifyErr) {
+            console.error(`[pollHeygenVideos] Error sending notification to user ${data.userId} for video ${videoId}:`, notifyErr);
+          }
+        }
       } else if (status.status === 'error') {
         updateData.status = 'error';
         updateData.error = status.error || 'Error al generar el video';
@@ -139,21 +152,31 @@ export const pollHeygenVideos = functions.pubsub.schedule('every 5 minutes').onR
         console.log(`[pollHeygenVideos] Video ${videoId} actualizado a error: ${status.error}`);
       }
 
-      await db.collection('videos').doc(videoId).update(updateData);
+      try {
+        await db.collection('videos').doc(videoId).update(updateData);
+        console.log(`[pollHeygenVideos] Firestore actualizado para video ${videoId}`);
+      } catch (firestoreErr) {
+        console.error(`[pollHeygenVideos] ERROR al actualizar Firestore para video ${videoId}:`, firestoreErr);
+      }
     } catch (err) {
-      console.error(`[pollHeygenVideos] Error al consultar Heygen para video ${videoId}:`, err);
+      console.error(`[pollHeygenVideos] ERROR al consultar Heygen para video ${videoId}:`, err);
       // Actualizar el estado a error si hay un problema de comunicación
-      await db.collection('videos').doc(videoId).update({
-        status: 'error',
-        error: 'Error al consultar el estado del video',
-        heygenResults: {
-          ...data.heygenResults,
+      try {
+        await db.collection('videos').doc(videoId).update({
           status: 'error',
-          error: err instanceof Error ? err.message : 'Error desconocido',
-          generatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+          error: 'Error al consultar el estado del video',
+          heygenResults: {
+            ...data.heygenResults,
+            status: 'error',
+            error: err instanceof Error ? err.message : 'Error desconocido',
+            generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        console.log(`[pollHeygenVideos] Estado de video ${videoId} actualizado a error en Firestore.`);
+      } catch (firestoreErr) {
+        console.error(`[pollHeygenVideos] ERROR crítico: No se pudo actualizar Firestore para video ${videoId} tras error de polling:`, firestoreErr);
+      }
     }
   }
   return null;

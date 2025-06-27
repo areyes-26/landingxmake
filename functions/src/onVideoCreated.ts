@@ -294,17 +294,6 @@ export const onVideoCreated = functions.firestore
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
 
-      // Notificar al usuario que el video está listo
-      if (videoData.userId) {
-        await sendNotificationToUser(videoData.userId, {
-          type: 'video_ready',
-          message: '¡Tu video ya está listo! Haz clic para verlo en tu dashboard.',
-          videoId
-        });
-      } else {
-        console.warn(`[onVideoCreated] ⚠️ userId no encontrado en videoData, no se pudo enviar notificación.`);
-      }
-
       console.log(`[onVideoCreated] ✅ Generación completa exitosa para ${videoId}`);
 
     } catch (err) {

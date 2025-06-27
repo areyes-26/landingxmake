@@ -20,7 +20,7 @@ export class TokenManager {
       createdAt:   new Date(),
       lastUsedAt:  new Date(),
       status:      'active',
-      scopes:      ['instagram_basic', 'instagram_content_publish', 'pages_show_list'],
+      scopes:      ['instagram_basic', 'instagram_content_publish', 'pages_show_list', 'pages_read_engagement'],
     };
 
     await this.tokensCollection.doc(tokenData.id).set(tokenData);
@@ -30,33 +30,32 @@ export class TokenManager {
   async getToken(userId: string): Promise<InstagramToken | null> {
     const snap = await this.tokensCollection.doc(userId).get();
     if (!snap.exists) return null;
-
+    
     const token = snap.data() as InstagramToken;
-    if (this.isTokenExpired(token)) {
-      const refreshed = await this.refreshToken(userId);
-      if (refreshed) return refreshed;
-      await this.invalidateToken(userId);
-      return null;
+    
+    // Verificar si el token ha expirado
+    if (token.expiresAt && new Date() > token.expiresAt) {
+      console.log('Token expired, attempting refresh...');
+      return await this.refreshToken(userId);
     }
-
-    // Actualizamos lastUsedAt
-    await this.tokensCollection.doc(userId).update({ lastUsedAt: new Date() });
+    
     return token;
   }
 
-  async invalidateToken(userId: string): Promise<void> {
-    await this.tokensCollection.doc(userId).update({
-      status:     'expired',
-      lastUsedAt: new Date(),
-    });
+  async getPageAccessToken(userId: string): Promise<string | null> {
+    const snap = await this.tokensCollection.doc(userId).get();
+    if (!snap.exists) return null;
+    
+    const data = snap.data();
+    return data.pageAccessToken || null;
   }
 
-  private isTokenExpired(token: InstagramToken): boolean {
-    return (
-      token.status === 'expired' ||
-      token.status === 'revoked' ||
-      token.expiresAt < new Date()
-    );
+  async getInstagramBusinessAccountId(userId: string): Promise<string | null> {
+    const snap = await this.tokensCollection.doc(userId).get();
+    if (!snap.exists) return null;
+    
+    const data = snap.data();
+    return data.instagramBusinessAccount?.id || null;
   }
 
   async refreshToken(userId: string): Promise<InstagramToken | null> {
@@ -70,7 +69,7 @@ export class TokenManager {
     try {
       // Usamos client_id y client_secret de functions.config()
       const resp = await axios.post<{ access_token: string; expires_in: number }>(
-        'https://graph.facebook.com/v18.0/oauth/access_token',
+        'https://graph.facebook.com/v19.0/oauth/access_token',
         {
           grant_type:       'fb_exchange_token',
           client_id:        instagramCfg.client_id,
@@ -101,6 +100,17 @@ export class TokenManager {
       await this.invalidateToken(userId);
       return null;
     }
+  }
+
+  async invalidateToken(userId: string): Promise<void> {
+    await this.tokensCollection.doc(userId).update({
+      status: 'expired',
+      lastUsedAt: new Date(),
+    });
+  }
+
+  async deleteToken(userId: string): Promise<void> {
+    await this.tokensCollection.doc(userId).delete();
   }
 
   async cleanupExpiredTokens(): Promise<void> {
