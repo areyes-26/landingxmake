@@ -922,6 +922,7 @@ export default function VideoFormsPage() {
                     
                     <div className="video-forms-modal-actions">
                       <button
+                        type="button"
                         onClick={() => setShowInsufficientCreditsModal(false)}
                         className="video-forms-modal-button secondary"
                       >

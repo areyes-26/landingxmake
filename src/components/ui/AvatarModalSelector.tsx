@@ -71,22 +71,22 @@ export function AvatarModalSelector({
         setLoading(true);
         setError(null);
         
-        let jsonFile = '';
+        let planEndpoint = '';
         switch (userPlan) {
           case 'free':
-            jsonFile = '/avatar-list/freeplan.json';
+            planEndpoint = '/api/avatar-list/freeplan';
             break;
           case 'premium':
-            jsonFile = '/avatar-list/basicplan.json';
+            planEndpoint = '/api/avatar-list/basicplan';
             break;
           case 'pro':
-            jsonFile = '/avatar-list/proplan.json';
+            planEndpoint = '/api/avatar-list/proplan';
             break;
           default:
-            jsonFile = '/avatar-list/freeplan.json';
+            planEndpoint = '/api/avatar-list/freeplan';
         }
 
-        const response = await fetch(jsonFile);
+        const response = await fetch(planEndpoint);
         if (!response.ok) {
           throw new Error(`Failed to load avatar data: ${response.status}`);
         }
@@ -204,6 +204,7 @@ export function AvatarModalSelector({
               <div className="flex items-center gap-3">
                 {showLooks && (
                   <button
+                    type="button"
                     onClick={handleBackToGroups}
                     className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
                   >
@@ -215,6 +216,7 @@ export function AvatarModalSelector({
                 </h2>
               </div>
               <button
+                type="button"
                 onClick={onClose}
                 className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
               >
@@ -232,6 +234,7 @@ export function AvatarModalSelector({
                 <div className="text-center py-8">
                   <p className="text-red-500 mb-4">{error}</p>
                   <button 
+                    type="button"
                     onClick={() => window.location.reload()} 
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
@@ -277,6 +280,7 @@ export function AvatarModalSelector({
                   {totalLookPages > 1 && (
                     <div className="flex items-center justify-center gap-2">
                       <button
+                        type="button"
                         onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                         disabled={currentPage === 0}
                         className="p-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -287,6 +291,7 @@ export function AvatarModalSelector({
                         {currentPage + 1} de {totalLookPages}
                       </span>
                       <button
+                        type="button"
                         onClick={() => setCurrentPage(Math.min(totalLookPages - 1, currentPage + 1))}
                         disabled={currentPage === totalLookPages - 1}
                         className="p-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -329,6 +334,7 @@ export function AvatarModalSelector({
                   {totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2">
                       <button
+                        type="button"
                         onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                         disabled={currentPage === 0}
                         className="p-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -339,6 +345,7 @@ export function AvatarModalSelector({
                         {currentPage + 1} de {totalPages}
                       </span>
                       <button
+                        type="button"
                         onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
                         disabled={currentPage === totalPages - 1}
                         className="p-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"

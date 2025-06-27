@@ -65,22 +65,22 @@ export function AvatarSelector({ onAvatarSelect, selectedAvatarId, selectedLookI
         setLoading(true);
         setError(null);
         
-        let jsonFile = '';
+        let planEndpoint = '';
         switch (userPlan) {
           case 'free':
-            jsonFile = '/avatar-list/freeplan.json';
+            planEndpoint = '/api/avatar-list/freeplan';
             break;
           case 'premium':
-            jsonFile = '/avatar-list/basicplan.json';
+            planEndpoint = '/api/avatar-list/basicplan';
             break;
           case 'pro':
-            jsonFile = '/avatar-list/proplan.json';
+            planEndpoint = '/api/avatar-list/proplan';
             break;
           default:
-            jsonFile = '/avatar-list/freeplan.json';
+            planEndpoint = '/api/avatar-list/freeplan';
         }
 
-        const response = await fetch(jsonFile);
+        const response = await fetch(planEndpoint);
         if (!response.ok) {
           throw new Error(`Failed to load avatar data: ${response.status}`);
         }
@@ -184,6 +184,7 @@ export function AvatarSelector({ onAvatarSelect, selectedAvatarId, selectedLookI
           Selecciona un Avatar
         </label>
         <Button
+          type="button"
           onClick={() => setModalOpen(true)}
           variant="outline"
           className="w-full h-12 text-left justify-start bg-gray-800/50 border-gray-700 hover:bg-gray-700/50"
