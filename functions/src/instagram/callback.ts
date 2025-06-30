@@ -49,7 +49,7 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
     });
 
     const userId = userRes.data.id;
-    const userEmail = userRes.data.email;
+    const userEmail = userRes.data.email ?? null;
     console.log('[USER INFO]', userRes.data);
 
     console.log('[STEP] Getting user pages...');
@@ -93,7 +93,7 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       createdAt: Date.now(),
       firebaseUid: state,
       userId: userId,
-      userEmail: userEmail,
+      userEmail: userEmail ?? null,
       pageId: pageId,
       pageAccessToken: pageAccessToken,
       instagramBusinessAccount: instagramBusinessAccount,
