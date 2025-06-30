@@ -229,3 +229,5 @@ export const onUserCreated = functions.auth.user().onCreate(async (user: any) =>
     throw error;
   }
 });
+
+export { tiktokCallback } from './tiktok/callback';

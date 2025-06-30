@@ -517,4 +517,49 @@ main.content {
   color: #fff;
   font-size: 0.98rem;
   word-break: break-all;
+}
+
+.integration-btn {
+  background: linear-gradient(90deg, #0ea5e9 0%, #7c3aed 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  font-weight: 500;
+  min-width: 100px;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.integration-btn:hover {
+  opacity: 0.85;
+}
+
+.integration-btn-youtube {
+  background: linear-gradient(90deg, #FF0000 0%, #FF6B6B 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  font-weight: 500;
+  min-width: 100px;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.integration-btn-youtube:hover {
+  opacity: 0.85;
+}
+
+.integration-btn-tiktok {
+  background: linear-gradient(90deg, #000000 0%, #333333 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  font-weight: 500;
+  min-width: 100px;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.integration-btn-tiktok:hover {
+  opacity: 0.85;
 } 

@@ -1,0 +1,63 @@
+import * as functions from 'firebase-functions/v1';
+import { db } from '../lib/firebase-admin';
+import axios from 'axios';
+
+export const tiktokCallback = functions.https.onRequest(async (req, res) => {
+  const cfg = functions.config().tiktok;
+  const { client_key, client_secret, redirect_uri } = cfg;
+
+  const { code, state } = req.query as { code?: string; state?: string };
+
+  console.log('[tiktokCallback] code:', code);
+  console.log('[tiktokCallback] state:', state);
+  console.log('[DEBUG] client_key:', client_key);
+  console.log('[DEBUG] client_secret exists:', !!client_secret);
+  console.log('[DEBUG] redirect_uri:', redirect_uri);
+
+  if (!code || !state) {
+    console.error('[ERROR] Missing code or state');
+    res.status(400).json({ error: 'Missing code or state' });
+    return;
+  }
+
+  try {
+    // Intercambiar code por access_token
+    const tokenRes = await axios.post('https://open-api.tiktok.com/oauth/access_token/', {
+      client_key,
+      client_secret,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri,
+    });
+
+    const tokenData = tokenRes.data.data;
+    console.log('[TOKEN RESPONSE]', tokenData);
+    if (!tokenData.access_token) {
+      console.error('Error en intercambio de código:', tokenData);
+      res.status(500).json({ error: 'No access_token returned', detail: tokenData });
+      return;
+    }
+
+    // Guardar en Firestore
+    const { open_id, access_token, refresh_token, expires_in, refresh_expires_in, scope } = tokenData;
+    const connectionData = {
+      openId: open_id,
+      accessToken: access_token,
+      refreshToken: refresh_token,
+      expiresIn: expires_in,
+      refreshExpiresIn: refresh_expires_in,
+      scope,
+      createdAt: Date.now(),
+      state,
+    };
+    await db.collection('tiktok_tokens').doc(open_id).set(connectionData);
+    await db.collection('tiktok_tokens').doc(state).set({ ...connectionData, tempState: true });
+
+    console.log('[SUCCESS] TikTok connection saved. Redirecting...');
+    res.redirect('https://landing-videos-generator-06--landing-x-make.us-central1.web.app/tiktok/success');
+  } catch (error: any) {
+    const raw = error.response?.data || error.message;
+    console.error('[ERROR] Failed during TikTok OAuth flow:', raw);
+    res.status(500).json({ error: 'Error exchanging code', detail: raw });
+  }
+}); 

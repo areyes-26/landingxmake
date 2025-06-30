@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import './account-setting.css';
 import { Instagram, Power } from 'lucide-react';
 import { SiYoutube } from 'react-icons/si';
+import { FaTiktok } from 'react-icons/fa';
 
 const AccountSettings = ({ user, handlePasswordReset, showPasswordAlert }: any) => {
     const [firstName, setFirstName] = useState("");
@@ -197,7 +198,7 @@ const handleInstagramConnect = () => {
     const state = crypto.randomUUID();
     localStorage.setItem('instagram_oauth_state', state);
     const clientId = process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID;
-    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/facebookCallbackFn');
+    const redirectUri = encodeURIComponent('https://landing-videos-generator-06--landing-x-make.us-central1.hosted.app/facebookCallbackFn');
     const scope = [
         'pages_show_list',
         'pages_read_engagement',
@@ -256,6 +257,26 @@ const badgeBase = {
     minWidth: 120,
     justifyContent: 'center',
     letterSpacing: 0.2,
+};
+
+const handleTikTokConnect = () => {
+    const state = crypto.randomUUID();
+    localStorage.setItem('tiktok_oauth_state', state);
+    const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY;
+    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/tiktokCallback');
+    const scope = [
+        'user.info.basic',
+        'video.publish',
+        'video.upload'
+    ].join(',');
+    const authUrl =
+        `https://www.tiktok.com/v2/auth/authorize/` +
+        `?client_key=${clientKey}` +
+        `&scope=${scope}` +
+        `&response_type=code` +
+        `&redirect_uri=${redirectUri}` +
+        `&state=${state}`;
+    window.location.href = authUrl;
 };
 
 const Connections = () => {
@@ -440,24 +461,29 @@ const Connections = () => {
                             </>
                         ) : (
                             <button
-                                className="integration-btn"
-                                style={{
-                                    background: 'linear-gradient(90deg,#232526,#414345)',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: 6,
-                                    padding: '0.5rem 1.2rem',
-                                    fontWeight: 500,
-                                    minWidth: 100,
-                                    cursor: 'pointer',
-                                }}
-                                onClick={() => {
-                                    handleYouTubeConnect();
-                                }}
+                                className="integration-btn-youtube"
+                                onClick={handleYouTubeConnect}
                             >
                                 Connect
                             </button>
                         )}
+                    </div>
+                </div>
+                {/* TikTok */}
+                <div className="integration-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#181c2a', padding: '1rem', borderRadius: 12, flexWrap: 'wrap', gap: 12 }}>
+                    <div style={infoStyle}>
+                        <span style={titleStyle}>
+                            <FaTiktok style={{ color: '#000000' }} className="w-6 h-6" /> TikTok
+                        </span>
+                        {/* Aquí puedes mostrar info de la cuenta conectada en el futuro */}
+                    </div>
+                    <div style={actionsStyle}>
+                        <button
+                            className="integration-btn-tiktok"
+                            onClick={handleTikTokConnect}
+                        >
+                            Connect
+                        </button>
                     </div>
                 </div>
             </div>
