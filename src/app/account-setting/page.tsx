@@ -198,7 +198,7 @@ const handleInstagramConnect = () => {
     const state = crypto.randomUUID();
     localStorage.setItem('instagram_oauth_state', state);
     const clientId = process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID;
-    const redirectUri = encodeURIComponent('https://landing-videos-generator-06--landing-x-make.us-central1.hosted.app/facebookCallbackFn');
+    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/facebookCallbackFn');
     const scope = [
         'pages_show_list',
         'pages_read_engagement',
