@@ -33,6 +33,9 @@ export default function ExportViewPage() {
   const [ytLoading, setYtLoading] = useState(false);
   const [showTikTokModal, setShowTikTokModal] = useState(false);
   const [tiktokLoading, setTiktokLoading] = useState(false);
+  const [showInstagramModal, setShowInstagramModal] = useState(false);
+  const [igCaption, setIgCaption] = useState('');
+  const [igLoading, setIgLoading] = useState(false);
 
   // Usar el hook para manejar el refresco de URLs
   const { isRefreshingUrl, refreshVideoUrl } = useVideoUrlRefresh({
@@ -112,7 +115,16 @@ export default function ExportViewPage() {
   };
 
   const handleInstagramShare = () => {
-    window.open('https://www.instagram.com/', '_blank');
+    if (!user) {
+      toast.error('You must be logged in to export to Instagram.');
+      return;
+    }
+    if (!videoData) {
+      toast.error('No video data available.');
+      return;
+    }
+    setIgCaption(getCopy(videoData.shortCopy));
+    setShowInstagramModal(true);
   };
 
   const handleTikTokShare = () => {
@@ -254,6 +266,39 @@ export default function ExportViewPage() {
     }
   };
 
+  const confirmInstagramExport = async () => {
+    if (!user || !videoData) return;
+    setIgLoading(true);
+    try {
+      const downloadUrl = videoData.heygenResults?.videoUrl || videoData.videoUrl;
+      if (!downloadUrl) {
+        toast.error('No video available for upload.');
+        setIgLoading(false);
+        return;
+      }
+      const res = await fetch('/api/instagram/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          videoUrl: downloadUrl,
+          caption: igCaption,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Instagram upload failed');
+      }
+      setShowInstagramModal(false);
+      toast.success('Video export started! It will be published on Instagram soon.');
+    } catch (error) {
+      console.error('Error exporting to Instagram:', error);
+      toast.error('Error exporting to Instagram');
+    } finally {
+      setIgLoading(false);
+    }
+  };
+
   if (!videoData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -362,7 +407,7 @@ export default function ExportViewPage() {
 
             <div className="actions-section">
               <div className="share-buttons">
-              <button className="share-btn share-btn-instagram" title="Connect Instagram" disabled>
+              <button className="share-btn share-btn-instagram" title="Export to Instagram" onClick={handleInstagramShare}>
                   <Instagram className="w-6 h-6" />
                 </button>
                 <button className="share-btn share-btn-twitter" title="Share on Twitter" disabled>
@@ -474,6 +519,40 @@ export default function ExportViewPage() {
               <button
                 onClick={() => setShowTikTokModal(false)}
                 disabled={tiktokLoading}
+                className="modal-btn modal-btn-secondary"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showInstagramModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ minWidth: 380, maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, textAlign: 'center', letterSpacing: 0.2 }}>Export to Instagram</h3>
+            <label style={{ fontWeight: 500, fontSize: 15, marginBottom: 2 }}>Caption</label>
+            <textarea
+              className="custom-scrollbar"
+              style={{ padding: '0.5rem', borderRadius: 8, border: '1.5px solid #31344b', background: '#181c2a', color: '#fff', fontSize: 15, minHeight: 220, marginBottom: 8, outline: 'none', fontWeight: 500, resize: 'none', maxHeight: 400 }}
+              value={igCaption}
+              onChange={e => setIgCaption(e.target.value)}
+              maxLength={5000}
+            />
+            <div style={{ fontSize: 13, color: '#a3a3a3', marginBottom: 8, textAlign: 'center' }}>
+              Your video will be published on Instagram with the caption provided.
+            </div>
+            <div className="modal-actions">
+              <button
+                onClick={confirmInstagramExport}
+                disabled={igLoading}
+                className="modal-btn modal-btn-primary"
+              >
+                {igLoading ? 'Exporting...' : 'Confirm export'}
+              </button>
+              <button
+                onClick={() => setShowInstagramModal(false)}
+                disabled={igLoading}
                 className="modal-btn modal-btn-secondary"
               >
                 Cancel

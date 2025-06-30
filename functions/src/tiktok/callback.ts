@@ -21,13 +21,18 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
   }
 
   try {
-    // Intercambiar code por access_token
-    const tokenRes = await axios.post('https://open-api.tiktok.com/oauth/access_token/', {
+    // Intercambiar code por access_token usando OAuth v2
+    const tokenRes = await axios.post('https://open.tiktokapis.com/v2/oauth/token/', {
       client_key,
       client_secret,
       code,
       grant_type: 'authorization_code',
       redirect_uri,
+    }, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cache-Control': 'no-cache'
+      }
     });
 
     const tokenData = tokenRes.data.data;
@@ -40,6 +45,21 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
 
     // Guardar en Firestore
     const { open_id, access_token, refresh_token, expires_in, refresh_expires_in, scope } = tokenData;
+    
+    // Obtener información básica del usuario usando v2 API
+    let userInfo = null;
+    try {
+      const userRes = await axios.get('https://open.tiktokapis.com/v2/user/info/', {
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      userInfo = userRes.data.data;
+    } catch (error) {
+      console.log('[WARNING] Could not fetch user info:', error);
+    }
+
     const connectionData = {
       openId: open_id,
       accessToken: access_token,
@@ -47,14 +67,18 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
       expiresIn: expires_in,
       refreshExpiresIn: refresh_expires_in,
       scope,
+      displayName: userInfo?.display_name || null,
+      avatarUrl: userInfo?.avatar_url || null,
       createdAt: Date.now(),
       state,
+      // Nota: userId se agregará cuando el usuario complete el flujo
     };
+    
     await db.collection('tiktok_tokens').doc(open_id).set(connectionData);
     await db.collection('tiktok_tokens').doc(state).set({ ...connectionData, tempState: true });
 
     console.log('[SUCCESS] TikTok connection saved. Redirecting...');
-    res.redirect('https://landing-videos-generator-06--landing-x-make.us-central1.web.app/tiktok/success');
+    res.redirect(`https://landing-videos-generator-06--landing-x-make.us-central1.web.app/tiktok/success?state=${state}`);
   } catch (error: any) {
     const raw = error.response?.data || error.message;
     console.error('[ERROR] Failed during TikTok OAuth flow:', raw);

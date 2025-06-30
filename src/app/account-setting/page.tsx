@@ -286,6 +286,9 @@ const Connections = () => {
     // Instagram: placeholder
     const [instagramConnected, setInstagramConnected] = useState(false);
     const [instagramProfile, setInstagramProfile] = useState<any>(null);
+    // TikTok: agregar estado
+    const [tiktokConnected, setTiktokConnected] = useState(false);
+    const [tiktokProfile, setTiktokProfile] = useState<any>(null);
 
     useEffect(() => {
         if (!user) return;
@@ -333,6 +336,35 @@ const Connections = () => {
             }
         };
         fetchInstagram();
+
+        // TikTok: consultar Firestore
+        const fetchTikTok = async () => {
+            try {
+                // Buscar en tiktok_tokens usando el userId
+                const tiktokQuery = query(
+                    collection(db, "tiktok_tokens"),
+                    where("userId", "==", user.uid)
+                );
+                const tiktokSnap = await getDocs(tiktokQuery);
+                
+                if (!tiktokSnap.empty) {
+                    const tiktokData = tiktokSnap.docs[0].data();
+                    setTiktokConnected(true);
+                    setTiktokProfile({
+                        openId: tiktokData.openId,
+                        displayName: tiktokData.displayName || 'TikTok User'
+                    });
+                } else {
+                    setTiktokConnected(false);
+                    setTiktokProfile(null);
+                }
+            } catch (error) {
+                console.error('Error fetching TikTok status:', error);
+                setTiktokConnected(false);
+                setTiktokProfile(null);
+            }
+        };
+        fetchTikTok();
     }, [user]);
 
     const handleYouTubeDisconnect = async () => {
@@ -350,6 +382,30 @@ const Connections = () => {
         setInstagramConnected(false);
         setInstagramProfile(null);
         toast.success("Instagram disconnected!");
+    };
+
+    // TikTok: desconexión
+    const handleTikTokDisconnect = async () => {
+        if (!user) return;
+        try {
+            // Buscar y eliminar el documento de TikTok
+            const tiktokQuery = query(
+                collection(db, "tiktok_tokens"),
+                where("userId", "==", user.uid)
+            );
+            const tiktokSnap = await getDocs(tiktokQuery);
+            
+            if (!tiktokSnap.empty) {
+                await deleteDoc(tiktokSnap.docs[0].ref);
+            }
+            
+            setTiktokConnected(false);
+            setTiktokProfile(null);
+            toast.success("TikTok disconnected!");
+        } catch (error) {
+            console.error('Error disconnecting TikTok:', error);
+            toast.error("Failed to disconnect TikTok");
+        }
     };
 
     // Estilos inline para el rediseño
@@ -475,15 +531,33 @@ const Connections = () => {
                         <span style={titleStyle}>
                             <FaTiktok style={{ color: '#000000' }} className="w-6 h-6" /> TikTok
                         </span>
-                        {/* Aquí puedes mostrar info de la cuenta conectada en el futuro */}
+                        {tiktokConnected && tiktokProfile && (
+                            <span style={accountStyle}>
+                                Account: <b>{tiktokProfile.displayName || 'TikTok User'}</b>
+                            </span>
+                        )}
                     </div>
                     <div style={actionsStyle}>
-                        <button
-                            className="integration-btn-tiktok"
-                            onClick={handleTikTokConnect}
-                        >
-                            Connect
-                        </button>
+                        {tiktokConnected ? (
+                            <>
+                                <span style={badgeConnected}>Connected</span>
+                                <button
+                                    style={disconnectBtn}
+                                    onClick={handleTikTokDisconnect}
+                                    onMouseOver={e => Object.assign(e.currentTarget.style, disconnectBtnHover)}
+                                    onMouseOut={e => Object.assign(e.currentTarget.style, disconnectBtn)}
+                                >
+                                    <Power size={16} style={{ marginRight: 4 }} /> Disconnect
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                className="integration-btn-tiktok"
+                                onClick={handleTikTokConnect}
+                            >
+                                Connect
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

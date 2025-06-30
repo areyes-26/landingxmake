@@ -85,12 +85,13 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       }
     }
 
-    // Guardar información completa en Firestore usando el user ID real
+    // Guardar información completa en Firestore usando el firebaseUid (state)
     const connectionData = {
       accessToken: access_token,
       tokenType: token_type,
       expiresIn: expires_in,
       createdAt: Date.now(),
+      firebaseUid: state,
       userId: userId,
       userEmail: userEmail,
       pageId: pageId,
@@ -100,14 +101,10 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       scopes: ['pages_show_list', 'instagram_basic', 'pages_read_engagement', 'instagram_content_publish']
     };
 
-    await db.collection('instagram_tokens').doc(userId).set(connectionData);
-    await db.collection('instagram_tokens').doc(state).set({
-      ...connectionData,
-      tempState: true
-    });
+    await db.collection('instagram_tokens').doc(state).set(connectionData);
 
     console.log('[SUCCESS] Complete Instagram connection saved. Redirecting...');
-    res.redirect('https://landing-videos-generator-06--landing-x-make.us-central1.web.app/instagram/success');
+    res.redirect('https://landing-videos-generator-06--landing-x-make.us-central1.hosted.app/account-setting?section=connections');
   } catch (error: any) {
     const raw = error.response?.data || error.message;
     console.error('[ERROR] Failed during OAuth flow:', raw);

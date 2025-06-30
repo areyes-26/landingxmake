@@ -31,7 +31,19 @@ export class TokenManager {
     const snap = await this.tokensCollection.doc(userId).get();
     if (!snap.exists) return null;
     
-    const token = snap.data() as InstagramToken;
+    const data = snap.data();
+    const token: InstagramToken = {
+      id: data.firebaseUid || userId,
+      userId: data.firebaseUid || userId,
+      accessToken: data.accessToken,
+      expiresAt: data.expiresIn ? new Date(Date.now() + data.expiresIn * 1000) : new Date(Date.now() + 3600 * 1000),
+      createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+      lastUsedAt: new Date(),
+      status: 'active',
+      scopes: data.scopes || ['instagram_basic', 'instagram_content_publish', 'pages_show_list', 'pages_read_engagement'],
+      pageAccessToken: data.pageAccessToken,
+      instagramBusinessAccount: data.instagramBusinessAccount,
+    };
     
     // Verificar si el token ha expirado
     if (token.expiresAt && new Date() > token.expiresAt) {
@@ -60,7 +72,7 @@ export class TokenManager {
 
   async refreshToken(userId: string): Promise<InstagramToken | null> {
     // Config movido dentro del método
-    const instagramCfg = functions.config().instagram;
+    const facebookCfg = functions.config().facebook;
     
     const snap = await this.tokensCollection.doc(userId).get();
     if (!snap.exists) return null;
@@ -72,8 +84,8 @@ export class TokenManager {
         'https://graph.facebook.com/v19.0/oauth/access_token',
         {
           grant_type:       'fb_exchange_token',
-          client_id:        instagramCfg.client_id,
-          client_secret:    instagramCfg.client_secret,
+          client_id:        facebookCfg.client_id,
+          client_secret:    facebookCfg.client_secret,
           fb_exchange_token: token.accessToken,
         }
       );

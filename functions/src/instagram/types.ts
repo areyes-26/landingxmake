@@ -15,6 +15,16 @@ export interface InstagramToken {
   lastUsedAt: Date;
   status: 'active' | 'expired' | 'inactive' | 'revoked';
   scopes: string[];
+  pageAccessToken?: string;
+  instagramBusinessAccount?: {
+    id: string;
+    username: string;
+    name: string;
+    profile_picture_url?: string;
+  };
+  firebaseUid?: string;
+  userEmail?: string;
+  pageId?: string;
 }
 
 export interface InstagramMedia {
