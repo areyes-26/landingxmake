@@ -659,10 +659,10 @@ export class HeyGenAPI {
         character.type = "avatar";
         character.avatar_id = params.avatarId;
         character.avatar_style = "normal";
-        
+      
         // Agregar look_id si está presente (solo para avatares normales)
-        if (params.lookId) {
-          character.look_id = params.lookId;
+      if (params.lookId) {
+        character.look_id = params.lookId;
         }
       }
       

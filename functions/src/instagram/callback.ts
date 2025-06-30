@@ -2,14 +2,17 @@ import * as functions from 'firebase-functions/v1';
 import { db } from '../lib/firebase-admin';
 import axios from 'axios';
 
-export const instagramCallback = functions.https.onRequest(async (req, res) => {
-  const cfg = functions.config().instagram;
+export const facebookCallback = functions.https.onRequest(async (req, res) => {
+  const cfg = functions.config().facebook;
   const { client_id, client_secret, redirect_uri } = cfg;
 
   const { code, state } = req.query as { code?: string; state?: string };
 
   console.log('[instagramCallback] code:', code);
   console.log('[instagramCallback] state:', state);
+  console.log('[DEBUG] client_id:', client_id);
+  console.log('[DEBUG] client_secret exists:', !!client_secret);
+  console.log('[DEBUG] redirect_uri:', redirect_uri);
 
   if (!code || !state) {
     console.error('[ERROR] Missing code or state');
@@ -28,11 +31,11 @@ export const instagramCallback = functions.https.onRequest(async (req, res) => {
       },
     });
 
-    const { access_token, token_type, expires_in } = tokenRes.data;
-    console.log('[TOKEN RESPONSE]', tokenRes.data);
-
+    const tokenData = tokenRes.data;
+    const { access_token, token_type, expires_in } = tokenData;
+    console.log('[TOKEN RESPONSE]', tokenData);
     if (!access_token) {
-      console.error('[ERROR] No access_token received');
+      console.error('Error en intercambio de código:', tokenData);
       res.status(500).json({ error: 'No access_token returned' });
       return;
     }
@@ -46,6 +49,7 @@ export const instagramCallback = functions.https.onRequest(async (req, res) => {
     });
 
     const userId = userRes.data.id;
+    const userEmail = userRes.data.email;
     console.log('[USER INFO]', userRes.data);
 
     console.log('[STEP] Getting user pages...');
@@ -88,8 +92,7 @@ export const instagramCallback = functions.https.onRequest(async (req, res) => {
       expiresIn: expires_in,
       createdAt: Date.now(),
       userId: userId,
-      userName: userRes.data.name,
-      userEmail: userRes.data.email,
+      userEmail: userEmail,
       pageId: pageId,
       pageAccessToken: pageAccessToken,
       instagramBusinessAccount: instagramBusinessAccount,
@@ -97,10 +100,7 @@ export const instagramCallback = functions.https.onRequest(async (req, res) => {
       scopes: ['pages_show_list', 'instagram_basic', 'pages_read_engagement', 'instagram_content_publish']
     };
 
-    // Guardar usando el user ID real
     await db.collection('instagram_tokens').doc(userId).set(connectionData);
-
-    // También guardar temporalmente con el state para la página de éxito
     await db.collection('instagram_tokens').doc(state).set({
       ...connectionData,
       tempState: true

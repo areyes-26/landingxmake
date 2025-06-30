@@ -4,7 +4,7 @@ import * as functions from 'firebase-functions/v1';
 import { admin, db } from './lib/firebase-admin';
 import * as crypto from 'crypto';
 import axios from 'axios';
-import { instagramCallback } from './instagram/callback';
+import { facebookCallback } from './instagram/callback';
 import { checkVideoStatus } from './instagram/videoStatusChecker';
 import { HeyGenAPI } from './lib/heygen';
 
@@ -71,10 +71,10 @@ export const facebookWebhook = functions.https.onRequest((req: any, res: any) =>
 });
 
 // === Instagram OAuth Callback ===
-export const instagramCallbackFn = functions
+export const facebookCallbackFn = functions
   .region('us-central1')
   .runWith({ timeoutSeconds: 60 })
-  .https.onRequest(instagramCallback);
+  .https.onRequest(facebookCallback);
 
 // === Instagram Webhook POST (procesa media) ===
 

@@ -74,7 +74,7 @@ export function NewNavigation() {
   const handleDeleteNotification = async (notifId: string) => {
     if (!user) return;
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'notifications', notifId));
+      await deleteDoc(doc(db, 'Notifications', user.uid, 'notifications', notifId));
     } catch (err) {
       console.error('Error deleting notification:', err);
     }
@@ -200,27 +200,29 @@ export function NewNavigation() {
                             (settings.system && n.type !== 'video_ready' && n.type !== 'youtube_export')
                           ).map(n => (
                             <li key={n.id} className="relative p-3 rounded-lg bg-gray-900/60 border border-gray-800 flex flex-col gap-1 shadow-sm hover:shadow-lg transition-shadow">
-                              <button
-                                className="absolute left-2 top-2 text-gray-400 hover:text-red-500 transition-colors z-10"
-                                title="Delete notification"
-                                onClick={() => handleDeleteNotification(n.id)}
-                                style={{padding: 0, background: 'none', border: 'none'}}
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
                               <div className="flex items-center gap-2 mb-1">
-                                {n.type === 'video_ready' || n.type === 'youtube_export' ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/10">
-                                    <PlayCircle className="w-4 h-4 text-cyan-300" /> Video
+                                <button
+                                  className="text-gray-400 hover:text-red-500 transition-colors z-10"
+                                  title="Delete notification"
+                                  onClick={() => handleDeleteNotification(n.id)}
+                                  style={{padding: 0, background: 'none', border: 'none'}}
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                                <div className="flex items-center gap-2 ml-auto">
+                                  {n.type === 'video_ready' || n.type === 'youtube_export' ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/10">
+                                      <PlayCircle className="w-4 h-4 text-cyan-300" /> Video
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-500/10 text-gray-200 border border-gray-400/10">
+                                      <Settings className="w-4 h-4 text-gray-300" /> System
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-gray-400">
+                                    {n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString() : ''}
                                   </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-500/10 text-gray-200 border border-gray-400/10">
-                                    <Settings className="w-4 h-4 text-gray-300" /> System
-                                  </span>
-                                )}
-                                <span className="ml-auto text-xs text-gray-400">
-                                  {n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString() : ''}
-                                </span>
+                                </div>
                               </div>
                               <div className="text-sm text-white/90 mb-1">
                                 {n.message}
