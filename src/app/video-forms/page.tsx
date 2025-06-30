@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, type ChangeEvent, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Bell, PlayCircle, PauseCircle, Check } from "lucide-react";
+import { ChevronDown, PlayCircle, PauseCircle, Check } from "lucide-react";
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { toast } from 'sonner';
@@ -370,9 +370,7 @@ export default function VideoFormsPage() {
   };
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const notifRef = useRef<HTMLDivElement>(null);
 
   // Cerrar el dropdown si se hace click fuera
   useEffect(() => {
@@ -390,23 +388,6 @@ export default function VideoFormsPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [dropdownOpen]);
-
-  // Cerrar el dropdown de notificaciones si se hace click fuera
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
-        setNotifOpen(false);
-      }
-    }
-    if (notifOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [notifOpen]);
 
   // Cerrar el dropdown de voz si se hace click fuera
   useEffect(() => {

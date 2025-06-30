@@ -3,14 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, Bell, Settings, ArrowLeft, X } from "lucide-react";
+import { ChevronDown, Bell, Settings, ArrowLeft, X, PlayCircle } from "lucide-react";
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import CreditCounter from '@/components/CreditCounter';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications, useNotificationSettings } from '@/hooks/useNotifications';
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -32,6 +32,7 @@ export function NewNavigation() {
   const notifRef = useRef<HTMLDivElement>(null);
 
   const { notifications, unreadCount, loading: notifLoading } = useNotifications();
+  const { settings, loading: settingsLoading, updateSetting } = useNotificationSettings();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -148,121 +149,93 @@ export function NewNavigation() {
               <button
                 onClick={() => setNotifOpen(!notifOpen)}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors relative"
+                aria-label="View notifications"
               >
                 <Bell className="w-5 h-5 text-white/70" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-gray-900" style={{boxShadow: '0 0 8px 2px rgba(239,68,68,0.5)'}}></span>
+                  <span className="absolute top-0 right-0 w-3 h-3 bg-cyan-400 rounded-full animate-pulse border-2 border-gray-900" style={{boxShadow: '0 0 8px 2px rgba(14,165,233,0.3)'}}></span>
                 )}
               </button>
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-96 bg-[rgba(20,22,40,0.85)] border border-blue-500/20 rounded-lg shadow-lg backdrop-blur-md text-white transition-all duration-300">
-                  <div className="flex justify-between items-center p-3 border-b border-blue-500/20">
+                <div className="fixed sm:absolute right-2 sm:right-0 top-16 sm:top-auto sm:mt-2 w-[95vw] max-w-sm sm:w-96 bg-[rgba(20,22,40,0.97)] border border-blue-500/10 rounded-xl shadow-2xl backdrop-blur-md text-white transition-all duration-300 z-50" style={{maxHeight: '80vh', overflowY: 'auto'}}>
+                  <div className="flex justify-between items-center p-4 border-b border-blue-500/10">
+                    <span className="font-semibold text-base">Notifications</span>
                     <div className="flex items-center gap-2">
-                      {showNotifSettings && (
-                        <button onClick={() => setShowNotifSettings(false)} className="p-1 rounded-full text-gray-400 hover:bg-white/10 hover:text-white transition-colors">
-                          <ArrowLeft className="w-5 h-5" />
-                        </button>
-                      )}
-                      <h3 className="font-semibold">{showNotifSettings ? 'Notification Settings' : 'Notifications'}</h3>
-                    </div>
-                    
-                    {!showNotifSettings && (
-                      <button onClick={() => setShowNotifSettings(true)} className="text-gray-400 hover:text-white transition-colors">
+                      <button onClick={() => setShowNotifSettings(!showNotifSettings)} className="p-2 rounded-full text-gray-400 hover:bg-white/10 hover:text-white transition-colors" aria-label="Notification settings">
                         <Settings className="w-5 h-5" />
                       </button>
-                    )}
+                      <button onClick={() => setNotifOpen(false)} className="p-2 rounded-full text-gray-400 hover:bg-white/10 hover:text-white transition-colors" aria-label="Close notifications">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
-                  
                   {showNotifSettings ? (
-                    <div className="p-4">
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <label htmlFor="video-notifs" className="text-sm text-gray-300">Video Notifications</label>
-                          <input type="checkbox" id="video-notifs" className="toggle-checkbox" checked={videoNotifs} onChange={() => setVideoNotifs(!videoNotifs)} />
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <label htmlFor="system-notifs" className="text-sm text-gray-300">System Updates</label>
-                          <input type="checkbox" id="system-notifs" className="toggle-checkbox" checked={systemNotifs} onChange={() => setSystemNotifs(!systemNotifs)} />
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <label htmlFor="email-notifs" className="text-sm text-gray-300">Email Notifications</label>
-                          <input type="checkbox" id="email-notifs" className="toggle-checkbox" checked={emailNotifs} onChange={() => setEmailNotifs(!emailNotifs)} />
-                        </div>
+                    <div className="p-4 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <label htmlFor="video-notifs" className="text-sm text-gray-300">Video notifications</label>
+                        <input type="checkbox" id="video-notifs" className="toggle-checkbox" checked={settings.video} onChange={() => updateSetting('video', !settings.video)} disabled={settingsLoading} />
                       </div>
-                      <button className="w-full mt-6 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-                        Save preferences
+                      <div className="flex justify-between items-center">
+                        <label htmlFor="system-notifs" className="text-sm text-gray-300">System notifications</label>
+                        <input type="checkbox" id="system-notifs" className="toggle-checkbox" checked={settings.system} onChange={() => updateSetting('system', !settings.system)} disabled={settingsLoading} />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <label htmlFor="email-notifs" className="text-sm text-gray-300">Email notifications</label>
+                        <input type="checkbox" id="email-notifs" className="toggle-checkbox" checked={settings.email} onChange={() => updateSetting('email', !settings.email)} disabled={settingsLoading} />
+                      </div>
+                      <button className="w-full mt-4 px-4 py-2 text-sm font-semibold text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors" onClick={() => setShowNotifSettings(false)}>
+                        Done
                       </button>
                     </div>
                   ) : (
-                    <>
-                      <div className="p-2 bg-gray-900/50">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => setNotifTab('videos')}
-                            className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-all duration-200 ${notifTab === 'videos' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold shadow-md' : 'bg-transparent text-blue-200 hover:bg-blue-500/10'}`}
-                          >
-                            Videos
-                          </button>
-                          <button
-                            onClick={() => setNotifTab('system')}
-                            className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-all duration-200 ${notifTab === 'system' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold shadow-md' : 'bg-transparent text-blue-200 hover:bg-blue-500/10'}`}
-                          >
-                            System
-                          </button>
-                        </div>
-                      </div>
-                      <div className="p-2 max-h-80 overflow-y-auto relative">
-                        <div className="transition-all duration-300 ease-in-out" style={{position: 'relative', minHeight: '120px'}}>
-                          <div
-                            className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${notifTab === 'videos' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
-                          >
-                            {notifTab === 'videos' && (
-                              notifLoading ? (
-                                <div className="p-4 text-center text-gray-500">Loading notifications...</div>
-                              ) : notifications.length === 0 ? (
-                                <div className="p-4 text-center text-gray-500">No new video notifications.</div>
-                              ) : (
-                                <ul className="space-y-2">
-                                  {notifications.filter(n => n.type === 'video_ready' || n.type === 'youtube_export').map(n => (
-                                    <li key={n.id} className={`p-3 rounded-lg ${!n.read ? 'bg-blue-900/40' : 'bg-gray-800/40'} border border-blue-500/10 flex flex-col gap-1 relative`}>
-                                      <button
-                                        className="absolute left-2 top-2 text-gray-400 hover:text-red-500 transition-colors z-10"
-                                        title="Delete notification"
-                                        onClick={() => handleDeleteNotification(n.id)}
-                                        style={{padding: 0, background: 'none', border: 'none'}}
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                      {n.createdAt?.toDate && (
-                                        <span className="absolute right-2 top-2 text-xs text-gray-400 z-10">
-                                          {n.createdAt.toDate().toLocaleString()}
-                                        </span>
-                                      )}
-                                      <div className="pt-6">
-                                        <span className="text-sm block mb-1">{n.message}</span>
-                                        {n.type === 'video_ready' && n.videoId && (
-                                          <Link href={`/videos/${n.videoId}`} className="text-xs text-blue-400 hover:underline">View video</Link>
-                                        )}
-                                        {n.type === 'youtube_export' && n.url && (
-                                          <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-xs text-red-400 hover:underline block">Click here to watch on YouTube</a>
-                                        )}
-                                      </div>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )
-                            )}
-                          </div>
-                          <div
-                            className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${notifTab === 'system' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
-                          >
-                            {notifTab === 'system' && (
-                              <div className="p-4 text-center text-gray-500">No new system notifications.</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </>
+                    <div className="p-2">
+                      {(notifLoading || settingsLoading) ? (
+                        <div className="p-4 text-center text-gray-500">Loading notifications...</div>
+                      ) : notifications.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">No notifications.</div>
+                      ) : (
+                        <ul className="space-y-2">
+                          {notifications.filter(n =>
+                            (settings.video && (n.type === 'video_ready' || n.type === 'youtube_export')) ||
+                            (settings.system && n.type !== 'video_ready' && n.type !== 'youtube_export')
+                          ).map(n => (
+                            <li key={n.id} className="relative p-3 rounded-lg bg-gray-900/60 border border-gray-800 flex flex-col gap-1 shadow-sm hover:shadow-lg transition-shadow">
+                              <button
+                                className="absolute left-2 top-2 text-gray-400 hover:text-red-500 transition-colors z-10"
+                                title="Delete notification"
+                                onClick={() => handleDeleteNotification(n.id)}
+                                style={{padding: 0, background: 'none', border: 'none'}}
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                              <div className="flex items-center gap-2 mb-1">
+                                {n.type === 'video_ready' || n.type === 'youtube_export' ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/10">
+                                    <PlayCircle className="w-4 h-4 text-cyan-300" /> Video
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-500/10 text-gray-200 border border-gray-400/10">
+                                    <Settings className="w-4 h-4 text-gray-300" /> System
+                                  </span>
+                                )}
+                                <span className="ml-auto text-xs text-gray-400">
+                                  {n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString() : ''}
+                                </span>
+                              </div>
+                              <div className="text-sm text-white/90 mb-1">
+                                {n.message}
+                              </div>
+                              {n.type === 'video_ready' && n.videoId && (
+                                <Link href={`/videos/${n.videoId}`} className="text-xs text-cyan-400 hover:underline font-medium">View video</Link>
+                              )}
+                              {n.type === 'youtube_export' && n.url && (
+                                <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 hover:underline font-medium">View on YouTube</a>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

@@ -643,17 +643,30 @@ export class HeyGenAPI {
       // Determinar dimension
       let dimension = params.dimension || { width: 720, height: 1280 };
       
-      // Preparar el objeto character
-      const character: any = {
-        type: "avatar",
-        avatar_id: params.avatarId,
-        avatar_style: "normal"
-      };
+      // Detectar si es un talking photo o avatar normal
+      // Los talking photos tienen IDs que son hashes hexadecimales de 32 caracteres
+      const isTalkingPhoto = /^[a-f0-9]{32}$/.test(params.avatarId);
       
-      // Agregar look_id si está presente
-      if (params.lookId) {
-        character.look_id = params.lookId;
+      // Preparar el objeto character según el tipo
+      const character: any = {};
+      
+      if (isTalkingPhoto) {
+        // Para talking photos
+        character.type = "talking_photo";
+        character.talking_photo_id = params.avatarId;
+      } else {
+        // Para avatares normales
+        character.type = "avatar";
+        character.avatar_id = params.avatarId;
+        character.avatar_style = "normal";
+        
+        // Agregar look_id si está presente (solo para avatares normales)
+        if (params.lookId) {
+          character.look_id = params.lookId;
+        }
       }
+      
+      console.log('Character configuration:', character);
       
       const response = await this.request('/v2/video/generate', {
         method: 'POST',

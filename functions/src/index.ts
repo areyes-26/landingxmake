@@ -85,6 +85,31 @@ export { onVideoCreated } from './onVideoCreated';
 // === Firestore Trigger: check video status ===
 export { checkVideoStatus };
 
+// === Firestore Trigger: Video status update (para notificaciones robustas) ===
+export const onVideoStatusUpdate = functions.firestore
+  .document('videos/{videoId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    const videoId = context.params.videoId;
+
+    // Solo procesar si el status cambió de algo diferente a 'completed' a 'completed'
+    if (before.status !== 'completed' && after.status === 'completed' && after.userId) {
+      console.log(`[onVideoStatusUpdate] Video ${videoId} completed. Sending notification to user ${after.userId}`);
+      
+      try {
+        await require('./lib/notifications').sendNotificationToUser(after.userId, {
+          type: 'video_ready',
+          message: 'Your video is ready! Click to view it in your dashboard.',
+          videoId
+        });
+        console.log(`[onVideoStatusUpdate] Notification sent successfully for video ${videoId}`);
+      } catch (error) {
+        console.error(`[onVideoStatusUpdate] Error sending notification for video ${videoId}:`, error);
+      }
+    }
+  });
+
 // EXPORT WEBHOOK INSTAGRAM
 export { instagramWebhook } from './instagram/webhook';
 
@@ -132,19 +157,7 @@ export const pollHeygenVideos = functions.pubsub.schedule('every 2 minutes').onR
           updateData.thumbnailUrl = status.thumbnailUrl;
         }
         console.log(`[pollHeygenVideos] Video ${videoId} actualizado a completed con URL: ${status.videoUrl}`);
-        // Enviar notificación al usuario si existe userId
-        if (data.userId) {
-          try {
-            await require('./lib/notifications').sendNotificationToUser(data.userId, {
-              type: 'video_ready',
-              message: 'Your video is ready! Click to view it in your dashboard.',
-              videoId
-            });
-            console.log(`[pollHeygenVideos] Notification sent to user ${data.userId} for video ${videoId}`);
-          } catch (notifyErr) {
-            console.error(`[pollHeygenVideos] Error sending notification to user ${data.userId} for video ${videoId}:`, notifyErr);
-          }
-        }
+        // La notificación se enviará automáticamente por el trigger onVideoStatusUpdate
       } else if (status.status === 'error') {
         updateData.status = 'error';
         updateData.error = status.error || 'Error al generar el video';
