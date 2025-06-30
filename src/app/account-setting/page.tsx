@@ -286,129 +286,61 @@ const Connections = () => {
     const { user } = useAuth();
     const [youtubeConnected, setYoutubeConnected] = useState(false);
     const [youtubeProfile, setYoutubeProfile] = useState<any>(null);
-    // Instagram: placeholder
     const [instagramConnected, setInstagramConnected] = useState(false);
     const [instagramProfile, setInstagramProfile] = useState<any>(null);
-    // TikTok: agregar estado
     const [tiktokConnected, setTiktokConnected] = useState(false);
     const [tiktokProfile, setTiktokProfile] = useState<any>(null);
 
     useEffect(() => {
         if (!user) return;
-        // YouTube: consultar Firestore
+        // YouTube: consultar app_tokens
         const fetchYouTube = async () => {
-            const ytRef = doc(db, "youtube_tokens", user.uid);
+            const ytRef = doc(db, "app_tokens", user.uid, "youtube");
             const ytSnap = await getDoc(ytRef);
-            if (ytSnap.exists()) {
-                setYoutubeConnected(true);
-                setYoutubeProfile(ytSnap.data().profile || null);
-            } else {
-                setYoutubeConnected(false);
-                setYoutubeProfile(null);
-            }
+            setYoutubeConnected(ytSnap.exists());
+            setYoutubeProfile(ytSnap.exists() ? ytSnap.data().profile || null : null);
         };
         fetchYouTube();
-        
-        // Instagram: consultar endpoint de estado
+        // Instagram: consultar app_tokens
         const fetchInstagram = async () => {
-            try {
-                const token = await user.getIdToken();
-                const response = await fetch('/api/instagram/status', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.connected) {
-                        setInstagramConnected(true);
-                        setInstagramProfile(data.instagramBusinessAccount);
-                    } else {
-                        setInstagramConnected(false);
-                        setInstagramProfile(null);
-                    }
-                } else {
-                    setInstagramConnected(false);
-                    setInstagramProfile(null);
-                }
-            } catch (error) {
-                console.error('Error fetching Instagram status:', error);
-                setInstagramConnected(false);
-                setInstagramProfile(null);
-            }
+            const igRef = doc(db, "app_tokens", user.uid, "instagram");
+            const igSnap = await getDoc(igRef);
+            setInstagramConnected(igSnap.exists());
+            setInstagramProfile(igSnap.exists() ? igSnap.data().profile || null : null);
         };
         fetchInstagram();
-
-        // TikTok: consultar Firestore
+        // TikTok: consultar app_tokens
         const fetchTikTok = async () => {
-            try {
-                // Buscar en tiktok_tokens usando el userId
-                const tiktokQuery = query(
-                    collection(db, "tiktok_tokens"),
-                    where("userId", "==", user.uid)
-                );
-                const tiktokSnap = await getDocs(tiktokQuery);
-                
-                if (!tiktokSnap.empty) {
-                    const tiktokData = tiktokSnap.docs[0].data();
-                    setTiktokConnected(true);
-                    setTiktokProfile({
-                        openId: tiktokData.openId,
-                        displayName: tiktokData.displayName || 'TikTok User'
-                    });
-                } else {
-                    setTiktokConnected(false);
-                    setTiktokProfile(null);
-                }
-            } catch (error) {
-                console.error('Error fetching TikTok status:', error);
-                setTiktokConnected(false);
-                setTiktokProfile(null);
-            }
+            const tkRef = doc(db, "app_tokens", user.uid, "tiktok");
+            const tkSnap = await getDoc(tkRef);
+            setTiktokConnected(tkSnap.exists());
+            setTiktokProfile(tkSnap.exists() ? tkSnap.data().profile || null : null);
         };
         fetchTikTok();
     }, [user]);
 
     const handleYouTubeDisconnect = async () => {
         if (!user) return;
-        await deleteDoc(doc(db, "youtube_tokens", user.uid));
+        await deleteDoc(doc(db, "app_tokens", user.uid, "youtube"));
         setYoutubeConnected(false);
         setYoutubeProfile(null);
         toast.success("YouTube disconnected!");
     };
 
-    // Instagram: desconexión real
     const handleInstagramDisconnect = async () => {
         if (!user) return;
-        await deleteDoc(doc(db, "instagram_tokens", user.uid));
+        await deleteDoc(doc(db, "app_tokens", user.uid, "instagram"));
         setInstagramConnected(false);
         setInstagramProfile(null);
         toast.success("Instagram disconnected!");
     };
 
-    // TikTok: desconexión
     const handleTikTokDisconnect = async () => {
         if (!user) return;
-        try {
-            // Buscar y eliminar el documento de TikTok
-            const tiktokQuery = query(
-                collection(db, "tiktok_tokens"),
-                where("userId", "==", user.uid)
-            );
-            const tiktokSnap = await getDocs(tiktokQuery);
-            
-            if (!tiktokSnap.empty) {
-                await deleteDoc(tiktokSnap.docs[0].ref);
-            }
-            
-            setTiktokConnected(false);
-            setTiktokProfile(null);
-            toast.success("TikTok disconnected!");
-        } catch (error) {
-            console.error('Error disconnecting TikTok:', error);
-            toast.error("Failed to disconnect TikTok");
-        }
+        await deleteDoc(doc(db, "app_tokens", user.uid, "tiktok"));
+        setTiktokConnected(false);
+        setTiktokProfile(null);
+        toast.success("TikTok disconnected!");
     };
 
     // Estilos inline para el rediseño
@@ -448,7 +380,7 @@ const Connections = () => {
             <h2 className="section-title">Connections</h2>
             <p className="section-description">Connect your social media accounts and other platforms.</p>
             <div className="integrations-list" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 500 }}>
-                {/* Instagram (placeholder, preparado para futuro) */}
+                {/* Instagram */}
                 <div className="integration-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#181c2a', padding: '1rem', borderRadius: 12, flexWrap: 'wrap', gap: 12 }}>
                     <div style={infoStyle}>
                         <span style={titleStyle}>
