@@ -223,7 +223,7 @@ const handleYouTubeConnect = () => {
     const redirectUri = encodeURIComponent(
       isLocal
         ? 'http://localhost:3000/api/youtube/callback'
-        : 'https://landing-videos-generator-06--landing-x-make.us-central1.web.app/api/youtube/callback' // dominio real de producción
+        : 'https://visiora.ai/api/youtube/callback' // dominio real de producción
     );
   
     const scope = encodeURIComponent(

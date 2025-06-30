@@ -104,7 +104,7 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
     await db.collection('instagram_tokens').doc(state).set(connectionData);
 
     console.log('[SUCCESS] Complete Instagram connection saved. Redirecting...');
-    res.redirect('https://landing-videos-generator-06--landing-x-make.us-central1.hosted.app/account-setting?section=connections');
+    res.redirect('https://visiora.ai/account-setting?section=connections');
   } catch (error: any) {
     const raw = error.response?.data || error.message;
     console.error('[ERROR] Failed during OAuth flow:', raw);
