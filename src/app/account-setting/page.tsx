@@ -198,23 +198,30 @@ const handleInstagramConnect = () => {
     const state = crypto.randomUUID();
     localStorage.setItem('instagram_oauth_state', state);
     const clientId = process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID;
-    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/facebookCallbackFn');
+  
+    const redirectUri = encodeURIComponent(
+      process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI || 'https://us-central1-landing-x-make.cloudfunctions.net/facebookCallbackFn'
+    );
+  
     const scope = [
-        'pages_show_list',
-        'pages_read_engagement',
-        'pages_manage_posts',
-        'instagram_basic',
-        'instagram_content_publish'
+      'pages_show_list',
+      'pages_read_engagement',
+      'pages_manage_posts',
+      'instagram_basic',
+      'instagram_content_publish'
     ].join(',');
+  
     const authUrl =
-        `https://www.facebook.com/v19.0/dialog/oauth` +
-        `?client_id=${clientId}` +
-        `&redirect_uri=${redirectUri}` +
-        `&scope=${scope}` +
-        `&response_type=code` +
-        `&state=${state}`;
+      `https://www.facebook.com/v19.0/dialog/oauth` +
+      `?client_id=${clientId}` +
+      `&redirect_uri=${redirectUri}` +
+      `&scope=${scope}` +
+      `&response_type=code` +
+      `&state=${state}`;
+  
     window.location.href = authUrl;
-};
+  };
+  
 
 const handleYouTubeConnect = () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
