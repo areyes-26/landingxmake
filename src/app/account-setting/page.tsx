@@ -220,11 +220,7 @@ const handleYouTubeConnect = () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     const isLocal = process.env.NODE_ENV === 'development';
   
-    const redirectUri = encodeURIComponent(
-      isLocal
-        ? 'http://localhost:3000/api/youtube/callback'
-        : 'https://visiora.ai/api/youtube/callback' // dominio real de producción
-    );
+    const redirectUri = encodeURIComponent(process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || '');
   
     const scope = encodeURIComponent(
       'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/userinfo.profile'
