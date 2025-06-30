@@ -196,9 +196,15 @@ const Pricing = ({ user, userPlan, isLoading, handleStripeCheckout, handleSelect
 const handleInstagramConnect = () => {
     const state = crypto.randomUUID();
     localStorage.setItem('instagram_oauth_state', state);
-    const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
-    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/instagramCallbackFn');
-    const scope = ['pages_show_list', 'instagram_basic', 'pages_read_engagement', 'instagram_content_publish'].join(',');
+    const clientId = process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID;
+    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/facebookCallbackFn');
+    const scope = [
+        'pages_show_list',
+        'pages_read_engagement',
+        'pages_manage_posts',
+        'instagram_basic',
+        'instagram_content_publish'
+    ].join(',');
     const authUrl =
         `https://www.facebook.com/v19.0/dialog/oauth` +
         `?client_id=${clientId}` +
