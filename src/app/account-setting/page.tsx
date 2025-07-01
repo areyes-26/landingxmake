@@ -252,12 +252,12 @@ const Connections = () => {
         if (!user) return;
         const state = user.uid;
         localStorage.setItem('tiktok_oauth_state', state);
-        const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY;
+        const clientKey = "TU_CLIENT_KEY_DE_TIKTOK"; // <-- hardcodea aquí tu client key real
         const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/tiktokCallback');
         const scope = [
             'user.info.basic',
-            'video.publish',
-            'video.upload'
+            'video.upload',
+            'video.list'
         ].join(',');
         const authUrl =
             `https://www.tiktok.com/v2/auth/authorize/` +
