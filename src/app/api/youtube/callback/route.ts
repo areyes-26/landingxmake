@@ -73,6 +73,12 @@ export async function GET(req: NextRequest) {
       updatedAt: new Date(),
     });
     
+    // Fechas legibles
+    const now = new Date();
+    const createdAt = now.toISOString();
+    const updatedAt = now.toISOString();
+    const expiresAt = new Date(now.getTime() + expires_in * 1000).toISOString();
+
     // También guardar el perfil para mostrar en la UI
     await db.collection('app_tokens').doc(userId).collection('youtube').doc('profile').set({
       id: profile.id || null,
@@ -81,15 +87,15 @@ export async function GET(req: NextRequest) {
       picture: profile.picture || null,
       access_token,
       refresh_token,
-      token_expires_at: Date.now() + (expires_in * 1000),
-      createdAt: new Date(),
-      updatedAt: new Date()
+      token_expires_at: expiresAt,
+      createdAt,
+      updatedAt
     });
 
     // 5. Redirigir a la sección de conexiones con éxito
-    return NextResponse.redirect(`${BASE_URL}/account-setting?section=connections&success=youtube_connected`);
+    return NextResponse.redirect('https://visiora.ai/account-setting?section=connections&success=youtube_connected');
   } catch (err) {
     console.error('YouTube OAuth callback error:', err);
-    return NextResponse.redirect(`${BASE_URL}/account-setting?section=connections&error=youtube_oauth`);
+    return NextResponse.redirect('https://visiora.ai/account-setting?section=connections&error=youtube_oauth');
   }
 }

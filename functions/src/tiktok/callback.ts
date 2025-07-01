@@ -60,23 +60,34 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
       console.log('[WARNING] Could not fetch user info:', error);
     }
 
+    // Eliminar documentos previos para evitar duplicados
+    const tkConnRef = db.collection('app_tokens').doc(state).collection('tiktok').doc('connection');
+    const tkProfileRef = db.collection('app_tokens').doc(state).collection('tiktok').doc('profile');
+    await tkConnRef.delete();
+    await tkProfileRef.delete();
+
+    // Fechas legibles
+    const now = new Date();
+    const createdAt = now.toISOString();
+    const updatedAt = now.toISOString();
+    const expiresAt = new Date(now.getTime() + expires_in * 1000).toISOString();
+
     const connectionData = {
-      openId: open_id,
+      openId: open_id || null,
       accessToken: access_token,
       refreshToken: refresh_token,
       expiresIn: expires_in,
       refreshExpiresIn: refresh_expires_in,
       scope,
-      displayName: userInfo?.display_name || null,
-      avatarUrl: userInfo?.avatar_url || null,
-      createdAt: Date.now(),
+      displayName: (userInfo && userInfo.display_name) ? userInfo.display_name : null,
+      avatarUrl: (userInfo && userInfo.avatar_url) ? userInfo.avatar_url : null,
+      createdAt,
+      updatedAt,
+      expiresAt,
       state,
-      // Nota: userId se agregará cuando el usuario complete el flujo
     };
-    
-    // Guardar en la colección centralizada app_tokens
-    await db.collection('app_tokens').doc(state).collection('tiktok').doc('connection').set(connectionData);
-    
+    await tkConnRef.set(connectionData);
+
     // También guardar el perfil para mostrar en la UI
     const profileData = {
       id: open_id || null,
@@ -84,12 +95,11 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
       avatarUrl: (userInfo && userInfo.avatar_url) ? userInfo.avatar_url : null,
       access_token: access_token,
       refresh_token: refresh_token,
-      token_expires_at: Date.now() + (expires_in * 1000),
-      createdAt: Date.now(),
-      updatedAt: Date.now()
+      token_expires_at: expiresAt,
+      createdAt,
+      updatedAt
     };
-    
-    await db.collection('app_tokens').doc(state).collection('tiktok').doc('profile').set(profileData);
+    await tkProfileRef.set(profileData);
 
     console.log('[SUCCESS] TikTok connection saved. Redirecting...');
     res.redirect(`https://landing-videos-generator-06--landing-x-make.us-central1.web.app/tiktok/success?state=${state}`);

@@ -85,12 +85,26 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       }
     }
 
+    // Eliminar documentos previos para evitar duplicados
+    const igConnRef = db.collection('app_tokens').doc(state).collection('instagram').doc('connection');
+    const igProfileRef = db.collection('app_tokens').doc(state).collection('instagram').doc('profile');
+    await igConnRef.delete();
+    await igProfileRef.delete();
+
+    // Fechas legibles
+    const now = new Date();
+    const createdAt = now.toISOString();
+    const updatedAt = now.toISOString();
+    const expiresAt = new Date(now.getTime() + expires_in * 1000).toISOString();
+
     // Guardar información completa en Firestore usando el firebaseUid (state)
     const connectionData = {
       accessToken: access_token,
       tokenType: token_type,
       expiresIn: expires_in,
-      createdAt: Date.now(),
+      createdAt,
+      updatedAt,
+      expiresAt,
       firebaseUid: state,
       userId: userId,
       userEmail: userEmail ?? null,
@@ -101,8 +115,7 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       scopes: ['pages_show_list', 'instagram_basic', 'pages_read_engagement', 'instagram_content_publish']
     };
 
-    // Guardar en la colección centralizada app_tokens
-    await db.collection('app_tokens').doc(state).collection('instagram').doc('connection').set(connectionData);
+    await igConnRef.set(connectionData);
     
     // También guardar el perfil para mostrar en la UI
     const profileData = {
@@ -112,12 +125,12 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       profile_picture: (instagramBusinessAccount && instagramBusinessAccount.profile_picture_url) ? instagramBusinessAccount.profile_picture_url : null,
       access_token: access_token,
       refresh_token: null, // Instagram no usa refresh tokens
-      token_expires_at: Date.now() + (expires_in * 1000),
-      createdAt: Date.now(),
-      updatedAt: Date.now()
+      token_expires_at: expiresAt,
+      createdAt,
+      updatedAt
     };
     
-    await db.collection('app_tokens').doc(state).collection('instagram').doc('profile').set(profileData);
+    await igProfileRef.set(profileData);
 
     console.log('[SUCCESS] Complete Instagram connection saved. Redirecting...');
     res.redirect('https://visiora.ai/account-setting?section=connections');
