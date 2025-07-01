@@ -48,7 +48,7 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       }
     });
 
-    const userId = userRes.data.id;
+    const userId = state;
     const userEmail = userRes.data.email ?? null;
     console.log('[USER INFO]', userRes.data);
 

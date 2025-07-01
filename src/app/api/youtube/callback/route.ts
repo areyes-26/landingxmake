@@ -6,7 +6,7 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI =
   process.env.NODE_ENV === 'development'
     ? 'http://localhost:3000/api/youtube/callback'
-    : 'https://landing-videos-generator-06--landing-x-make.us-central1.web.app/api/youtube/callback';
+    : 'https://visiora.ai/api/youtube/callback';
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 async function exchangeCodeForTokens(code: string) {
