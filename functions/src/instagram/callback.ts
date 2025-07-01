@@ -86,8 +86,8 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
     }
 
     // Eliminar documentos previos para evitar duplicados
-    const igConnRef = db.collection('app_tokens').doc(state).collection('instagram').doc('connection');
-    const igProfileRef = db.collection('app_tokens').doc(state).collection('instagram').doc('profile');
+    const igConnRef = db.collection('app_tokens').doc(userId).collection('instagram').doc('connection');
+    const igProfileRef = db.collection('app_tokens').doc(userId).collection('instagram').doc('profile');
     await igConnRef.delete();
     await igProfileRef.delete();
 
@@ -97,7 +97,7 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
     const updatedAt = now.toISOString();
     const expiresAt = new Date(now.getTime() + expires_in * 1000).toISOString();
 
-    // Guardar información completa en Firestore usando el firebaseUid (state)
+    // Guardar información completa en Firestore usando el UID real
     const connectionData = {
       accessToken: access_token,
       tokenType: token_type,
@@ -105,7 +105,7 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       createdAt,
       updatedAt,
       expiresAt,
-      firebaseUid: state,
+      firebaseUid: userId,
       userId: userId,
       userEmail: userEmail ?? null,
       pageId: pageId || null,

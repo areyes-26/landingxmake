@@ -61,8 +61,8 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
     }
 
     // Eliminar documentos previos para evitar duplicados
-    const tkConnRef = db.collection('app_tokens').doc(state).collection('tiktok').doc('connection');
-    const tkProfileRef = db.collection('app_tokens').doc(state).collection('tiktok').doc('profile');
+    const tkConnRef = db.collection('app_tokens').doc(userId).collection('tiktok').doc('connection');
+    const tkProfileRef = db.collection('app_tokens').doc(userId).collection('tiktok').doc('profile');
     await tkConnRef.delete();
     await tkProfileRef.delete();
 
@@ -84,7 +84,7 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
       createdAt,
       updatedAt,
       expiresAt,
-      state,
+      userId: userId,
     };
     await tkConnRef.set(connectionData);
 
