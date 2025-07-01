@@ -94,10 +94,10 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       firebaseUid: state,
       userId: userId,
       userEmail: userEmail ?? null,
-      pageId: pageId,
-      pageAccessToken: pageAccessToken,
-      instagramBusinessAccount: instagramBusinessAccount,
-      pages: pages,
+      pageId: pageId || null,
+      pageAccessToken: pageAccessToken || null,
+      instagramBusinessAccount: instagramBusinessAccount || null,
+      pages: pages || [],
       scopes: ['pages_show_list', 'instagram_basic', 'pages_read_engagement', 'instagram_content_publish']
     };
 
@@ -107,9 +107,9 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
     // También guardar el perfil para mostrar en la UI
     const profileData = {
       id: userId,
-      name: instagramBusinessAccount?.name || 'Instagram User',
-      email: userEmail,
-      profile_picture: instagramBusinessAccount?.profile_picture_url,
+      name: (instagramBusinessAccount && instagramBusinessAccount.name) ? instagramBusinessAccount.name : 'Instagram User',
+      email: userEmail || null,
+      profile_picture: (instagramBusinessAccount && instagramBusinessAccount.profile_picture_url) ? instagramBusinessAccount.profile_picture_url : null,
       access_token: access_token,
       refresh_token: null, // Instagram no usa refresh tokens
       token_expires_at: Date.now() + (expires_in * 1000),

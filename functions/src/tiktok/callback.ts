@@ -79,9 +79,9 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
     
     // También guardar el perfil para mostrar en la UI
     const profileData = {
-      id: open_id,
-      displayName: userInfo?.display_name || 'TikTok User',
-      avatarUrl: userInfo?.avatar_url,
+      id: open_id || null,
+      displayName: (userInfo && userInfo.display_name) ? userInfo.display_name : 'TikTok User',
+      avatarUrl: (userInfo && userInfo.avatar_url) ? userInfo.avatar_url : null,
       access_token: access_token,
       refresh_token: refresh_token,
       token_expires_at: Date.now() + (expires_in * 1000),

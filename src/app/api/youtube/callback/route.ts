@@ -75,10 +75,10 @@ export async function GET(req: NextRequest) {
     
     // También guardar el perfil para mostrar en la UI
     await db.collection('app_tokens').doc(userId).collection('youtube').doc('profile').set({
-      id: profile.id,
-      name: profile.name,
-      email: profile.email,
-      picture: profile.picture,
+      id: profile.id || null,
+      name: profile.name || null,
+      email: profile.email || null,
+      picture: profile.picture || null,
       access_token,
       refresh_token,
       token_expires_at: Date.now() + (expires_in * 1000),
