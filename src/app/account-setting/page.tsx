@@ -193,95 +193,6 @@ const Pricing = ({ user, userPlan, isLoading, handleStripeCheckout, handleSelect
     </section>
 )};
 
-// Handler para conectar Instagram (migrado desde export-view)
-const handleInstagramConnect = () => {
-    const state = crypto.randomUUID();
-    localStorage.setItem('instagram_oauth_state', state);
-    const clientId = process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID;
-  
-    const redirectUri = encodeURIComponent(
-      process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI || 'https://us-central1-landing-x-make.cloudfunctions.net/facebookCallbackFn'
-    );
-  
-    const scope = [
-      'pages_show_list',
-      'pages_read_engagement',
-      'pages_manage_posts',
-      'instagram_basic',
-      'instagram_content_publish'
-    ].join(',');
-  
-    const authUrl =
-      `https://www.facebook.com/v19.0/dialog/oauth` +
-      `?client_id=${clientId}` +
-      `&redirect_uri=${redirectUri}` +
-      `&scope=${scope}` +
-      `&response_type=code` +
-      `&state=${state}`;
-  
-    window.location.href = authUrl;
-  };
-  
-
-const handleYouTubeConnect = () => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    const isLocal = process.env.NODE_ENV === 'development';
-  
-    const redirectUri = encodeURIComponent(process.env.GOOGLE_REDIRECT_URI || 'https://visiora.ai/api/youtube/callback');
-  
-    const scope = encodeURIComponent(
-      'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/userinfo.profile'
-    );
-  
-    const state = crypto.randomUUID();
-  
-    const authUrl =
-      `https://accounts.google.com/o/oauth2/v2/auth` +
-      `?client_id=${clientId}` +
-      `&redirect_uri=${redirectUri}` +
-      `&response_type=code` +
-      `&scope=${scope}` +
-      `&access_type=offline` +
-      `&prompt=consent` +
-      `&state=${state}`;
-  
-    window.location.href = authUrl;
-  };
-  
-
-const badgeBase = {
-    padding: '0.25rem 0.9rem',
-    borderRadius: '999px',
-    fontSize: '0.95rem',
-    fontWeight: 500,
-    display: 'flex',
-    alignItems: 'center',
-    border: '1px solid',
-    minWidth: 120,
-    justifyContent: 'center',
-    letterSpacing: 0.2,
-};
-
-const handleTikTokConnect = () => {
-    const state = crypto.randomUUID();
-    localStorage.setItem('tiktok_oauth_state', state);
-    const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY;
-    const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/tiktokCallback');
-    const scope = [
-        'user.info.basic',
-        'video.publish',
-        'video.upload'
-    ].join(',');
-    const authUrl =
-        `https://www.tiktok.com/v2/auth/authorize/` +
-        `?client_key=${clientKey}` +
-        `&scope=${scope}` +
-        `&response_type=code` +
-        `&redirect_uri=${redirectUri}` +
-        `&state=${state}`;
-    window.location.href = authUrl;
-};
-
 const Connections = () => {
     const { user } = useAuth();
     const [youtubeConnected, setYoutubeConnected] = useState(false);
@@ -290,6 +201,73 @@ const Connections = () => {
     const [instagramProfile, setInstagramProfile] = useState<any>(null);
     const [tiktokConnected, setTiktokConnected] = useState(false);
     const [tiktokProfile, setTiktokProfile] = useState<any>(null);
+
+    // Handlers de conexión dentro del componente para acceder a user
+    const handleInstagramConnect = () => {
+        if (!user) return;
+        const state = user.uid;
+        localStorage.setItem('instagram_oauth_state', state);
+        const clientId = process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID;
+        const redirectUri = encodeURIComponent(
+            process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI || 'https://us-central1-landing-x-make.cloudfunctions.net/facebookCallbackFn'
+        );
+        const scope = [
+            'pages_show_list',
+            'pages_read_engagement',
+            'pages_manage_posts',
+            'instagram_basic',
+            'instagram_content_publish'
+        ].join(',');
+        const authUrl =
+            `https://www.facebook.com/v19.0/dialog/oauth` +
+            `?client_id=${clientId}` +
+            `&redirect_uri=${redirectUri}` +
+            `&scope=${scope}` +
+            `&response_type=code` +
+            `&state=${state}`;
+        window.location.href = authUrl;
+    };
+
+    const handleYouTubeConnect = () => {
+        if (!user) return;
+        const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+        const redirectUri = encodeURIComponent(process.env.GOOGLE_REDIRECT_URI || 'https://visiora.ai/api/youtube/callback');
+        const scope = encodeURIComponent(
+            'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/userinfo.profile'
+        );
+        const state = user.uid;
+        const authUrl =
+            `https://accounts.google.com/o/oauth2/v2/auth` +
+            `?client_id=${clientId}` +
+            `&redirect_uri=${redirectUri}` +
+            `&response_type=code` +
+            `&scope=${scope}` +
+            `&access_type=offline` +
+            `&prompt=consent` +
+            `&state=${state}`;
+        window.location.href = authUrl;
+    };
+
+    const handleTikTokConnect = () => {
+        if (!user) return;
+        const state = user.uid;
+        localStorage.setItem('tiktok_oauth_state', state);
+        const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY;
+        const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/tiktokCallback');
+        const scope = [
+            'user.info.basic',
+            'video.publish',
+            'video.upload'
+        ].join(',');
+        const authUrl =
+            `https://www.tiktok.com/v2/auth/authorize/` +
+            `?client_key=${clientKey}` +
+            `&scope=${scope}` +
+            `&response_type=code` +
+            `&redirect_uri=${redirectUri}` +
+            `&state=${state}`;
+        window.location.href = authUrl;
+    };
 
     useEffect(() => {
         if (!user) return;

@@ -21,6 +21,9 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
   }
 
   try {
+    // Obtener el UID real del usuario desde state
+    const userId = state;
+
     // Intercambiar code por access_token usando OAuth v2
     const tokenRes = await axios.post('https://open.tiktokapis.com/v2/oauth/token/', {
       client_key,
