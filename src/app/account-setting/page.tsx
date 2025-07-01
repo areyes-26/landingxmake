@@ -295,33 +295,37 @@ const Connections = () => {
         if (!user) return;
         // YouTube: consultar app_tokens
         const fetchYouTube = async () => {
-            const ytRef = doc(db, "app_tokens", user.uid, "youtube");
+            const ytRef = doc(db, "app_tokens", user.uid, "youtube", "profile");
             const ytSnap = await getDoc(ytRef);
             setYoutubeConnected(ytSnap.exists());
-            setYoutubeProfile(ytSnap.exists() ? ytSnap.data().profile || null : null);
+            setYoutubeProfile(ytSnap.exists() ? ytSnap.data() : null);
         };
         fetchYouTube();
         // Instagram: consultar app_tokens
         const fetchInstagram = async () => {
-            const igRef = doc(db, "app_tokens", user.uid, "instagram");
+            const igRef = doc(db, "app_tokens", user.uid, "instagram", "profile");
             const igSnap = await getDoc(igRef);
             setInstagramConnected(igSnap.exists());
-            setInstagramProfile(igSnap.exists() ? igSnap.data().profile || null : null);
+            setInstagramProfile(igSnap.exists() ? igSnap.data() : null);
         };
         fetchInstagram();
         // TikTok: consultar app_tokens
         const fetchTikTok = async () => {
-            const tkRef = doc(db, "app_tokens", user.uid, "tiktok");
+            const tkRef = doc(db, "app_tokens", user.uid, "tiktok", "profile");
             const tkSnap = await getDoc(tkRef);
             setTiktokConnected(tkSnap.exists());
-            setTiktokProfile(tkSnap.exists() ? tkSnap.data().profile || null : null);
+            setTiktokProfile(tkSnap.exists() ? tkSnap.data() : null);
         };
         fetchTikTok();
     }, [user]);
 
     const handleYouTubeDisconnect = async () => {
         if (!user) return;
-        await deleteDoc(doc(db, "app_tokens", user.uid, "youtube"));
+        // Eliminar toda la colección de YouTube
+        const ytCollectionRef = collection(db, "app_tokens", user.uid, "youtube");
+        const ytDocs = await getDocs(ytCollectionRef);
+        const deletePromises = ytDocs.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
         setYoutubeConnected(false);
         setYoutubeProfile(null);
         toast.success("YouTube disconnected!");
@@ -329,7 +333,11 @@ const Connections = () => {
 
     const handleInstagramDisconnect = async () => {
         if (!user) return;
-        await deleteDoc(doc(db, "app_tokens", user.uid, "instagram"));
+        // Eliminar toda la colección de Instagram
+        const igCollectionRef = collection(db, "app_tokens", user.uid, "instagram");
+        const igDocs = await getDocs(igCollectionRef);
+        const deletePromises = igDocs.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
         setInstagramConnected(false);
         setInstagramProfile(null);
         toast.success("Instagram disconnected!");
@@ -337,7 +345,11 @@ const Connections = () => {
 
     const handleTikTokDisconnect = async () => {
         if (!user) return;
-        await deleteDoc(doc(db, "app_tokens", user.uid, "tiktok"));
+        // Eliminar toda la colección de TikTok
+        const tkCollectionRef = collection(db, "app_tokens", user.uid, "tiktok");
+        const tkDocs = await getDocs(tkCollectionRef);
+        const deletePromises = tkDocs.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
         setTiktokConnected(false);
         setTiktokProfile(null);
         toast.success("TikTok disconnected!");

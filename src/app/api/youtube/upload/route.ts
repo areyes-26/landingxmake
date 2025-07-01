@@ -48,8 +48,8 @@ export async function POST(req: NextRequest) {
       console.log('[YouTube] Error getting userId:', err);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    // 2. Obtener access_token y refresh_token de Firestore
-    const ytDocRef = db.collection('youtube_tokens').doc(userId);
+    // 2. Obtener access_token y refresh_token de Firestore - colección centralizada
+    const ytDocRef = db.collection('app_tokens').doc(userId).collection('youtube').doc('connection');
     const ytDoc = await ytDocRef.get();
     if (!ytDoc.exists) {
       console.log('[YouTube] No YouTube token doc for user:', userId);

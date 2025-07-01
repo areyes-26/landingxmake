@@ -47,18 +47,15 @@ export async function refreshTikTokToken(refreshToken: string): Promise<{
 
 export async function getValidTikTokToken(userId: string): Promise<string | null> {
   try {
-    // Buscar token del usuario
-    const tiktokQuery = await db.collection('tiktok_tokens')
-      .where('userId', '==', userId)
-      .limit(1)
-      .get();
+    // Buscar token del usuario en la colección centralizada
+    const tiktokRef = db.collection('app_tokens').doc(userId).collection('tiktok').doc('connection');
+    const tiktokDoc = await tiktokRef.get();
 
-    if (tiktokQuery.empty) {
+    if (!tiktokDoc.exists) {
       return null;
     }
 
-    const tokenDoc = tiktokQuery.docs[0];
-    const tokenData = tokenDoc.data() as TikTokTokenData;
+    const tokenData = tiktokDoc.data() as TikTokTokenData;
     
     // Verificar si el token ha expirado (con margen de 5 minutos)
     const tokenAge = Date.now() - tokenData.createdAt;
@@ -81,13 +78,13 @@ export async function getValidTikTokToken(userId: string): Promise<string | null
           createdAt: Date.now(),
         };
         
-        await tokenDoc.ref.update(updatedData);
+        await tiktokRef.update(updatedData);
         
         return newTokenData.access_token;
       } catch (refreshError) {
         console.error(`[TikTok] Failed to refresh token for user ${userId}:`, refreshError);
         // Si falla la renovación, eliminar la conexión
-        await tokenDoc.ref.delete();
+        await tiktokRef.delete();
         return null;
       }
     }

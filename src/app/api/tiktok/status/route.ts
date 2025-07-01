@@ -13,21 +13,23 @@ export async function GET(request: NextRequest) {
     const decodedToken = await auth.verifyIdToken(token);
     const userId = decodedToken.uid;
 
-    // Buscar conexión de TikTok para este usuario
-    const tiktokQuery = await db.collection('tiktok_tokens')
-      .where('userId', '==', userId)
-      .limit(1)
-      .get();
+    // Buscar conexión de TikTok en la colección centralizada
+    const tiktokRef = db.collection('app_tokens').doc(userId).collection('tiktok').doc('profile');
+    const tiktokDoc = await tiktokRef.get();
 
-    if (tiktokQuery.empty) {
+    if (!tiktokDoc.exists) {
       return NextResponse.json({ connected: false });
     }
 
-    const tiktokData = tiktokQuery.docs[0].data();
+    const tiktokData = tiktokDoc.data();
+    
+    if (!tiktokData) {
+      return NextResponse.json({ connected: false });
+    }
     
     // Verificar si el token ha expirado (simplificado por ahora)
     const tokenAge = Date.now() - tiktokData.createdAt;
-    const tokenExpiry = tiktokData.expiresIn * 1000; // Convertir a milisegundos
+    const tokenExpiry = tiktokData.token_expires_at || (tiktokData.createdAt + 3600 * 1000); // Convertir a milisegundos
     const isExpired = tokenAge > (tokenExpiry - 5 * 60 * 1000); // 5 minutos de margen
     
     if (isExpired) {
@@ -36,10 +38,9 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       connected: true,
-      openId: tiktokData.openId,
+      id: tiktokData.id,
       displayName: tiktokData.displayName,
-      avatarUrl: tiktokData.avatarUrl,
-      scope: tiktokData.scope
+      avatarUrl: tiktokData.avatarUrl
     });
 
   } catch (error) {
@@ -65,8 +66,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'State is required' }, { status: 400 });
     }
 
-    // Buscar la conexión temporal por state
-    const tempDoc = await db.collection('tiktok_tokens').doc(state).get();
+    // Buscar la conexión temporal por state en la colección centralizada
+    const tempDocRef = db.collection('app_tokens').doc(state).collection('tiktok').doc('connection');
+    const tempDoc = await tempDocRef.get();
     
     if (!tempDoc.exists) {
       return NextResponse.json({ error: 'Invalid state or expired' }, { status: 400 });
@@ -79,12 +81,18 @@ export async function POST(request: NextRequest) {
     }
     
     // Actualizar con el userId
-    await db.collection('tiktok_tokens').doc(tempData.openId).update({
+    await tempDocRef.update({
       userId: userId
     });
 
-    // Eliminar el documento temporal
-    await db.collection('tiktok_tokens').doc(state).delete();
+    // También actualizar el perfil con el userId
+    const profileDocRef = db.collection('app_tokens').doc(state).collection('tiktok').doc('profile');
+    const profileDoc = await profileDocRef.get();
+    if (profileDoc.exists) {
+      await profileDocRef.update({
+        userId: userId
+      });
+    }
 
     return NextResponse.json({ 
       success: true, 

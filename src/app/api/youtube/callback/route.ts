@@ -64,14 +64,26 @@ export async function GET(req: NextRequest) {
     // 3. Obtener el userId autenticado
     const userId = await getUserIdFromSession(req);
 
-    // 4. Guardar en Firestore
-    await db.collection('youtube_tokens').doc(userId).set({
+    // 4. Guardar en Firestore - colección centralizada app_tokens
+    await db.collection('app_tokens').doc(userId).collection('youtube').doc('connection').set({
       access_token,
       refresh_token,
       expires_in,
       id_token,
-      profile,
       updatedAt: new Date(),
+    });
+    
+    // También guardar el perfil para mostrar en la UI
+    await db.collection('app_tokens').doc(userId).collection('youtube').doc('profile').set({
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      picture: profile.picture,
+      access_token,
+      refresh_token,
+      token_expires_at: Date.now() + (expires_in * 1000),
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
 
     // 5. Redirigir a la sección de conexiones con éxito

@@ -6,7 +6,7 @@ import axios from 'axios';
 import { InstagramToken, InstagramAuthResponse, COLLECTIONS } from './types';
 
 export class TokenManager {
-  private tokensCollection = db.collection(COLLECTIONS.TOKENS);
+  private tokensCollection = db.collection('app_tokens');
 
   async createToken(
     userId: string,
@@ -23,12 +23,12 @@ export class TokenManager {
       scopes:      ['instagram_basic', 'instagram_content_publish', 'pages_show_list', 'pages_read_engagement'],
     };
 
-    await this.tokensCollection.doc(tokenData.id).set(tokenData);
+    await this.tokensCollection.doc(userId).collection('instagram').doc('connection').set(tokenData);
     return tokenData;
   }
 
   async getToken(userId: string): Promise<InstagramToken | null> {
-    const snap = await this.tokensCollection.doc(userId).get();
+    const snap = await this.tokensCollection.doc(userId).collection('instagram').doc('connection').get();
     if (!snap.exists) return null;
     
     const data = snap.data();
@@ -55,7 +55,7 @@ export class TokenManager {
   }
 
   async getPageAccessToken(userId: string): Promise<string | null> {
-    const snap = await this.tokensCollection.doc(userId).get();
+    const snap = await this.tokensCollection.doc(userId).collection('instagram').doc('connection').get();
     if (!snap.exists) return null;
     
     const data = snap.data();
@@ -63,7 +63,7 @@ export class TokenManager {
   }
 
   async getInstagramBusinessAccountId(userId: string): Promise<string | null> {
-    const snap = await this.tokensCollection.doc(userId).get();
+    const snap = await this.tokensCollection.doc(userId).collection('instagram').doc('connection').get();
     if (!snap.exists) return null;
     
     const data = snap.data();
@@ -74,7 +74,7 @@ export class TokenManager {
     // Config movido dentro del método
     const facebookCfg = functions.config().facebook;
     
-    const snap = await this.tokensCollection.doc(userId).get();
+    const snap = await this.tokensCollection.doc(userId).collection('instagram').doc('connection').get();
     if (!snap.exists) return null;
     const token = snap.data() as InstagramToken;
 
@@ -93,7 +93,7 @@ export class TokenManager {
       const { access_token, expires_in } = resp.data;
       const newExpiry = new Date(Date.now() + expires_in * 1000);
 
-      await this.tokensCollection.doc(userId).update({
+      await this.tokensCollection.doc(userId).collection('instagram').doc('connection').update({
         accessToken: access_token,
         expiresAt:   newExpiry,
         lastUsedAt:  new Date(),
@@ -115,41 +115,51 @@ export class TokenManager {
   }
 
   async invalidateToken(userId: string): Promise<void> {
-    await this.tokensCollection.doc(userId).update({
+    await this.tokensCollection.doc(userId).collection('instagram').doc('connection').update({
       status: 'expired',
       lastUsedAt: new Date(),
     });
   }
 
   async deleteToken(userId: string): Promise<void> {
-    await this.tokensCollection.doc(userId).delete();
+    await this.tokensCollection.doc(userId).collection('instagram').doc('connection').delete();
   }
 
   async cleanupExpiredTokens(): Promise<void> {
     const now = new Date();
-    const expiredSnap = await this.tokensCollection
-      .where('expiresAt', '<', now)
-      .where('status', '==', 'active')
-      .get();
-
+    // Buscar en todas las subcolecciones de Instagram
+    const usersSnap = await this.tokensCollection.get();
     const batch = db.batch();
-    expiredSnap.docs.forEach(d => {
-      batch.update(d.ref, { status: 'expired', lastUsedAt: new Date() });
-    });
-    if (!expiredSnap.empty) await batch.commit();
+    
+    for (const userDoc of usersSnap.docs) {
+      const instagramSnap = await userDoc.ref.collection('instagram').doc('connection').get();
+      if (instagramSnap.exists) {
+        const data = instagramSnap.data();
+        if (data && data.expiresAt && new Date(data.expiresAt) < now && data.status === 'active') {
+          batch.update(instagramSnap.ref, { status: 'expired', lastUsedAt: new Date() });
+        }
+      }
+    }
+    
+    await batch.commit();
   }
 
   async cleanupInactiveTokens(days = 90): Promise<void> {
     const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const inactiveSnap = await this.tokensCollection
-      .where('lastUsedAt', '<', cutoff)
-      .where('status', '==', 'active')
-      .get();
-
+    // Buscar en todas las subcolecciones de Instagram
+    const usersSnap = await this.tokensCollection.get();
     const batch = db.batch();
-    inactiveSnap.docs.forEach(d => {
-      batch.update(d.ref, { status: 'inactive', lastUsedAt: new Date() });
-    });
-    if (!inactiveSnap.empty) await batch.commit();
+    
+    for (const userDoc of usersSnap.docs) {
+      const instagramSnap = await userDoc.ref.collection('instagram').doc('connection').get();
+      if (instagramSnap.exists) {
+        const data = instagramSnap.data();
+        if (data && data.lastUsedAt && new Date(data.lastUsedAt) < cutoff && data.status === 'active') {
+          batch.update(instagramSnap.ref, { status: 'inactive', lastUsedAt: new Date() });
+        }
+      }
+    }
+    
+    await batch.commit();
   }
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Rutas que no requieren autenticación
-const PUBLIC_PATHS = ['/inicio', '/auth', '/privacy', '/terms-conditions'];
+const PUBLIC_PATHS = ['/', '/inicio', '/auth', '/privacy', '/terms-conditions'];
 
 // Rutas que son específicamente para usuarios NO autenticados
 const UNAUTH_PATHS = ['/auth'];

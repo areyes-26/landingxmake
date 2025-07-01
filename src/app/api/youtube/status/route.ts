@@ -18,32 +18,43 @@ export async function GET(request: NextRequest) {
     const decodedToken = await auth.verifyIdToken(token);
     const userId = decodedToken.uid;
 
-    // Buscar la conexión de Instagram en la colección centralizada
-    const instagramRef = db.collection('app_tokens').doc(userId).collection('instagram').doc('profile');
-    const instagramDoc = await instagramRef.get();
+    // Buscar la conexión de YouTube en la colección centralizada
+    const youtubeRef = db.collection('app_tokens').doc(userId).collection('youtube').doc('profile');
+    const youtubeDoc = await youtubeRef.get();
 
-    if (!instagramDoc.exists) {
+    if (!youtubeDoc.exists) {
       return NextResponse.json({
         connected: false,
-        message: 'No Instagram connection found'
+        message: 'No YouTube connection found'
       });
     }
 
-    const instagramData = instagramDoc.data();
+    const youtubeData = youtubeDoc.data();
+    
+    // Verificar si el token ha expirado
+    const tokenExpiry = youtubeData?.token_expires_at;
+    const isExpired = tokenExpiry && Date.now() > tokenExpiry;
+    
+    if (isExpired) {
+      return NextResponse.json({
+        connected: false,
+        message: 'YouTube token expired'
+      });
+    }
     
     return NextResponse.json({
       connected: true,
       user: {
-        id: instagramData?.id,
-        name: instagramData?.name,
-        email: instagramData?.email
+        id: youtubeData?.id,
+        name: youtubeData?.name,
+        email: youtubeData?.email
       },
-      profile_picture: instagramData?.profile_picture,
-      createdAt: instagramData?.createdAt
+      picture: youtubeData?.picture,
+      createdAt: youtubeData?.createdAt
     });
 
   } catch (error) {
-    console.error('Error checking Instagram status:', error);
+    console.error('Error checking YouTube status:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

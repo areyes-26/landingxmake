@@ -74,8 +74,22 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
       // Nota: userId se agregará cuando el usuario complete el flujo
     };
     
-    await db.collection('tiktok_tokens').doc(open_id).set(connectionData);
-    await db.collection('tiktok_tokens').doc(state).set({ ...connectionData, tempState: true });
+    // Guardar en la colección centralizada app_tokens
+    await db.collection('app_tokens').doc(state).collection('tiktok').doc('connection').set(connectionData);
+    
+    // También guardar el perfil para mostrar en la UI
+    const profileData = {
+      id: open_id,
+      displayName: userInfo?.display_name || 'TikTok User',
+      avatarUrl: userInfo?.avatar_url,
+      access_token: access_token,
+      refresh_token: refresh_token,
+      token_expires_at: Date.now() + (expires_in * 1000),
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    
+    await db.collection('app_tokens').doc(state).collection('tiktok').doc('profile').set(profileData);
 
     console.log('[SUCCESS] TikTok connection saved. Redirecting...');
     res.redirect(`https://landing-videos-generator-06--landing-x-make.us-central1.web.app/tiktok/success?state=${state}`);

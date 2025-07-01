@@ -101,7 +101,23 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       scopes: ['pages_show_list', 'instagram_basic', 'pages_read_engagement', 'instagram_content_publish']
     };
 
-    await db.collection('instagram_tokens').doc(state).set(connectionData);
+    // Guardar en la colección centralizada app_tokens
+    await db.collection('app_tokens').doc(state).collection('instagram').doc('connection').set(connectionData);
+    
+    // También guardar el perfil para mostrar en la UI
+    const profileData = {
+      id: userId,
+      name: instagramBusinessAccount?.name || 'Instagram User',
+      email: userEmail,
+      profile_picture: instagramBusinessAccount?.profile_picture_url,
+      access_token: access_token,
+      refresh_token: null, // Instagram no usa refresh tokens
+      token_expires_at: Date.now() + (expires_in * 1000),
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    
+    await db.collection('app_tokens').doc(state).collection('instagram').doc('profile').set(profileData);
 
     console.log('[SUCCESS] Complete Instagram connection saved. Redirecting...');
     res.redirect('https://visiora.ai/account-setting?section=connections');
