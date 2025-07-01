@@ -89,6 +89,8 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
       expiresAt,
       userId: userId,
     };
+    console.log('[TikTok OAuth Callback] userId:', userId);
+    console.log('[TikTok OAuth Callback] connectionData:', connectionData);
     await tkConnRef.set(connectionData);
 
     // También guardar el perfil para mostrar en la UI
@@ -102,6 +104,7 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
       createdAt,
       updatedAt
     };
+    console.log('[TikTok OAuth Callback] profileData:', profileData);
     await tkProfileRef.set(profileData);
 
     console.log('[SUCCESS] TikTok connection saved. Redirecting...');

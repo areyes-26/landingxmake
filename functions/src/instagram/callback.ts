@@ -115,6 +115,9 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       scopes: ['pages_show_list', 'instagram_basic', 'pages_read_engagement', 'instagram_content_publish']
     };
 
+    console.log('[Instagram OAuth Callback] userId:', userId);
+    console.log('[Instagram OAuth Callback] connectionData:', connectionData);
+
     await igConnRef.set(connectionData);
     
     // También guardar el perfil para mostrar en la UI
@@ -130,6 +133,7 @@ export const facebookCallback = functions.https.onRequest(async (req, res) => {
       updatedAt
     };
     
+    console.log('[Instagram OAuth Callback] profileData:', profileData);
     await igProfileRef.set(profileData);
 
     console.log('[SUCCESS] Complete Instagram connection saved. Redirecting...');

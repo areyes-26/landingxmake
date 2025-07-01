@@ -92,6 +92,20 @@ export async function GET(req: NextRequest) {
       updatedAt
     });
 
+    console.log('[YouTube OAuth Callback] userId:', userId);
+    console.log('[YouTube OAuth Callback] profile:', profile);
+    console.log('[YouTube OAuth Callback] profileData:', {
+      id: profile.id || null,
+      name: profile.name || null,
+      email: profile.email || null,
+      picture: profile.picture || null,
+      access_token,
+      refresh_token,
+      token_expires_at: expiresAt,
+      createdAt,
+      updatedAt
+    });
+
     // 5. Redirigir a la sección de conexiones con éxito
     return NextResponse.redirect('https://visiora.ai/account-setting?section=connections&success=youtube_connected');
   } catch (err) {
