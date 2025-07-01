@@ -275,6 +275,7 @@ const Connections = () => {
         const fetchYouTube = async () => {
             const ytRef = doc(db, "app_tokens", user.uid, "youtube", "profile");
             const ytSnap = await getDoc(ytRef);
+            console.log('[YouTube] Fetched profile:', ytSnap.exists(), ytSnap.data());
             setYoutubeConnected(ytSnap.exists());
             setYoutubeProfile(ytSnap.exists() ? ytSnap.data() : null);
         };
@@ -283,6 +284,7 @@ const Connections = () => {
         const fetchInstagram = async () => {
             const igRef = doc(db, "app_tokens", user.uid, "instagram", "profile");
             const igSnap = await getDoc(igRef);
+            console.log('[Instagram] Fetched profile:', igSnap.exists(), igSnap.data());
             setInstagramConnected(igSnap.exists());
             setInstagramProfile(igSnap.exists() ? igSnap.data() : null);
         };
@@ -291,6 +293,7 @@ const Connections = () => {
         const fetchTikTok = async () => {
             const tkRef = doc(db, "app_tokens", user.uid, "tiktok", "profile");
             const tkSnap = await getDoc(tkRef);
+            console.log('[TikTok] Fetched profile:', tkSnap.exists(), tkSnap.data());
             setTiktokConnected(tkSnap.exists());
             setTiktokProfile(tkSnap.exists() ? tkSnap.data() : null);
         };
@@ -364,6 +367,11 @@ const Connections = () => {
         background: '#ef4444',
         color: '#fff',
     };
+
+    // Agrega logs en el render
+    console.log('[Render] youtubeConnected:', youtubeConnected, youtubeProfile);
+    console.log('[Render] instagramConnected:', instagramConnected, instagramProfile);
+    console.log('[Render] tiktokConnected:', tiktokConnected, tiktokProfile);
 
     return (
         <section className="content-section active" id="connections">
