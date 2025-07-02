@@ -57,9 +57,9 @@ env:
   - variable: BASE_URL
     value: "https://visiora.ai"
     availability:
-    - BUILD
-    - RUNTIME
-    
+      - BUILD
+      - RUNTIME
+
   - variable: FIREBASE_PROJECT_ID
     secret: FIREBASE_PROJECT_ID
     availability:
@@ -91,7 +91,7 @@ env:
       - BUILD
       - RUNTIME
 
-  # Facebook variables para login de instagram
+  # Facebook variables para login de Instagram
   - variable: NEXT_PUBLIC_FACEBOOK_CLIENT_ID
     secret: NEXT_PUBLIC_FACEBOOK_CLIENT_ID
     availability:
@@ -104,44 +104,46 @@ env:
     availability:
       - BUILD
       - RUNTIME
-#necesarios para youtube export
+
+  # necesarios para YouTube export
   - variable: GOOGLE_CLIENT_ID
     secret: GOOGLE_CLIENT_ID
     availability:
-    - BUILD
-    - RUNTIME
+      - BUILD
+      - RUNTIME
 
   - variable: GOOGLE_CLIENT_SECRET
     secret: GOOGLE_CLIENT_SECRET
     availability:
-    - BUILD
-    - RUNTIME
+      - BUILD
+      - RUNTIME
 
   - variable: GOOGLE_REDIRECT_URI
     secret: GOOGLE_REDIRECT_URI
     availability:
-    - BUILD
-    - RUNTIME
+      - BUILD
+      - RUNTIME
 
   - variable: NEXT_PUBLIC_GOOGLE_CLIENT_ID
     secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
     availability:
-    - BUILD
-    - RUNTIME
-# TikTok variables for OAuth
+      - BUILD
+      - RUNTIME
+
+  # TikTok variables for OAuth
   - variable: NEXT_PUBLIC_TIKTOK_CLIENT_KEY
-     secret: NEXT_PUBLIC_TIKTOK_CLIENT_KEY
-      availability:
-    - BUILD
-    - RUNTIME
+    secret: NEXT_PUBLIC_TIKTOK_CLIENT_KEY
+    availability:
+      - BUILD
+      - RUNTIME
 
   - variable: TIKTOK_CLIENT_SECRET
-      secret: TIKTOK_CLIENT_SECRET
-      availability:
-    - RUNTIME
+    secret: TIKTOK_CLIENT_SECRET
+    availability:
+      - RUNTIME
 
   - variable: NEXT_PUBLIC_TIKTOK_REDIRECT_URI
     value: "https://visiora.ai/api/tiktok/callback"
     availability:
-    - BUILD
-    - RUNTIME
+      - BUILD
+      - RUNTIME
