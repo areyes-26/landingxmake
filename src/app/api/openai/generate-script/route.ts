@@ -62,6 +62,14 @@ export async function POST(req: Request) {
     const completeVideoData = videoDoc.data();
     console.log('[generate-script] 📋 Datos completos del video:', completeVideoData);
     
+    if (!completeVideoData || !completeVideoData.userId) {
+      console.error('[generate-script] ❌ No se encontró userId en el documento del video');
+      return NextResponse.json({
+        error: 'User ID not found in video document',
+        status: 500
+      }, { status: 500 });
+    }
+
     // Combinar datos del frontend con datos completos de Firestore
     const finalVideoData = {
       ...videoData,
@@ -111,7 +119,8 @@ export async function POST(req: Request) {
 
     await db.collection('completion_results_videos').doc(generationId).set({
       script,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      userId: completeVideoData.userId
     }, { merge: true });
 
     await db.collection('videos').doc(generationId).set({

@@ -59,6 +59,14 @@ export async function POST(req: Request) {
 
     const videoData = videoDoc.data();
 
+    if (!videoData || !videoData.userId) {
+      const error: ApiError = {
+        error: 'User ID not found in video document',
+        status: 500
+      };
+      return NextResponse.json(error, { status: 500 });
+    }
+
     const promptTemplate = await readPromptTemplate('copy-corto');
     const prompt = replacePromptPlaceholders(promptTemplate, {
       script,
@@ -89,7 +97,8 @@ export async function POST(req: Request) {
         platform: 'TikTok/Reels',
         content: shortCopy
       },
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      userId: videoData.userId
     }, { merge: true });
 
     return NextResponse.json({

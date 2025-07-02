@@ -43,6 +43,13 @@ export async function POST(req: Request) {
     }
 
     const videoData = videoDoc.data();
+    if (!videoData || !videoData.userId) {
+      return NextResponse.json({
+        error: 'User ID not found in video document',
+        status: 500
+      }, { status: 500 });
+    }
+
     const promptTemplate = await readPromptTemplate('copy-largo');
     const prompt = replacePromptPlaceholders(promptTemplate, {
       script,
@@ -85,7 +92,8 @@ export async function POST(req: Request) {
         platform: 'Descripción extendida',
         content: longCopy
       },
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      userId: videoData.userId
     }, { merge: true });
 
     return NextResponse.json({
