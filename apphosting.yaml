@@ -129,19 +129,19 @@ env:
     - BUILD
     - RUNTIME
 # TikTok variables for OAuth
-- variable: NEXT_PUBLIC_TIKTOK_CLIENT_KEY
-  secret: NEXT_PUBLIC_TIKTOK_CLIENT_KEY
-  availability:
+  - variable: NEXT_PUBLIC_TIKTOK_CLIENT_KEY
+     secret: NEXT_PUBLIC_TIKTOK_CLIENT_KEY
+      availability:
     - BUILD
     - RUNTIME
 
-- variable: TIKTOK_CLIENT_SECRET
-  secret: TIKTOK_CLIENT_SECRET
-  availability:
+  - variable: TIKTOK_CLIENT_SECRET
+      secret: TIKTOK_CLIENT_SECRET
+      availability:
     - RUNTIME
 
-- variable: NEXT_PUBLIC_TIKTOK_REDIRECT_URI
-  value: "https://visiora.ai/api/tiktok/callback"
-  availability:
+  - variable: NEXT_PUBLIC_TIKTOK_REDIRECT_URI
+    value: "https://visiora.ai/api/tiktok/callback"
+    availability:
     - BUILD
     - RUNTIME
