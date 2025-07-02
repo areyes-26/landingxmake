@@ -89,47 +89,8 @@ export interface InstagramProfile {
   lastUpdated: Date;
 }
 
-export interface InstagramComment {
-  id: string;
-  mediaId: string;
-  userId: string;
-  username: string;
-  text: string;
-  timestamp: Date;
-  likes?: number;
-  parentId?: string;
-  status: 'active' | 'deleted' | 'hidden';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface InstagramStory {
-  id: string;
-  userId: string;
-  mediaId: string;
-  mediaType: string;
-  mediaUrl: string;
-  caption: string;
-  timestamp: Date;
-  views: number;
-  expiresAt: Date;
-  status: 'active' | 'expired';
-  createdAt: Date;
-}
-
-export interface InstagramInsights {
-  id: string;
-  userId: string;
-  mediaId?: string;
-  type: 'impressions' | 'reach' | 'engagement' | 'profile_views';
-  period: 'day' | 'week' | 'lifetime';
-  value: number;
-  timestamp: Date;
-  createdAt: Date;
-}
-
 export const COLLECTIONS = {
-  TOKENS: 'instagram_tokens',
+  TOKENS: 'app_tokens',
   MEDIA: 'instagram_media',
   VIDEO_PUBLISH: 'instagram_video_publish',
   WEBHOOK_EVENTS: 'instagram_webhook_events',
@@ -137,14 +98,8 @@ export const COLLECTIONS = {
 
 export const INDEXES = {
   MEDIA_BY_USER: ['userId', 'createdAt'],
-  COMMENTS_BY_MEDIA: ['mediaId', 'createdAt'],
-  STORIES_BY_USER: ['userId', 'expiresAt'],
-  INSIGHTS_BY_PERIOD: ['type', 'period', 'timestamp'],
 } as const;
 
 export const RETENTION = {
   MEDIA: 365,
-  COMMENTS: 180,
-  STORIES: 7,
-  INSIGHTS: 30,
 } as const;

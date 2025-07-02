@@ -385,9 +385,26 @@ const Connections = () => {
                             <Instagram style={{ color: '#E1306C' }} className="w-6 h-6" /> Instagram
                         </span>
                         {instagramConnected && (
-                            <span style={accountStyle}>
-                                Account: <b>{instagramProfile?.name || 'Instagram User'}</b>
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                {/* Avatar redondo */}
+                                {instagramProfile?.profile_picture_url && (
+                                    <img
+                                        src={instagramProfile.profile_picture_url}
+                                        alt="Profile"
+                                        style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff', background: '#23263a' }}
+                                    />
+                                )}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    {/* Username */}
+                                    {instagramProfile?.username && (
+                                        <span style={{ fontWeight: 500, fontSize: 15, color: '#e0e0e0' }}>@{instagramProfile.username}</span>
+                                    )}
+                                    {/* Nombre completo */}
+                                    {instagramProfile?.name && (
+                                        <span style={{ fontSize: 14, color: '#a3a3a3' }}>{instagramProfile.name}</span>
+                                    )}
+                                </div>
+                            </div>
                         )}
                     </div>
                     <div style={actionsStyle}>
