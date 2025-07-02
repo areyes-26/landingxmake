@@ -55,7 +55,7 @@ env:
       - RUNTIME
 
   - variable: BASE_URL
-    value: "https://landing-videos-generator-06--landing-x-make.us-central1.hosted.app"
+    value: "https://visiora.ai"
     availability:
     - BUILD
     - RUNTIME
@@ -100,7 +100,7 @@ env:
 
   # Base URL for frontend
   - variable: NEXT_PUBLIC_BASE_URL
-    value: "https://landing-videos-generator-06--landing-x-make.us-central1.hosted.app"
+    value: "https://visiora.ai"
     availability:
       - BUILD
       - RUNTIME
@@ -126,5 +126,22 @@ env:
   - variable: NEXT_PUBLIC_GOOGLE_CLIENT_ID
     secret: NEXT_PUBLIC_GOOGLE_CLIENT_ID
     availability:
+    - BUILD
+    - RUNTIME
+# TikTok variables for OAuth
+- variable: NEXT_PUBLIC_TIKTOK_CLIENT_KEY
+  secret: NEXT_PUBLIC_TIKTOK_CLIENT_KEY
+  availability:
+    - BUILD
+    - RUNTIME
+
+- variable: TIKTOK_CLIENT_SECRET
+  secret: TIKTOK_CLIENT_SECRET
+  availability:
+    - RUNTIME
+
+- variable: NEXT_PUBLIC_TIKTOK_REDIRECT_URI
+  value: "https://visiora.ai/api/tiktok/callback"
+  availability:
     - BUILD
     - RUNTIME
