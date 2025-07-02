@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       scopes: [
         'user.info.basic',
         'video.upload',
-        'video.list'
+        'video.publish'
       ]
     };
 
