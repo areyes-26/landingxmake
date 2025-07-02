@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
     // Configuración de TikTok - usar los mismos valores que Firebase Functions
     const config = {
       clientKey: 'sbawn9w6d1qs6whocc',
-      redirectUri: 'https://visiora.ai/api/tiktok/callback',
+      redirectUri: 'https://us-central1-landing-x-make.cloudfunctions.net/tiktokCallback',
       scopes: [
         'user.info.basic',
         'video.upload',
