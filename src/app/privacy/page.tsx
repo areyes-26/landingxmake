@@ -7,18 +7,18 @@ export default function PrivacyPolicies() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground mb-4">Last updated: 6/5/2025</p>
+        <p className="text-sm text-muted-foreground mb-4">Last updated: 2/7/2025</p>
         
         <div className="space-y-6">
           <p className="text-lg">
-            This Privacy Policy describes how we collect, use, and what measures we take to protect the personal information of users who use our site and services.
+          This Privacy Policy describes how we collect, use, and protect the personal information of users who use our site and services.
           </p>
           
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Information We Collect</h2>
             <ul className="list-disc list-inside space-y-2">
-              <li>Video creation form data: such as names, topics, descriptions.</li>
-              <li>Social media information: If the user connects their Instagram account or other networks, we collect access tokens and public profile data as permitted by the APIs.</li>
+              <li>Video creation data: such as names, topics, and descriptions submitted via our forms.</li>
+              <li>Social media information: If a user connects their Instagram account or other networks, we collect access tokens and public profile data as permitted by their respective APIs.</li>
               <li>Technical data: IP address, browser, operating system, date/time of access.</li>
             </ul>
           </section>
@@ -27,15 +27,15 @@ export default function PrivacyPolicies() {
             <h2 className="text-2xl font-semibold mb-4">2. How we use the information</h2>
             <ul className="list-disc list-inside space-y-2">
               <li>To generate personalized AI videos.</li>
-              <li>To enable automatic publishing to connected social networks.</li>
-              <li>To improve our services and technical support.</li>
+              <li>To enable automatic publishing to connected social media accounts.</li>
+              <li>To improve our service performance and technical support.</li>
             </ul>
           </section>
           
           <section>
             <h2 className="text-2xl font-semibold mb-4">3. Credential Storage</h2>
             <ul className="list-disc list-inside space-y-2">
-              <li>Credentials (access tokens) are stored in an encrypted and secure manner.</li>
+              <li>All credentials (e.g., access tokens) are stored in a secure and encrypted manner.</li>
               <li>We never share or sell personal data to third parties.</li>
             </ul>
           </section>
@@ -43,14 +43,14 @@ export default function PrivacyPolicies() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">4. Data Deletion</h2>
             <p className="text-base">
-              Users may request complete deletion of their data by sending an email to: [youremail@yourdomain.com]. The request will be processed within a maximum of 7 business days.
+              Users may request complete deletion of their data by sending an email to: <a href="mailto:tomasameridev@gmail.com">tomasameridev@gmail.com</a>. The request will be processed within a maximum of 7 business days.
             </p>
           </section>
           
           <section>
             <h2 className="text-2xl font-semibold mb-4">5. Security</h2>
             <p className="text-base">
-              We use technical and organizational measures to protect user data from unauthorized access or misuse.
+            We apply technical and organizational measures to prevent unauthorized access, loss, or misuse of user data.
             </p>
           </section>
           
