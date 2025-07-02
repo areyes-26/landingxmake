@@ -33,6 +33,9 @@ export default function ExportViewPage() {
   const [ytLoading, setYtLoading] = useState(false);
   const [showTikTokModal, setShowTikTokModal] = useState(false);
   const [tiktokLoading, setTiktokLoading] = useState(false);
+  const [tiktokTitle, setTiktokTitle] = useState('');
+  const [tiktokDescription, setTiktokDescription] = useState('');
+  const [tiktokPrivacy, setTiktokPrivacy] = useState('public');
   const [showInstagramModal, setShowInstagramModal] = useState(false);
   const [igCaption, setIgCaption] = useState('');
   const [igLoading, setIgLoading] = useState(false);
@@ -128,6 +131,21 @@ export default function ExportViewPage() {
   };
 
   const handleTikTokShare = () => {
+    if (!user) {
+      toast.error('You must be logged in to export to TikTok.');
+      return;
+    }
+    if (!videoData) {
+      toast.error('No video data available.');
+      return;
+    }
+    setTiktokTitle(videoData.videoTitle || 'Video from LandingXMake');
+    let shortCopy: any = videoData.shortCopy;
+    if (shortCopy && typeof shortCopy === 'object' && 'content' in shortCopy) {
+      shortCopy = shortCopy.content;
+    }
+    setTiktokDescription(shortCopy || '');
+    setTiktokPrivacy('public');
     setShowTikTokModal(true);
   };
 
@@ -236,31 +254,39 @@ export default function ExportViewPage() {
   };
 
   const confirmTikTokExport = async () => {
-    if (!videoData) return;
+    if (!user || !videoData) return;
     setTiktokLoading(true);
     try {
       const downloadUrl = videoData.heygenResults?.videoUrl || videoData.videoUrl;
       if (!downloadUrl) {
-        toast.error('No video available for download');
+        toast.error('No video available for upload.');
         setTiktokLoading(false);
         return;
       }
-      // Descargar el video
-      const response = await fetch(downloadUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${videoData.videoTitle}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      // Redirigir a TikTok Studio
-      window.open('https://www.tiktok.com/tiktokstudio/upload', '_blank');
+      
+      const token = await user.getIdToken();
+      const res = await fetch('/api/tiktok/upload', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          videoUrl: downloadUrl,
+          title: tiktokTitle,
+          description: tiktokDescription,
+          privacy: tiktokPrivacy,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'TikTok upload failed');
+      }
       setShowTikTokModal(false);
-    } catch (error) {
-      toast.error('Error downloading video');
+      toast.success('Video uploaded to TikTok successfully!');
+    } catch (error: any) {
+      console.error('TikTok upload error:', error);
+      toast.error('Failed to upload video to TikTok: ' + (error.message || error));
     } finally {
       setTiktokLoading(false);
     }
@@ -502,10 +528,33 @@ export default function ExportViewPage() {
         <div className="modal-overlay">
           <div className="modal-content" style={{ minWidth: 380, maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 18 }}>
             <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, textAlign: 'center', letterSpacing: 0.2 }}>Export to TikTok</h3>
-            <div style={{ fontSize: 15, color: '#a3a3a3', marginBottom: 8, textAlign: 'center' }}>
-              Direct TikTok export is not yet available.<br />
-              By confirming, your video will be downloaded and the TikTok Studio upload page will open in a new tab.<br />
-              There you can upload your downloaded video and paste the generated copies from this page.
+            <label style={{ fontWeight: 500, fontSize: 15, marginBottom: 2 }}>Title</label>
+            <input
+              style={{ padding: '0.5rem', borderRadius: 8, border: '1.5px solid #31344b', background: '#181c2a', color: '#fff', fontSize: 15, marginBottom: 8, outline: 'none', fontWeight: 500 }}
+              value={tiktokTitle}
+              onChange={e => setTiktokTitle(e.target.value)}
+              maxLength={100}
+            />
+            <label style={{ fontWeight: 500, fontSize: 15, marginBottom: 2 }}>Description</label>
+            <textarea
+              className="custom-scrollbar"
+              style={{ padding: '0.5rem', borderRadius: 8, border: '1.5px solid #31344b', background: '#181c2a', color: '#fff', fontSize: 15, minHeight: 120, marginBottom: 8, outline: 'none', fontWeight: 500, resize: 'none', maxHeight: 200 }}
+              value={tiktokDescription}
+              onChange={e => setTiktokDescription(e.target.value)}
+              maxLength={2000}
+            />
+            <label style={{ fontWeight: 500, fontSize: 15, marginBottom: 2 }}>Privacy</label>
+            <select
+              style={{ padding: '0.5rem', borderRadius: 8, border: '1.5px solid #31344b', background: '#181c2a', color: '#fff', fontSize: 15, marginBottom: 8, outline: 'none', fontWeight: 500 }}
+              value={tiktokPrivacy}
+              onChange={e => setTiktokPrivacy(e.target.value)}
+            >
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+              <option value="draft">Draft</option>
+            </select>
+            <div style={{ fontSize: 13, color: '#a3a3a3', marginBottom: 8, textAlign: 'center' }}>
+              Your video will be uploaded directly to TikTok with the settings provided.
             </div>
             <div className="modal-actions">
               <button
@@ -514,7 +563,7 @@ export default function ExportViewPage() {
                 className="modal-btn modal-btn-primary"
                 style={{ background: 'linear-gradient(135deg, #0ea5e9, #7c3aed)', color: 'white' }}
               >
-                {tiktokLoading ? 'Preparing...' : 'Confirm and open TikTok'}
+                {tiktokLoading ? 'Uploading...' : 'Upload to TikTok'}
               </button>
               <button
                 onClick={() => setShowTikTokModal(false)}
