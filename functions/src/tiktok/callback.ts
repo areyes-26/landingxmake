@@ -108,10 +108,10 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
     await tkProfileRef.set(profileData);
 
     console.log('[SUCCESS] TikTok connection saved. Redirecting...');
-    res.redirect(`https://landing-videos-generator-06--landing-x-make.us-central1.web.app/tiktok/success?state=${state}`);
+    res.redirect(`https://visiora.ai/account-setting?section=connections&success=tiktok_connected`);
   } catch (error: any) {
     const raw = error.response?.data || error.message;
     console.error('[ERROR] Failed during TikTok OAuth flow:', raw);
-    res.status(500).json({ error: 'Error exchanging code', detail: raw });
+    res.redirect(`https://visiora.ai/account-setting?section=connections&error=tiktok_oauth`);
   }
 }); 

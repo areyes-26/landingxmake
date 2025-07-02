@@ -248,25 +248,33 @@ const Connections = () => {
         window.location.href = authUrl;
     };
 
-    const handleTikTokConnect = () => {
+    const handleTikTokConnect = async () => {
         if (!user) return;
-        const state = user.uid;
-        localStorage.setItem('tiktok_oauth_state', state);
-        const clientKey = "awe2lzmku4mfu3wx"; // <-- hardcodea aquí tu client key real
-        const redirectUri = encodeURIComponent('https://us-central1-landing-x-make.cloudfunctions.net/tiktokCallback');
-        const scope = [
-            'user.info.basic',
-            'video.upload',
-            'video.list'
-        ].join(',');
-        const authUrl =
-            `https://www.tiktok.com/v2/auth/authorize/` +
-            `?client_key=${clientKey}` +
-            `&scope=${scope}` +
-            `&response_type=code` +
-            `&redirect_uri=${redirectUri}` +
-            `&state=${state}`;
-        window.location.href = authUrl;
+        try {
+            const state = user.uid;
+            localStorage.setItem('tiktok_oauth_state', state);
+            
+            // Obtener configuración desde el backend
+            const response = await fetch('/api/tiktok/config');
+            if (!response.ok) {
+                throw new Error('Failed to get TikTok config');
+            }
+            const config = await response.json();
+            
+            const redirectUri = encodeURIComponent(config.redirectUri);
+            const scope = config.scopes.join(',');
+            const authUrl =
+                `https://www.tiktok.com/v2/auth/authorize/` +
+                `?client_key=${config.clientKey}` +
+                `&scope=${scope}` +
+                `&response_type=code` +
+                `&redirect_uri=${redirectUri}` +
+                `&state=${state}`;
+            window.location.href = authUrl;
+        } catch (error) {
+            console.error('Error connecting to TikTok:', error);
+            toast.error('Failed to connect to TikTok');
+        }
     };
 
     useEffect(() => {
@@ -607,6 +615,22 @@ function AccountSettingPageContent() {
     const [showConfirmFree, setShowConfirmFree] = useState(false);
     const [pendingFree, setPendingFree] = useState(false);
     const [showPasswordAlert, setShowPasswordAlert] = useState(false);
+
+    // Manejar mensajes de éxito y error desde URL params
+    useEffect(() => {
+        const success = searchParams.get('success');
+        const error = searchParams.get('error');
+        
+        if (success === 'tiktok_connected') {
+            toast.success('TikTok account connected successfully!');
+        } else if (success === 'youtube_connected') {
+            toast.success('YouTube account connected successfully!');
+        }
+        
+        if (error === 'tiktok_oauth') {
+            toast.error('Failed to connect TikTok account. Please try again.');
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (user) {
