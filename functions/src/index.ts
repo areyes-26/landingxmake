@@ -234,3 +234,5 @@ export const onUserCreated = functions.auth.user().onCreate(async (user: any) =>
 });
 
 export { tiktokCallback } from './tiktok/callback';
+
+export { publishToInstagram } from './instagram/publish';
