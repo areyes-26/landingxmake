@@ -24,6 +24,15 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
     // Obtener el UID real del usuario desde state
     const userId = state;
 
+    // Validar que el UID exista en user_data
+    const userDataRef = db.collection('user_data').doc(userId);
+    const userDataDoc = await userDataRef.get();
+    if (!userDataDoc.exists) {
+      console.error(`[ERROR] UID inválido en state: ${userId}`);
+      res.status(400).json({ error: 'Invalid state: user not found' });
+      return;
+    }
+
     // Intercambiar code por access_token usando OAuth v2
     const tokenRes = await axios.post('https://open.tiktokapis.com/v2/oauth/token/', {
       client_key,
