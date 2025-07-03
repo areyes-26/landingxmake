@@ -2,15 +2,17 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
 import Link from 'next/link';
+
 import './generating.css';
 
 export default function VideoGeneratingPage({ params }: { params: { id: string } }) {
   const router = useRouter();
 
+  // Monitoreo en tiempo real del estado del video (sin polling activo)
   useEffect(() => {
     const videoRef = doc(db, 'videos', params.id);
     
@@ -23,10 +25,15 @@ export default function VideoGeneratingPage({ params }: { params: { id: string }
 
       const videoData = doc.data();
       
-      if (videoData.status === 'completed' && videoData.heygenResults?.videoUrl) {
+      if (videoData.status === 'completed' && (videoData.creatomateResults?.videoUrl || videoData.heygenResults?.videoUrl)) {
         toast.success('Video generated successfully!');
         router.push(`/export-view?id=${params.id}`);
         return;
+      }
+      
+      if (videoData.status === 'editing') {
+        // El video está siendo editado por Creatomate
+        console.log('Video is being edited by Creatomate...');
       }
       
       if (videoData.status === 'error') {
@@ -44,19 +51,6 @@ export default function VideoGeneratingPage({ params }: { params: { id: string }
     return () => unsubscribe();
   }, [params.id, router]);
 
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        await fetch(`/api/heygen/check-status?videoId=${params.id}`);
-      } catch (error) {
-        console.error('Polling error:', error);
-      }
-    };
-    const interval = setInterval(checkStatus, 30000);
-    checkStatus();
-    return () => clearInterval(interval);
-  }, [params.id]);
-
   return (
     <div className="page-wrapper">
       <div className="container">
@@ -73,6 +67,8 @@ export default function VideoGeneratingPage({ params }: { params: { id: string }
               <div className="time-title">Estimated completion time:</div>
               <div className="time-value">3-5 minutes</div>
             </div>
+            
+
             <div className="tips-section">
               <h3 className="tips-title">Pro Tips while you wait:</h3>
               <div className="tip-item">Plan your next video - batch creation saves time!</div>

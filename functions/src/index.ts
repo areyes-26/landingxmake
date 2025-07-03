@@ -86,117 +86,208 @@ export { onVideoCreated } from './onVideoCreated';
 export { checkVideoStatus };
 
 // === Firestore Trigger: Video status update (para notificaciones robustas) ===
-export const onVideoStatusUpdate = functions.firestore
-  .document('videos/{videoId}')
-  .onUpdate(async (change, context) => {
-    const before = change.before.data();
-    const after = change.after.data();
-    const videoId = context.params.videoId;
+// DESHABILITADO: Las notificaciones ahora se envían directamente desde los endpoints de polling
+// export const onVideoStatusUpdate = functions.firestore
+//   .document('videos/{videoId}')
+//   .onUpdate(async (change, context) => {
+//     const before = change.before.data();
+//     const after = change.after.data();
+//     const videoId = context.params.videoId;
 
-    // Solo procesar si el status cambió de algo diferente a 'completed' a 'completed'
-    if (before.status !== 'completed' && after.status === 'completed' && after.userId) {
-      console.log(`[onVideoStatusUpdate] Video ${videoId} completed. Sending notification to user ${after.userId}`);
+//     // Solo procesar si el status cambió de algo diferente a 'completed' a 'completed'
+//     if (before.status !== 'completed' && after.status === 'completed' && after.userId) {
+//       console.log(`[onVideoStatusUpdate] Video ${videoId} completed. Sending notification to user ${after.userId}`);
       
-      try {
-        await require('./lib/notifications').sendNotificationToUser(after.userId, {
-          type: 'video_ready',
-          message: 'Your video is ready! Click to view it in your dashboard.',
-          videoId
-        });
-        console.log(`[onVideoStatusUpdate] Notification sent successfully for video ${videoId}`);
-      } catch (error) {
-        console.error(`[onVideoStatusUpdate] Error sending notification for video ${videoId}:`, error);
-      }
-    }
-  });
+//       try {
+//         await require('./lib/notifications').sendNotificationToUser(after.userId, {
+//           type: 'video_ready',
+//           message: 'Your video is ready! Click to view it in your dashboard.',
+//           videoId
+//         });
+//         console.log(`[onVideoStatusUpdate] Notification sent successfully for video ${videoId}`);
+//       } catch (error) {
+//         console.error(`[onVideoStatusUpdate] Error sending notification for video ${videoId}:`, error);
+//       }
+//     }
+//   });
 
 // EXPORT WEBHOOK INSTAGRAM
 export { instagramWebhook } from './instagram/webhook';
 
-// === Cloud Function on demand para polling de un video en proceso ===
-export const pollHeygenVideos = functions.https.onCall(async (data, context) => {
-  const { videoId } = data;
-  if (!videoId) throw new functions.https.HttpsError('invalid-argument', 'videoId is required');
+// === POLLING UNIFICADO: Solo para HeyGen (Creatomate usa webhooks) ===
+export const videoPolling = functions.pubsub
+  .schedule('every 1 minutes')
+  .onRun(async (context) => {
+    console.log('[Video Polling] 🔄 Verificando videos en proceso (HeyGen)...');
+    
+    try {
+      // Solo buscar videos que están en proceso con HeyGen
+      const videosSnapshot = await db.collection('videos')
+        .where('status', '==', 'processing')
+        .get();
 
-  const cfg = functions.config() as any;
-  const heygenConfig = cfg.heygen || {};
-  const heygen = new HeyGenAPI();
+      if (videosSnapshot.empty) {
+        console.log('[Video Polling] ✅ No hay videos en proceso con HeyGen - skipping');
+        return null;
+      }
 
-  const docSnap = await db.collection('videos').doc(videoId).get();
-  if (!docSnap.exists) {
-    console.log(`[pollHeygenVideos] Video ${videoId} no encontrado.`);
-    throw new functions.https.HttpsError('not-found', 'Video not found');
+      console.log(`[Video Polling] 📋 Encontrados ${videosSnapshot.size} videos en proceso con HeyGen`);
+
+      const heygen = new HeyGenAPI();
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://visiora.ai';
+
+      // Procesar cada video
+      for (const doc of videosSnapshot.docs) {
+        const videoId = doc.id;
+        const videoData = doc.data();
+        
+        console.log(`[Video Polling] 🔍 Procesando video ${videoId} (HeyGen)`);
+
+        try {
+          await pollHeyGenVideo(videoId, videoData, heygen, baseUrl);
+        } catch (error) {
+          console.error(`[Video Polling] ❌ Error procesando video ${videoId}:`, error);
+          // Continuar con el siguiente video
+        }
+      }
+
+      console.log('[Video Polling] ✅ Polling de HeyGen completado');
+      return null;
+    } catch (error) {
+      console.error('[Video Polling] ❌ Error en polling:', error);
+      throw error;
+    }
+  });
+
+// Función unificada para polling de videos (solo HeyGen)
+async function pollVideoStatus(videoId: string, videoData: any, heygen?: HeyGenAPI, baseUrl?: string) {
+  if (!heygen) {
+    heygen = new HeyGenAPI();
   }
-  const dataVideo = docSnap.data();
-
-  // Intentar obtener el ID de la tarea de diferentes fuentes
-  const taskId = dataVideo.heygenResults?.taskId || dataVideo.heygenResults?.videoId || videoId;
-  if (!taskId) {
-    console.warn(`[pollHeygenVideos] Video ${videoId} no tiene taskId. Saltando.`);
-    throw new functions.https.HttpsError('invalid-argument', 'No taskId found for video');
+  if (!baseUrl) {
+    baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://visiora.ai';
   }
+
+  console.log(`[Video Polling] 🔍 Polling video ${videoId} (status: ${videoData.status})`);
 
   try {
-    console.log(`[pollHeygenVideos] Consultando estado para video ${videoId} con taskId ${taskId}`);
-    const status = await heygen.checkVideoStatus(taskId);
-    console.log(`[pollHeygenVideos] Estado recibido para video ${videoId}:`, status);
-
-    const updateData: any = {
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      heygenResults: {
-        ...dataVideo.heygenResults,
-        status: status.status,
-        generatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      }
-    };
-
-    if (status.status === 'completed' && status.videoUrl) {
-      updateData.status = 'completed';
-      updateData.heygenResults.videoUrl = status.videoUrl;
-      updateData.videoUrl = status.videoUrl; // Actualizar también el campo principal
-      if (status.thumbnailUrl) {
-        updateData.thumbnailUrl = status.thumbnailUrl;
-      }
-      console.log(`[pollHeygenVideos] Video ${videoId} actualizado a completed con URL: ${status.videoUrl}`);
-      // La notificación se enviará automáticamente por el trigger onVideoStatusUpdate
-    } else if (status.status === 'error') {
-      updateData.status = 'error';
-      updateData.error = status.error || 'Error al generar el video';
-      updateData.heygenResults.error = status.error;
-      console.log(`[pollHeygenVideos] Video ${videoId} actualizado a error: ${status.error}`);
+    if (videoData.status === 'processing') {
+      // Solo polling de HeyGen (Creatomate usa webhooks)
+      await pollHeyGenVideo(videoId, videoData, heygen, baseUrl);
     }
-
-    try {
-      await db.collection('videos').doc(videoId).update(updateData);
-      console.log(`[pollHeygenVideos] Firestore actualizado para video ${videoId}`);
-    } catch (firestoreErr) {
-      console.error(`[pollHeygenVideos] ERROR al actualizar Firestore para video ${videoId}:`, firestoreErr);
-      throw new functions.https.HttpsError('internal', 'Error updating Firestore');
-    }
-    return { status: updateData.status || status.status };
-  } catch (err) {
-    console.error(`[pollHeygenVideos] ERROR al consultar Heygen para video ${videoId}:`, err);
-    // Actualizar el estado a error si hay un problema de comunicación
-    try {
-      await db.collection('videos').doc(videoId).update({
-        status: 'error',
-        error: 'Error al consultar el estado del video',
-        heygenResults: {
-          ...dataVideo.heygenResults,
-          status: 'error',
-          error: err instanceof Error ? err.message : 'Error desconocido',
-          generatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-      console.log(`[pollHeygenVideos] Estado de video ${videoId} actualizado a error en Firestore.`);
-    } catch (firestoreErr) {
-      console.error(`[pollHeygenVideos] ERROR crítico: No se pudo actualizar Firestore para video ${videoId} tras error de polling:`, firestoreErr);
-      throw new functions.https.HttpsError('internal', 'Critical error updating Firestore after polling error');
-    }
-    throw new functions.https.HttpsError('internal', 'Error al consultar el estado del video');
+    // No más polling de Creatomate - usa webhooks
+  } catch (error) {
+    console.error(`[Video Polling] ❌ Error en polling de video ${videoId}:`, error);
+    throw error;
   }
-});
+}
+
+// Función auxiliar para polling de HeyGen
+async function pollHeyGenVideo(videoId: string, videoData: any, heygen: HeyGenAPI, baseUrl: string) {
+  const taskId = videoData.heygenResults?.taskId || videoData.heygenResults?.videoId || videoId;
+  
+  if (!taskId) {
+    console.warn(`[Automatic Polling] ⚠️ Video ${videoId} no tiene taskId`);
+    return;
+  }
+
+  console.log(`[Video Polling] 🎬 Verificando HeyGen para video ${videoId} (taskId: ${taskId})`);
+  
+  const status = await heygen.checkVideoStatus(taskId);
+  console.log(`[Video Polling] 📊 Estado HeyGen para ${videoId}: ${status.status}`);
+
+  const updateData: any = {
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    heygenResults: {
+      ...videoData.heygenResults,
+      status: status.status,
+      generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }
+  };
+
+  if (status.status === 'completed' && status.videoUrl) {
+    updateData.heygenResults.videoUrl = status.videoUrl;
+    if (status.thumbnailUrl) {
+      updateData.thumbnailUrl = status.thumbnailUrl;
+    }
+    console.log(`[Video Polling] ✅ HeyGen completado para ${videoId}: ${status.videoUrl}`);
+    
+    // Enviar automáticamente a Creatomate
+    try {
+      console.log(`[Video Polling] 🎨 Enviando ${videoId} a Creatomate...`);
+      const creatomateResponse = await axios.post(`${baseUrl}/api/creatomate/generate-video`, {
+        videoId
+      }, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (creatomateResponse.status === 200) {
+        console.log(`[Video Polling] ✅ ${videoId} enviado a Creatomate exitosamente`);
+        // El estado se actualizará automáticamente a 'editing' por el endpoint de Creatomate
+      } else {
+        console.error(`[Video Polling] ❌ Falló al enviar ${videoId} a Creatomate`);
+        // Si falla Creatomate, marcar como error y enviar notificación
+        updateData.status = 'error';
+        updateData.error = 'Error al enviar video a Creatomate para edición';
+        
+        // Enviar notificación de error
+        if (videoData.userId) {
+          try {
+            await require('./lib/notifications').sendNotificationToUser(videoData.userId, {
+              type: 'video_error',
+              message: 'There was an error processing your video. Please try again.',
+              videoId
+            });
+            console.log(`[Video Polling] ❌ Error notification sent for video ${videoId}`);
+          } catch (notifError) {
+            console.error(`[Video Polling] ❌ Error sending error notification for video ${videoId}:`, notifError);
+          }
+        }
+      }
+    } catch (creatomateError) {
+      console.error(`[Video Polling] ❌ Error enviando ${videoId} a Creatomate:`, creatomateError);
+      // Si falla Creatomate, marcar como error y enviar notificación
+      updateData.status = 'error';
+      updateData.error = 'Error al enviar video a Creatomate para edición';
+      
+      // Enviar notificación de error
+      if (videoData.userId) {
+        try {
+          await require('./lib/notifications').sendNotificationToUser(videoData.userId, {
+            type: 'video_error',
+            message: 'There was an error processing your video. Please try again.',
+            videoId
+          });
+          console.log(`[Video Polling] ❌ Error notification sent for video ${videoId}`);
+        } catch (notifError) {
+          console.error(`[Video Polling] ❌ Error sending error notification for video ${videoId}:`, notifError);
+        }
+      }
+    }
+  } else if (status.status === 'error') {
+    updateData.status = 'error';
+    updateData.error = status.error || 'Error al generar el video';
+    updateData.heygenResults.error = status.error;
+    console.log(`[Video Polling] ❌ ${videoId} marcado como error: ${status.error}`);
+    
+    // Enviar notificación de error
+    if (videoData.userId) {
+      try {
+        await require('./lib/notifications').sendNotificationToUser(videoData.userId, {
+          type: 'video_error',
+          message: 'There was an error generating your video. Please try again.',
+          videoId
+        });
+        console.log(`[Video Polling] ❌ Error notification sent for video ${videoId}`);
+      } catch (notifError) {
+        console.error(`[Video Polling] ❌ Error sending error notification for video ${videoId}:`, notifError);
+      }
+    }
+  }
+
+  await db.collection('videos').doc(videoId).update(updateData);
+  console.log(`[Video Polling] 💾 Firestore actualizado para ${videoId}`);
+}
 
 // === Firebase Auth Trigger: Crear user_data cuando se registra un nuevo usuario ===
 export const onUserCreated = functions.auth.user().onCreate(async (user: any) => {

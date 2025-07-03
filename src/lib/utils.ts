@@ -39,6 +39,19 @@ export function isHeyGenUrlExpired(url: string): boolean {
  * @returns true si necesita refrescar, false si está bien
  */
 export function needsUrlRefresh(videoData: any): boolean {
+  // Priorizar Creatomate si está disponible
+  if (videoData?.creatomateResults?.videoUrl) {
+    // Para Creatomate, verificar si el último refresh fue hace más de 6 días
+    const lastRefresh = videoData.creatomateResults?.lastUrlRefresh;
+    if (lastRefresh) {
+      const lastRefreshDate = new Date(lastRefresh);
+      const sixDaysAgo = new Date(Date.now() - (6 * 24 * 60 * 60 * 1000));
+      return lastRefreshDate < sixDaysAgo;
+    }
+    return false;
+  }
+  
+  // Fallback a HeyGen
   if (!videoData?.heygenResults?.videoUrl) {
     return false;
   }

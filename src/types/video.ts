@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 export interface VideoData {
   id: string;
   userId: string;
-  status: 'pending' | 'processing' | 'completed' | 'error' | 'draft';
+  status: 'pending' | 'processing' | 'completed' | 'error' | 'draft' | 'editing';
   error?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -66,5 +66,7 @@ export interface VideoData {
     videoUrl?: string;
     status?: string;
     generatedAt?: Timestamp;
+    renderId?: string;
+    error?: string;
   };
 } 

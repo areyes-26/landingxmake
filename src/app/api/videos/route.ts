@@ -160,6 +160,8 @@ export async function POST(req: NextRequest) {
         ...(lookId && { lookId })
       };
 
+      console.log('Saving video data with dimension:', dimension);
+
       if (voiceDetails) {
         videoData.voiceDetails = voiceDetails;
       }

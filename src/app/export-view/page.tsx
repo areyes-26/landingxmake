@@ -39,6 +39,7 @@ export default function ExportViewPage() {
   const [showInstagramModal, setShowInstagramModal] = useState(false);
   const [igCaption, setIgCaption] = useState('');
   const [igLoading, setIgLoading] = useState(false);
+  const [isReEditing, setIsReEditing] = useState(false);
 
   // Usar el hook para manejar el refresco de URLs
   const { isRefreshingUrl, refreshVideoUrl } = useVideoUrlRefresh({
@@ -94,7 +95,8 @@ export default function ExportViewPage() {
   }
 
   const handleDownload = async () => {
-    const downloadUrl = videoData?.heygenResults?.videoUrl || videoData?.videoUrl;
+    // Priorizar el video de Creatomate si está disponible, sino usar el de HeyGen
+    const downloadUrl = videoData?.creatomateResults?.videoUrl || videoData?.heygenResults?.videoUrl || videoData?.videoUrl;
     if (!downloadUrl) {
       toast.error('No video available for download');
       return;
@@ -325,6 +327,40 @@ export default function ExportViewPage() {
     }
   };
 
+  const handleReEdit = async () => {
+    if (!user || !videoData) return;
+    
+    setIsReEditing(true);
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/creatomate/re-edit', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId: videoId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to re-edit video');
+      }
+
+      const result = await response.json();
+      toast.success('Video sent for re-editing with Creatomate!');
+      // Redirigir a la página de generación para monitorear el progreso
+      router.push(`/videos/${videoId}/generating`);
+    } catch (error) {
+      console.error('Error re-editing video:', error);
+      toast.error('Failed to re-edit video. Please try again.');
+    } finally {
+      setIsReEditing(false);
+    }
+  };
+
   if (!videoData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -369,7 +405,7 @@ export default function ExportViewPage() {
                 onPause={() => setIsPlaying(false)}
                 onEnded={() => setIsPlaying(false)}
                 onClick={togglePlay}
-                src={videoData.heygenResults?.videoUrl}
+                src={videoData.creatomateResults?.videoUrl || videoData.heygenResults?.videoUrl}
                         >
                 Your browser does not support the video tag.
                         </video>
@@ -392,7 +428,7 @@ export default function ExportViewPage() {
                   {formatFirebaseDate(videoData.createdAt)}
                 </span>
                 <UrlExpirationIndicator 
-                  videoUrl={videoData.heygenResults?.videoUrl || videoData.videoUrl}
+                  videoUrl={videoData.creatomateResults?.videoUrl || videoData.heygenResults?.videoUrl || videoData.videoUrl}
                   className="mt-2"
                 />
               </div>
@@ -453,7 +489,7 @@ export default function ExportViewPage() {
                 <button 
                   className="refresh-btn" 
                   onClick={refreshVideoUrl} 
-                  disabled={isRefreshingUrl || !videoData.heygenResults?.videoId}
+                  disabled={isRefreshingUrl || (!videoData.heygenResults?.videoId && !videoData.creatomateResults?.renderId)}
                   title="Refresh video URL if expired"
                 >
                   {isRefreshingUrl ? 'Refreshing...' : 'Refresh URL'}
@@ -461,10 +497,20 @@ export default function ExportViewPage() {
                 <button 
                   className="download-btn" 
                   onClick={() => setShowDownloadModal(true)} 
-                  disabled={!(videoData.heygenResults?.videoUrl || videoData.videoUrl)}
+                  disabled={!(videoData.creatomateResults?.videoUrl || videoData.heygenResults?.videoUrl || videoData.videoUrl)}
                 >
                   Download Video
                 </button>
+                {videoData.creatomateResults?.videoUrl && (
+                  <button 
+                    className="re-edit-btn" 
+                    onClick={handleReEdit}
+                    disabled={isReEditing}
+                    title="Re-edit video with Creatomate"
+                  >
+                    {isReEditing ? 'Re-editing...' : 'Re-edit Video'}
+                  </button>
+                )}
               </div>
             </div>
           </div>

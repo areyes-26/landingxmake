@@ -53,6 +53,15 @@ export async function POST(req: Request) {
     const videoData = videoDoc.data();
     const dimension = videoData?.dimension;
 
+    console.log('Dimension from Firestore:', dimension);
+
+    // Configurar offset y scale por defecto para videos verticales
+    // Estos valores posicionan el avatar en la parte inferior del video
+    const defaultOffset = { x: 0, y: 0.23 }; // Posición Y positiva mueve el avatar hacia abajo
+    const defaultScale = 1.14; // Tamaño del avatar
+    
+    console.log('🎯 Configurando avatar con offset:', defaultOffset, 'y scale:', defaultScale);
+    
     // Iniciar la generación del video con Heygen
     const result = await heygen.generateVideo({
       script,
@@ -62,7 +71,9 @@ export async function POST(req: Request) {
       lookId: undefined, // No enviar lookId separado
       tone,
       duration,
-      dimension
+      dimension: dimension || { width: 720, height: 1280 }, // Fallback a vertical HD
+      avatarOffset: defaultOffset,
+      avatarScale: defaultScale
     });
 
     // Verificar que tenemos un video_id válido

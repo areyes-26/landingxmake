@@ -123,6 +123,8 @@ interface GenerateVideoParams {
   orientation?: 'vertical' | 'horizontal';
   resolution?: 'hd' | 'fullhd';
   dimension?: { width: number; height: number };
+  avatarOffset?: { x: number; y: number };
+  avatarScale?: number;
 }
 
 interface GenerateVideoResponse {
@@ -643,6 +645,10 @@ export class HeyGenAPI {
       // Determinar dimension
       let dimension = params.dimension || { width: 720, height: 1280 };
       
+      // NOTA: HeyGen a veces ignora las dimensiones especificadas y genera videos horizontales
+      // incluso cuando se solicitan dimensiones verticales. Esto es un problema conocido de HeyGen.
+      console.log('⚠️ HeyGen dimension warning: Requested dimensions may be ignored by HeyGen API');
+      
       // Detectar si es un talking photo o avatar normal
       // Los talking photos tienen IDs que son hashes hexadecimales de 32 caracteres
       const isTalkingPhoto = /^[a-f0-9]{32}$/.test(params.avatarId);
@@ -661,29 +667,52 @@ export class HeyGenAPI {
         character.avatar_style = "normal";
       
         // Agregar look_id si está presente (solo para avatares normales)
-      if (params.lookId) {
-        character.look_id = params.lookId;
+        if (params.lookId) {
+          character.look_id = params.lookId;
+        }
+        
+        // Agregar offset y scale para controlar posición y tamaño del avatar
+        if (params.avatarOffset) {
+          character.offset = params.avatarOffset;
+          console.log('🎯 Avatar offset configured:', params.avatarOffset);
+        }
+        
+        if (params.avatarScale) {
+          character.scale = params.avatarScale;
+          console.log('📏 Avatar scale configured:', params.avatarScale);
         }
       }
       
       console.log('Character configuration:', character);
       
+      // NOTA: Algunos avatares sin fondo pueden aparecer flotando en el centro del video
+      // en lugar de estar posicionados correctamente. Esto es un problema de HeyGen.
+      if (params.avatarId.includes('_in_') || params.avatarId.includes('Amanda')) {
+        console.log('⚠️ Avatar positioning warning: This avatar may appear floating in the center');
+      }
+      
+      const requestBody = {
+        video_inputs: [
+          {
+            character,
+            voice: {
+              type: "text",
+              input_text: params.script,
+              voice_id: params.voiceId,
+              speed: 1.0
+            }
+          }
+        ],
+        dimension
+      };
+
+      console.log('🚀 HeyGen API Request Body:', JSON.stringify(requestBody, null, 2));
+      console.log('📐 Requested dimensions:', dimension);
+      console.log('🎯 Expected aspect ratio:', dimension.width / dimension.height);
+
       const response = await this.request('/v2/video/generate', {
         method: 'POST',
-        body: JSON.stringify({
-          video_inputs: [
-            {
-              character,
-              voice: {
-                type: "text",
-                input_text: params.script,
-                voice_id: params.voiceId,
-                speed: 1.0
-              }
-            }
-          ],
-          dimension
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const data = await response.json() as HeyGenVideoResponse;

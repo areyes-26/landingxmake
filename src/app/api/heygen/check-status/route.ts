@@ -59,18 +59,96 @@ export async function GET(request: NextRequest) {
     };
 
     if (status.status === 'completed' && status.videoUrl) {
-      updateData.status = 'completed';
       updateData.heygenResults.videoUrl = status.videoUrl;
-      updateData.videoUrl = status.videoUrl; // Actualizar también el campo principal
       if (status.thumbnailUrl) {
         updateData.thumbnailUrl = status.thumbnailUrl;
       }
-      console.log('Video completed with URL:', status.videoUrl);
+      console.log('HeyGen video completed with URL:', status.videoUrl);
+      
+      // Verificar si ya se envió a Creatomate para evitar duplicados
+      if (currentData.creatomateResults?.renderId) {
+        console.log('Video already sent to Creatomate, skipping...');
+        return NextResponse.json(status);
+      }
+      
+      // Automáticamente enviar a Creatomate para edición
+      try {
+        console.log('Sending video to Creatomate for editing...');
+        const creatomateResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/creatomate/generate-video`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ videoId }),
+        });
+        
+        if (creatomateResponse.ok) {
+          const creatomateData = await creatomateResponse.json();
+          console.log('Video sent to Creatomate successfully:', creatomateData);
+          // El estado se actualizará automáticamente a 'editing' por el endpoint de Creatomate
+        } else {
+          const errorText = await creatomateResponse.text();
+          console.error('Failed to send video to Creatomate:', errorText);
+          // Si falla Creatomate, marcar como error y enviar notificación
+          updateData.status = 'error';
+          updateData.error = `Error al enviar video a Creatomate: ${errorText}`;
+          
+          // Enviar notificación de error
+          if (currentData.userId) {
+            try {
+              const { sendNotificationToUser } = await import('@/lib/notifications');
+              await sendNotificationToUser(currentData.userId, {
+                type: 'video_error',
+                message: 'There was an error processing your video. Please try again.',
+                videoId
+              });
+              console.log('Error notification sent for video:', videoId);
+            } catch (notifError) {
+              console.error('Error sending error notification:', notifError);
+            }
+          }
+        }
+      } catch (creatomateError) {
+        console.error('Error sending to Creatomate:', creatomateError);
+        // Si falla Creatomate, marcar como error y enviar notificación
+        updateData.status = 'error';
+        updateData.error = `Error al enviar video a Creatomate: ${creatomateError instanceof Error ? creatomateError.message : 'Unknown error'}`;
+        
+        // Enviar notificación de error
+        if (currentData.userId) {
+          try {
+            const { sendNotificationToUser } = await import('@/lib/notifications');
+            await sendNotificationToUser(currentData.userId, {
+              type: 'video_error',
+              message: 'There was an error processing your video. Please try again.',
+              videoId
+            });
+            console.log('Error notification sent for video:', videoId);
+          } catch (notifError) {
+            console.error('Error sending error notification:', notifError);
+          }
+        }
+      }
     } else if (status.status === 'error') {
       updateData.status = 'error';
       updateData.error = status.error || 'Error al generar el video';
       updateData.heygenResults.error = status.error;
       console.log('Video error:', status.error);
+      
+      // Enviar notificación de error
+      if (currentData.userId) {
+        try {
+          const { sendNotificationToUser } = await import('@/lib/notifications');
+          await sendNotificationToUser(currentData.userId, {
+            type: 'video_error',
+            message: 'There was an error generating your video. Please try again.',
+            videoId
+          });
+          console.log('Error notification sent for video:', videoId);
+        } catch (notifError) {
+          console.error('Error sending error notification:', notifError);
+        }
+      }
     }
 
     await videoRef.update(updateData);

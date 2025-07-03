@@ -222,6 +222,10 @@ export default function VideoFormsPage() {
       }
     }
 
+    console.log('Form data orientation:', formData.orientation);
+    console.log('Form data resolution:', formData.resolution);
+    console.log('Calculated dimension:', dimension);
+
     try {
       console.log('Sending data:', formData);
 

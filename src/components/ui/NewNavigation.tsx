@@ -196,8 +196,8 @@ export function NewNavigation() {
                       ) : (
                         <ul className="space-y-2">
                           {notifications.filter(n =>
-                            (settings.video && (n.type === 'video_ready' || n.type === 'youtube_export')) ||
-                            (settings.system && n.type !== 'video_ready' && n.type !== 'youtube_export')
+                            (settings.video && (n.type === 'video_ready' || n.type === 'youtube_export' || n.type === 'video_error')) ||
+                            (settings.system && n.type !== 'video_ready' && n.type !== 'youtube_export' && n.type !== 'video_error')
                           ).map(n => (
                             <li key={n.id} className="relative p-3 rounded-lg bg-gray-900/60 border border-gray-800 flex flex-col gap-1 shadow-sm hover:shadow-lg transition-shadow">
                               <div className="flex items-center gap-2 mb-1">
@@ -213,6 +213,10 @@ export function NewNavigation() {
                                   {n.type === 'video_ready' || n.type === 'youtube_export' ? (
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-400/10">
                                       <PlayCircle className="w-4 h-4 text-cyan-300" /> Video
+                                    </span>
+                                  ) : n.type === 'video_error' ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-500/10 text-red-300 border border-red-400/10">
+                                      <X className="w-4 h-4 text-red-300" /> Error
                                     </span>
                                   ) : (
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-500/10 text-gray-200 border border-gray-400/10">
@@ -232,6 +236,9 @@ export function NewNavigation() {
                               )}
                               {n.type === 'youtube_export' && n.url && (
                                 <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 hover:underline font-medium">View on YouTube</a>
+                              )}
+                              {n.type === 'video_error' && n.videoId && (
+                                <Link href={`/videos/${n.videoId}`} className="text-xs text-red-400 hover:underline font-medium">Try again</Link>
                               )}
                             </li>
                           ))}

@@ -147,3 +147,16 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # Creatomate variables
+  - variable: CREATOMATE_API_KEY
+    secret: CREATOMATE_API_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: CREATOMATE_TEMPLATE_ID
+    secret: CREATOMATE_TEMPLATE_ID
+    availability:
+      - BUILD
+      - RUNTIME
