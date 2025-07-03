@@ -143,7 +143,7 @@ env:
       - RUNTIME
 
   - variable: NEXT_PUBLIC_TIKTOK_REDIRECT_URI
-    value: "https://visiora.ai/api/tiktok/callback"
+    secret: NEXT_PUBLIC_TIKTOK_REDIRECT_URI
     availability:
       - BUILD
       - RUNTIME
