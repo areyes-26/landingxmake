@@ -34,24 +34,36 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
     }
 
     // Intercambiar code por access_token usando OAuth v2
-    const tokenRes = await axios.post('https://open.tiktokapis.com/v2/oauth/token/', {
-      client_key,
-      client_secret,
-      code,
-      grant_type: 'authorization_code',
-      redirect_uri,
-    }, {
+    const params = new URLSearchParams();
+    params.append('client_key', client_key);
+    params.append('client_secret', client_secret);
+    params.append('code', code);
+    params.append('grant_type', 'authorization_code');
+    params.append('redirect_uri', redirect_uri);
+
+    const tokenRes = await axios.post('https://open.tiktokapis.com/v2/oauth/token/', params, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Cache-Control': 'no-cache'
       }
     });
 
-    const tokenData = tokenRes.data.data;
+    console.log('[TOKEN RESPONSE FULL]', JSON.stringify(tokenRes.data, null, 2));
+    console.log('[TOKEN RESPONSE STATUS]', tokenRes.status);
+    console.log('[TOKEN RESPONSE HEADERS]', tokenRes.headers);
+
+    // Verificar si hay error en la respuesta
+    if (tokenRes.data.error) {
+      console.error('[TIKTOK ERROR]', tokenRes.data);
+      res.status(500).json({ error: 'TikTok OAuth error', detail: tokenRes.data });
+      return;
+    }
+
+    const tokenData = tokenRes.data;
     console.log('[TOKEN RESPONSE]', tokenData);
-    if (!tokenData.access_token) {
-      console.error('Error en intercambio de código:', tokenData);
-      res.status(500).json({ error: 'No access_token returned', detail: tokenData });
+    if (!tokenData || !tokenData.access_token) {
+      console.error('Error en intercambio de código:', tokenRes.data);
+      res.status(500).json({ error: 'No access_token returned', detail: tokenRes.data });
       return;
     }
 
@@ -67,9 +79,15 @@ export const tiktokCallback = functions.https.onRequest(async (req, res) => {
           'Content-Type': 'application/json'
         }
       });
+      console.log('[USER INFO RESPONSE FULL]', JSON.stringify(userRes.data, null, 2));
+      console.log('[USER INFO STATUS]', userRes.status);
       userInfo = userRes.data.data;
+      console.log('[USER INFO DATA]', userInfo);
     } catch (error) {
       console.log('[WARNING] Could not fetch user info:', error);
+      if (error.response) {
+        console.log('[USER INFO ERROR RESPONSE]', JSON.stringify(error.response.data, null, 2));
+      }
     }
 
     // Eliminar documentos previos para evitar duplicados

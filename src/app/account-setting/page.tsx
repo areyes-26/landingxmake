@@ -491,7 +491,12 @@ const Connections = () => {
                         </span>
                         {tiktokConnected && tiktokProfile && (
                             <span style={accountStyle}>
-                                Account: <b>{tiktokProfile.displayName || 'TikTok User'}</b>
+                                Account: <b>{tiktokProfile.displayName || 'TikTok User (Sandbox Mode)'}</b>
+                                {!tiktokProfile.displayName && (
+                                    <span style={{ fontSize: '0.8em', color: '#888', marginLeft: '8px' }}>
+                                        Limited data in sandbox mode
+                                    </span>
+                                )}
                             </span>
                         )}
                     </div>
