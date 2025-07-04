@@ -11,6 +11,7 @@
     "copy-prompts": "cp -r public lib/ || xcopy public lib\\public /E /I /Y"
   },
   "dependencies": {
+    "@google-cloud/pubsub": "^5.1.0",
     "axios": "1.6.7",
     "cors": "2.8.5",
     "firebase-admin": "^11.11.0",

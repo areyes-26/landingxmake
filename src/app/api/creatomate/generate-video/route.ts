@@ -2,13 +2,18 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { getCreatomateClient } from '@/lib/creatomate';
 import { Timestamp } from 'firebase-admin/firestore';
+import { getTemplateByPlan, PlanType } from '@/lib/creatomate/templates/getTemplateByPlan';
+import { personalizeTemplate } from '@/lib/creatomate/templates/personalizeTemplate';
+import { CreatomateAPI } from '@/lib/creatomate';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { videoId } = body;
+    console.log(`[Creatomate][generate-video] POST body:`, body);
 
     if (!videoId) {
+      console.warn(`[Creatomate][generate-video] videoId faltante en el body`);
       return NextResponse.json(
         { error: 'Faltan campos requeridos' },
         { status: 400 }
@@ -18,8 +23,10 @@ export async function POST(req: Request) {
     // Obtener el video de Firestore
     const videoRef = db.collection('videos').doc(videoId);
     const videoDoc = await videoRef.get();
+    console.log(`[Creatomate][generate-video] Buscando videoId: ${videoId}`);
 
     if (!videoDoc.exists) {
+      console.warn(`[Creatomate][generate-video] Video no encontrado: ${videoId}`);
       return NextResponse.json(
         { error: 'Video no encontrado' },
         { status: 404 }
@@ -29,6 +36,7 @@ export async function POST(req: Request) {
     const videoData = videoDoc.data();
     
     if (!videoData) {
+      console.warn(`[Creatomate][generate-video] Datos del video no encontrados para: ${videoId}`);
       return NextResponse.json(
         { error: 'Datos del video no encontrados' },
         { status: 404 }
@@ -37,6 +45,7 @@ export async function POST(req: Request) {
     
     // Verificar que el video de HeyGen esté completado
     if (!videoData.heygenResults?.videoUrl || videoData.heygenResults?.status !== 'completed') {
+      console.warn(`[Creatomate][generate-video] El video de HeyGen no está listo para editar. videoId: ${videoId}, heygenResults:`, videoData.heygenResults);
       return NextResponse.json(
         { error: 'El video de HeyGen no está listo para editar' },
         { status: 400 }
@@ -48,48 +57,72 @@ export async function POST(req: Request) {
     const completionDoc = await completionRef.get();
     const completionData = completionDoc.exists ? completionDoc.data() : {};
     const script = completionData?.script || '';
+    console.log(`[Creatomate][generate-video] Script para videoId ${videoId}:`, script ? script.substring(0, 100) : '[VACÍO]');
 
     if (!script) {
+      console.warn(`[Creatomate][generate-video] Script no encontrado para videoId: ${videoId}`);
       return NextResponse.json(
         { error: 'No se encontró el script del video' },
         { status: 400 }
       );
     }
 
-    const creatomate = getCreatomateClient();
+    // Obtener el plan del usuario (por ahora desde videoData, si no, setear 'free' por defecto)
+    const plan: PlanType = videoData.plan || 'free';
+    console.log(`[Creatomate][generate-video] Plan del usuario para videoId ${videoId}:`, plan);
 
-    // Configurar webhook URL para notificaciones
+    // Subtítulos: si existen en Firestore, usarlos; si no, generarlos
+    let subtitles = completionData?.subtitles || [];
+    if (!Array.isArray(subtitles) || subtitles.length === 0) {
+      const api = new CreatomateAPI();
+      const videoDuration = videoData.heygenResults?.duration ? parseFloat(videoData.heygenResults.duration) : undefined;
+      const generated = api['createSynchronizedSubtitles'](script, videoDuration);
+      // Mapear a formato {text, start, end}
+      subtitles = generated.map((s: any) => ({ text: s.text, start: s.startTime, end: s.startTime + s.duration }));
+      console.log(`[Creatomate][generate-video] Subtítulos generados dinámicamente para videoId ${videoId}:`, subtitles.slice(0, 3));
+    } else {
+      // Si ya existen, asegurarse de que tengan el formato correcto
+      subtitles = subtitles.map((s: any) => ({ text: s.text, start: s.start ?? s.startTime ?? 0, end: s.end ?? (s.startTime !== undefined && s.duration !== undefined ? s.startTime + s.duration : 0) }));
+    }
+
+    // Armar el objeto videoData para los placeholders
+    const personalizedVideoData = {
+      avatarUrl: videoData.heygenResults?.videoUrl,
+      backgroundUrl: videoData.backgroundUrl || '',
+      logoUrl: videoData.logoUrl || '',
+      accentColor: videoData.accentColor || '#e74c3c',
+      subtitles,
+    };
+
+    // Seleccionar y personalizar la plantilla
+    const baseTemplate = getTemplateByPlan(plan);
+    const personalizedTemplate = personalizeTemplate(baseTemplate, personalizedVideoData);
+    console.log(`[Creatomate][generate-video] Plantilla personalizada para videoId ${videoId}:`, personalizedTemplate);
+
+    const creatomate = getCreatomateClient();
     const webhookUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/creatomate/webhook`;
 
-    // Obtener la duración del video de HeyGen si está disponible
-    const videoDuration = videoData.heygenResults?.duration ? 
-      parseFloat(videoData.heygenResults.duration) : undefined;
-    
-    console.log(`[Creatomate] Video duration from HeyGen: ${videoDuration}s`);
-    
-    // Crear el render en Creatomate
-    const result = await creatomate.createVideoFromHeyGen(
-      videoData.heygenResults.videoUrl,
-      script,
-      videoData.videoTitle,
+    // Enviar la plantilla personalizada como 'source' a Creatomate
+    const result = await creatomate.createRender({
       webhookUrl,
-      videoDuration,
-      videoId
-    );
+      metadata: videoId,
+      outputFormat: 'mp4',
+      source: personalizedTemplate,
+    });
 
     // Actualizar el estado en Firestore
     const updateData = {
-      status: 'editing', // Nuevo estado para indicar que está siendo editado
+      status: 'editing',
       creatomateResults: {
         status: 'rendering',
-        renderId: result.id, // Usar solo result.id
+        renderId: result.id,
         generatedAt: Timestamp.now(),
       },
       updatedAt: Timestamp.now(),
     };
 
-    console.log('Creatomate result:', result);
-    console.log('Actualizando Firestore con datos de Creatomate:', updateData);
+    console.log(`[Creatomate][generate-video] Creatomate result para videoId ${videoId}:`, result);
+    console.log(`[Creatomate][generate-video] Actualizando Firestore para videoId ${videoId} con:`, updateData);
 
     await videoRef.update(updateData);
 
@@ -99,7 +132,7 @@ export async function POST(req: Request) {
       creatomateRenderId: result.id,
     });
   } catch (error) {
-    console.error('[Creatomate Generate Video] Error:', error);
+    console.error(`[Creatomate][generate-video] Error en videoId:`, error);
     return NextResponse.json(
       {
         error: 'Error al enviar el video a Creatomate',

@@ -6,12 +6,13 @@ import { sendNotificationToUser } from '@/lib/notifications';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('Creatomate webhook received:', body);
+    console.log('[Creatomate][webhook] Webhook recibido:', body);
 
     // Verificar que el webhook sea de Creatomate
     const { render_id, status, url, error, metadata } = body;
 
     if (!render_id) {
+      console.warn('[Creatomate][webhook] Faltante render_id en webhook:', body);
       return NextResponse.json(
         { error: 'Missing render_id in webhook' },
         { status: 400 }
@@ -23,11 +24,11 @@ export async function POST(request: NextRequest) {
 
     // Usar metadata si está disponible (más eficiente)
     if (metadata) {
-      console.log(`Using metadata to find video: ${metadata}`);
+      console.log(`[Creatomate][webhook] Buscando video por metadata: ${metadata}`);
       const videoDoc = await db.collection('videos').doc(metadata).get();
       
       if (!videoDoc.exists) {
-        console.log(`No video found for metadata: ${metadata}`);
+        console.warn(`[Creatomate][webhook] No se encontró video para metadata: ${metadata}`);
         return NextResponse.json(
           { error: 'Video not found for this metadata' },
           { status: 404 }
@@ -38,13 +39,13 @@ export async function POST(request: NextRequest) {
       currentData = videoDoc.data();
     } else {
       // Fallback: buscar por render_id (menos eficiente)
-      console.log(`Metadata not available, searching by render_id: ${render_id}`);
+      console.log(`[Creatomate][webhook] Buscando video por render_id: ${render_id}`);
       const videosRef = db.collection('videos');
       const query = videosRef.where('creatomateResults.renderId', '==', render_id);
       const querySnapshot = await query.get();
 
       if (querySnapshot.empty) {
-        console.log(`No video found for Creatomate render_id: ${render_id}`);
+        console.warn(`[Creatomate][webhook] No se encontró video para render_id: ${render_id}`);
         return NextResponse.json(
           { error: 'Video not found for this render_id' },
           { status: 404 }
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
       currentData = videoDoc.data();
     }
 
-    console.log(`Updating video ${videoId} with Creatomate status: ${status}`);
+    console.log(`[Creatomate][webhook] Actualizando video ${videoId} con status: ${status}, render_id: ${render_id}`);
 
     // Actualizar el estado en Firestore usando Admin SDK
     const updateData: any = {
@@ -65,15 +66,15 @@ export async function POST(request: NextRequest) {
         ...currentData.creatomateResults,
         status: status,
         generatedAt: Timestamp.now(),
-        renderId: render_id, // Guardar el render_id para referencia
+        renderId: render_id,
       }
     };
 
     if (status === 'completed' && url) {
       updateData.status = 'completed';
       updateData.creatomateResults.videoUrl = url;
-      updateData.videoUrl = url; // Actualizar también el campo principal
-      console.log(`Creatomate video ${videoId} completed with URL: ${url}`);
+      updateData.videoUrl = url;
+      console.log(`[Creatomate][webhook] Video ${videoId} COMPLETADO. URL: ${url}`);
       
       // Enviar notificación de video listo
       if (currentData.userId) {
@@ -83,16 +84,16 @@ export async function POST(request: NextRequest) {
             message: 'Your video is ready! Click to view it in your dashboard.',
             videoId
           });
-          console.log(`[Creatomate Webhook] ✅ Video ready notification sent for video ${videoId}`);
+          console.log(`[Creatomate][webhook] Notificación de video listo enviada para video ${videoId}`);
         } catch (notifError) {
-          console.error(`[Creatomate Webhook] ❌ Error sending video ready notification for video ${videoId}:`, notifError);
+          console.error(`[Creatomate][webhook] Error enviando notificación de video listo para video ${videoId}:`, notifError);
         }
       }
     } else if (status === 'failed') {
       updateData.status = 'error';
       updateData.error = error || 'Error al editar el video con Creatomate';
       updateData.creatomateResults.error = error;
-      console.log(`Creatomate video ${videoId} failed: ${error}`);
+      console.warn(`[Creatomate][webhook] Video ${videoId} FALLÓ. Error: ${error}`);
       
       // Enviar notificación de error
       if (currentData.userId) {
@@ -102,20 +103,19 @@ export async function POST(request: NextRequest) {
             message: 'There was an error editing your video. Please try again.',
             videoId
           });
-          console.log(`[Creatomate Webhook] ❌ Error notification sent for video ${videoId}`);
+          console.log(`[Creatomate][webhook] Notificación de error enviada para video ${videoId}`);
         } catch (notifError) {
-          console.error(`[Creatomate Webhook] ❌ Error sending error notification for video ${videoId}:`, notifError);
+          console.error(`[Creatomate][webhook] Error enviando notificación de error para video ${videoId}:`, notifError);
         }
       }
     }
 
-    // Usar Admin SDK para actualizar - esto evita problemas de permisos
     await db.collection('videos').doc(videoId).update(updateData);
-    console.log(`Firestore updated successfully for video ${videoId}`);
+    console.log(`[Creatomate][webhook] Firestore actualizado para video ${videoId}`);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[Creatomate Webhook] Error:', error);
+    console.error('[Creatomate][webhook] Error general:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

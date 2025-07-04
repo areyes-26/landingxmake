@@ -1,8 +1,8 @@
 export const CREATOMATE_API_URL = 'https://api.creatomate.com/v1';
 
 interface CreatomateRenderParams {
-  templateId: string;
-  modifications: {
+  templateId?: string;
+  modifications?: {
     [key: string]: any;
   };
   webhookUrl?: string;
@@ -12,6 +12,7 @@ interface CreatomateRenderParams {
   renderScale?: number;
   maxWidth?: number;
   maxHeight?: number;
+  source?: any;
 }
 
 interface CreatomateRenderResponse {
@@ -60,41 +61,41 @@ export class CreatomateAPI {
 
   async createRender(params: CreatomateRenderParams): Promise<CreatomateRenderResponse> {
     try {
-      console.log('Creating Creatomate render with params:', params);
+      console.log('[Creatomate][API] createRender - Parámetros de entrada:', params);
       
-      const requestBody: any = {
-        template_id: params.templateId,
-        modifications: params.modifications,
-      };
-
-      // Agregar parámetros opcionales solo si están definidos
+      const requestBody: any = {};
+      if (params.source) {
+        requestBody.source = params.source;
+      }
+      if (params.templateId) {
+        requestBody.template_id = params.templateId;
+      }
+      if (params.modifications) {
+        requestBody.modifications = params.modifications;
+      }
       if (params.webhookUrl) {
         requestBody.webhook_url = params.webhookUrl;
       }
-      
       if (params.metadata) {
         requestBody.metadata = params.metadata;
       }
-      
       if (params.outputFormat) {
         requestBody.output_format = params.outputFormat;
       }
-      
       if (params.frameRate) {
         requestBody.frame_rate = params.frameRate;
       }
-      
       if (params.renderScale) {
         requestBody.render_scale = params.renderScale;
       }
-      
       if (params.maxWidth) {
         requestBody.max_width = params.maxWidth;
       }
-      
       if (params.maxHeight) {
         requestBody.max_height = params.maxHeight;
       }
+
+      console.log('[Creatomate][API] createRender - requestBody:', requestBody);
 
       const response = await this.request('/renders', {
         method: 'POST',
@@ -102,7 +103,7 @@ export class CreatomateAPI {
       });
 
       const data = await response.json();
-      console.log('Creatomate render response:', data);
+      console.log('[Creatomate][API] createRender - Respuesta completa:', data);
 
       // La respuesta puede ser un array o un objeto individual
       const renderData = Array.isArray(data) ? data[0] : data;
@@ -114,7 +115,7 @@ export class CreatomateAPI {
         error: renderData.error,
       };
     } catch (error) {
-      console.error('Error in createRender:', error);
+      console.error('[Creatomate][API] createRender - Error:', error);
       throw error;
     }
   }
@@ -152,64 +153,14 @@ export class CreatomateAPI {
     videoId?: string
   ): Promise<CreatomateRenderResponse> {
     try {
-      // Template ID para videos con subtítulos y efectos
-      const templateId = process.env.CREATOMATE_TEMPLATE_ID || '273cdd5f-f40a-4c72-9a08-55245e49bfbc';
-      
-      // Procesar el script para subtítulos - dividir en frases más cortas
-      const processedScript = this.processScriptForSubtitles(script);
-      
-      // Crear subtítulos sincronizados
-      const synchronizedSubtitles = this.createSynchronizedSubtitles(script, videoDuration);
-      const subtitlesText = this.formatSubtitlesForCreatomate(synchronizedSubtitles);
-      
-      console.log(`[Subtitles] Script length: ${script.length} characters`);
-      console.log(`[Subtitles] Generated ${synchronizedSubtitles.length} subtitle segments`);
-      console.log(`[Subtitles] Sample segments:`, synchronizedSubtitles.slice(0, 3));
-      
-      const modifications = {
-        // Configuración específica para tu template de noticias
-        'Imagen-Total.source': heygenVideoUrl, // Usar el video de HeyGen como imagen principal
-        'Imagen-Noticia-1.source': '',
-        'Imagen-Noticia-2.source': '',
-        'Imagen-Noticia-3.source': '',
-        'Imagen-Noticia-4.source': '',
-        'Safe-Area.source': 'https://creatomate.com/files/assets/1ccbd1de-1637-41c2-ab01-6644c87594f1',
-        'Imagen-Portada-Abajo.source': '',
-        'Imagen-Portada-Arriba.source': '',
-        'Fecha.text': new Date().toLocaleDateString('es-ES', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        }),
-        'Contenido-Noticia-Portada.text': processedScript || videoTitle || 'Contenido generado automáticamente',
-        // Campos adicionales para asegurar que el template funcione
-        'Titulo-Noticia.text': videoTitle || 'Noticia Importante',
-        'Subtitulo-Noticia.text': processedScript.substring(0, 100) || 'Información relevante',
-        
-        // 🎯 SUBTÍTULOS SINCRONIZADOS
-        'subtitles.text': subtitlesText, // Elemento de subtítulos dinámicos
-        'subtitles.transcript_source': 'text', // Usar el texto como fuente de transcripción
-        'subtitles.transcript_effect': 'color', // Efecto de color para resaltar palabras
-        'subtitles.transcript_split': 'word', // Dividir por palabras
-        'subtitles.transcript_placement': 'static', // Posición estática
-        'subtitles.transcript_maximum_length': 50, // Máximo 50 caracteres por línea
-        'subtitles.transcript_color': '#e74c3c' // Color de resaltado
-      };
-
-      console.log('Creatomate modifications:', modifications);
-      console.log(`[Subtitles] Final subtitles text: ${subtitlesText.substring(0, 200)}...`);
-
-      return await this.createRender({
-        templateId,
-        modifications,
-        webhookUrl,
-        metadata: videoId, // Incluir videoId como metadata para identificación
-        outputFormat: 'mp4', // Formato de salida específico
-        frameRate: 30, // Frame rate para videos fluidos
-        renderScale: 1.0, // Escala al 100%
-      });
+      console.log('[Creatomate][API] createVideoFromHeyGen - Parámetros:', { heygenVideoUrl, script: script.substring(0, 100), videoTitle, webhookUrl, videoDuration, videoId });
+      // [ELIMINADO] Template ID fijo, ahora se usa plantilla personalizada
+      // const templateId = process.env.CREATOMATE_TEMPLATE_ID || '273cdd5f-f40a-4c72-9a08-55245e49bfbc';
+      // ...resto de la función...
+      // [Opcional: aquí podrías lanzar un error si alguien intenta usar esta función sin plantilla personalizada]
+      throw new Error('createVideoFromHeyGen ya no debe usarse. Usa createRender con source personalizado.');
     } catch (error) {
-      console.error('Error creating video from HeyGen:', error);
+      console.error('[Creatomate][API] createVideoFromHeyGen - Error:', error);
       throw error;
     }
   }

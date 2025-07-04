@@ -7,6 +7,7 @@ import axios from 'axios';
 import { facebookCallback } from './instagram/callback';
 import { checkVideoStatus } from './instagram/videoStatusChecker';
 import { HeyGenAPI } from './lib/heygen';
+import { PubSub } from '@google-cloud/pubsub';
 
 console.log('Firebase Functions loaded.');
 
@@ -114,181 +115,6 @@ export { checkVideoStatus };
 // EXPORT WEBHOOK INSTAGRAM
 export { instagramWebhook } from './instagram/webhook';
 
-// === POLLING UNIFICADO: Solo para HeyGen (Creatomate usa webhooks) ===
-export const videoPolling = functions.pubsub
-  .schedule('every 1 minutes')
-  .onRun(async (context) => {
-    console.log('[Video Polling] 🔄 Verificando videos en proceso (HeyGen)...');
-    
-    try {
-      // Solo buscar videos que están en proceso con HeyGen
-      const videosSnapshot = await db.collection('videos')
-        .where('status', '==', 'processing')
-        .get();
-
-      if (videosSnapshot.empty) {
-        console.log('[Video Polling] ✅ No hay videos en proceso con HeyGen - skipping');
-        return null;
-      }
-
-      console.log(`[Video Polling] 📋 Encontrados ${videosSnapshot.size} videos en proceso con HeyGen`);
-
-      const heygen = new HeyGenAPI();
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://visiora.ai';
-
-      // Procesar cada video
-      for (const doc of videosSnapshot.docs) {
-        const videoId = doc.id;
-        const videoData = doc.data();
-        
-        console.log(`[Video Polling] 🔍 Procesando video ${videoId} (HeyGen)`);
-
-        try {
-          await pollHeyGenVideo(videoId, videoData, heygen, baseUrl);
-        } catch (error) {
-          console.error(`[Video Polling] ❌ Error procesando video ${videoId}:`, error);
-          // Continuar con el siguiente video
-        }
-      }
-
-      console.log('[Video Polling] ✅ Polling de HeyGen completado');
-      return null;
-    } catch (error) {
-      console.error('[Video Polling] ❌ Error en polling:', error);
-      throw error;
-    }
-  });
-
-// Función unificada para polling de videos (solo HeyGen)
-async function pollVideoStatus(videoId: string, videoData: any, heygen?: HeyGenAPI, baseUrl?: string) {
-  if (!heygen) {
-    heygen = new HeyGenAPI();
-  }
-  if (!baseUrl) {
-    baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://visiora.ai';
-  }
-
-  console.log(`[Video Polling] 🔍 Polling video ${videoId} (status: ${videoData.status})`);
-
-  try {
-    if (videoData.status === 'processing') {
-      // Solo polling de HeyGen (Creatomate usa webhooks)
-      await pollHeyGenVideo(videoId, videoData, heygen, baseUrl);
-    }
-    // No más polling de Creatomate - usa webhooks
-  } catch (error) {
-    console.error(`[Video Polling] ❌ Error en polling de video ${videoId}:`, error);
-    throw error;
-  }
-}
-
-// Función auxiliar para polling de HeyGen
-async function pollHeyGenVideo(videoId: string, videoData: any, heygen: HeyGenAPI, baseUrl: string) {
-  const taskId = videoData.heygenResults?.taskId || videoData.heygenResults?.videoId || videoId;
-  
-  if (!taskId) {
-    console.warn(`[Automatic Polling] ⚠️ Video ${videoId} no tiene taskId`);
-    return;
-  }
-
-  console.log(`[Video Polling] 🎬 Verificando HeyGen para video ${videoId} (taskId: ${taskId})`);
-  
-  const status = await heygen.checkVideoStatus(taskId);
-  console.log(`[Video Polling] 📊 Estado HeyGen para ${videoId}: ${status.status}`);
-
-  const updateData: any = {
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    heygenResults: {
-      ...videoData.heygenResults,
-      status: status.status,
-      generatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }
-  };
-
-  if (status.status === 'completed' && status.videoUrl) {
-    updateData.heygenResults.videoUrl = status.videoUrl;
-    if (status.thumbnailUrl) {
-      updateData.thumbnailUrl = status.thumbnailUrl;
-    }
-    console.log(`[Video Polling] ✅ HeyGen completado para ${videoId}: ${status.videoUrl}`);
-    
-    // Enviar automáticamente a Creatomate
-    try {
-      console.log(`[Video Polling] 🎨 Enviando ${videoId} a Creatomate...`);
-      const creatomateResponse = await axios.post(`${baseUrl}/api/creatomate/generate-video`, {
-        videoId
-      }, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
-      if (creatomateResponse.status === 200) {
-        console.log(`[Video Polling] ✅ ${videoId} enviado a Creatomate exitosamente`);
-        // El estado se actualizará automáticamente a 'editing' por el endpoint de Creatomate
-      } else {
-        console.error(`[Video Polling] ❌ Falló al enviar ${videoId} a Creatomate`);
-        // Si falla Creatomate, marcar como error y enviar notificación
-        updateData.status = 'error';
-        updateData.error = 'Error al enviar video a Creatomate para edición';
-        
-        // Enviar notificación de error
-        if (videoData.userId) {
-          try {
-            await require('./lib/notifications').sendNotificationToUser(videoData.userId, {
-              type: 'video_error',
-              message: 'There was an error processing your video. Please try again.',
-              videoId
-            });
-            console.log(`[Video Polling] ❌ Error notification sent for video ${videoId}`);
-          } catch (notifError) {
-            console.error(`[Video Polling] ❌ Error sending error notification for video ${videoId}:`, notifError);
-          }
-        }
-      }
-    } catch (creatomateError) {
-      console.error(`[Video Polling] ❌ Error enviando ${videoId} a Creatomate:`, creatomateError);
-      // Si falla Creatomate, marcar como error y enviar notificación
-      updateData.status = 'error';
-      updateData.error = 'Error al enviar video a Creatomate para edición';
-      
-      // Enviar notificación de error
-      if (videoData.userId) {
-        try {
-          await require('./lib/notifications').sendNotificationToUser(videoData.userId, {
-            type: 'video_error',
-            message: 'There was an error processing your video. Please try again.',
-            videoId
-          });
-          console.log(`[Video Polling] ❌ Error notification sent for video ${videoId}`);
-        } catch (notifError) {
-          console.error(`[Video Polling] ❌ Error sending error notification for video ${videoId}:`, notifError);
-        }
-      }
-    }
-  } else if (status.status === 'error') {
-    updateData.status = 'error';
-    updateData.error = status.error || 'Error al generar el video';
-    updateData.heygenResults.error = status.error;
-    console.log(`[Video Polling] ❌ ${videoId} marcado como error: ${status.error}`);
-    
-    // Enviar notificación de error
-    if (videoData.userId) {
-      try {
-        await require('./lib/notifications').sendNotificationToUser(videoData.userId, {
-          type: 'video_error',
-          message: 'There was an error generating your video. Please try again.',
-          videoId
-        });
-        console.log(`[Video Polling] ❌ Error notification sent for video ${videoId}`);
-      } catch (notifError) {
-        console.error(`[Video Polling] ❌ Error sending error notification for video ${videoId}:`, notifError);
-      }
-    }
-  }
-
-  await db.collection('videos').doc(videoId).update(updateData);
-  console.log(`[Video Polling] 💾 Firestore actualizado para ${videoId}`);
-}
-
 // === Firebase Auth Trigger: Crear user_data cuando se registra un nuevo usuario ===
 export const onUserCreated = functions.auth.user().onCreate(async (user: any) => {
   try {
@@ -327,3 +153,110 @@ export const onUserCreated = functions.auth.user().onCreate(async (user: any) =>
 export { tiktokCallback } from './tiktok/callback';
 
 export { publishToInstagram } from './instagram/publish';
+
+const pubsub = new PubSub();
+const POLL_TOPIC = 'poll-heygen-video';
+const POLL_DELAY_SECONDS = 30; // Puedes ajustar el delay según necesidad
+
+// === Firestore Trigger: Publica en Pub/Sub cuando un video entra en 'processing' ===
+export const onVideoProcessing = functions.firestore
+  .document('videos/{videoId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    const videoId = context.params.videoId;
+
+    // Solo dispara si el status cambió a 'processing'
+    if (before.status !== 'processing' && after.status === 'processing') {
+      console.log(`[onVideoProcessing] Video ${videoId} entró en 'processing', publicando en Pub/Sub...`);
+      await pubsub.topic(POLL_TOPIC).publishMessage({
+        json: { videoId }
+      });
+    }
+  });
+
+// === Polling inteligente usando Pub/Sub ===
+export const pollHeygenVideo = functions.pubsub
+  .topic(POLL_TOPIC)
+  .onPublish(async (message) => {
+    const { videoId } = message.json;
+    if (!videoId) {
+      console.error('[pollHeygenVideo] No se recibió videoId');
+      return;
+    }
+    console.log(`[pollHeygenVideo] Iniciando polling para video ${videoId}`);
+
+    // Obtener datos del video
+    const videoRef = db.collection('videos').doc(videoId);
+    const videoSnap = await videoRef.get();
+    if (!videoSnap.exists) {
+      console.error(`[pollHeygenVideo] Video ${videoId} no existe en Firestore`);
+      return;
+    }
+    const videoData = videoSnap.data();
+    if (!videoData) return;
+
+    const heygen = new HeyGenAPI();
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://visiora.ai';
+    const taskId = videoData.heygenResults?.taskId || videoData.heygenResults?.videoId || videoId;
+    if (!taskId) {
+      console.warn(`[pollHeygenVideo] Video ${videoId} no tiene taskId`);
+      return;
+    }
+
+    // Polling a HeyGen
+    const status = await heygen.checkVideoStatus(taskId);
+    console.log(`[pollHeygenVideo] Estado HeyGen para ${videoId}: ${status.status}`);
+
+    const updateData: any = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      heygenResults: {
+        ...videoData.heygenResults,
+        status: status.status,
+        generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }
+    };
+
+    if (status.status === 'completed' && status.videoUrl) {
+      updateData.heygenResults.videoUrl = status.videoUrl;
+      if (status.thumbnailUrl) {
+        updateData.thumbnailUrl = status.thumbnailUrl;
+      }
+      console.log(`[pollHeygenVideo] ✅ HeyGen completado para ${videoId}: ${status.videoUrl}`);
+      // Enviar automáticamente a Creatomate
+      try {
+        console.log(`[pollHeygenVideo] Enviando ${videoId} a Creatomate...`);
+        const creatomateResponse = await axios.post(`${baseUrl}/api/creatomate/generate-video`, {
+          videoId
+        }, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (creatomateResponse.status === 200) {
+          console.log(`[pollHeygenVideo] ${videoId} enviado a Creatomate exitosamente`);
+        } else {
+          console.error(`[pollHeygenVideo] Falló al enviar ${videoId} a Creatomate`);
+          updateData.status = 'error';
+          updateData.error = 'Error al enviar video a Creatomate para edición';
+        }
+      } catch (creatomateError) {
+        console.error(`[pollHeygenVideo] Error enviando ${videoId} a Creatomate:`, creatomateError);
+        updateData.status = 'error';
+        updateData.error = 'Error al enviar video a Creatomate para edición';
+      }
+    } else if (status.status === 'error') {
+      updateData.status = 'error';
+      updateData.error = status.error || 'Error al generar el video';
+      updateData.heygenResults.error = status.error;
+      console.log(`[pollHeygenVideo] ❌ ${videoId} marcado como error: ${status.error}`);
+    } else if (status.status === 'processing') {
+      // Re-publicar mensaje en Pub/Sub para seguir el polling
+      console.log(`[pollHeygenVideo] Video ${videoId} sigue en processing, re-publicando en Pub/Sub con delay...`);
+      await pubsub.topic(POLL_TOPIC).publishMessage({
+        json: { videoId },
+        attributes: { 'scheduled-delay-seconds': POLL_DELAY_SECONDS.toString() }
+      });
+    }
+
+    await videoRef.update(updateData);
+    console.log(`[pollHeygenVideo] Firestore actualizado para ${videoId}`);
+  });
