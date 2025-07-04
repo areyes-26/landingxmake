@@ -19,6 +19,7 @@ export async function POST(req: Request) {
     } = body;
 
     if (!videoId || !videoTitle || !voiceId || !avatarId) {
+      console.error(`[HeyGen][generate-video] Faltan campos requeridos:`, { videoId, videoTitle, voiceId, avatarId });
       return NextResponse.json(
         { error: 'Faltan campos requeridos' },
         { status: 400 }
@@ -30,6 +31,7 @@ export async function POST(req: Request) {
     const completionDoc = await completionRef.get();
 
     if (!completionDoc.exists) {
+      console.error(`[HeyGen][generate-video] No se encontró el script en completion_results_videos para videoId: ${videoId}`);
       return NextResponse.json(
         { error: 'No se encontró el script del video' },
         { status: 404 }
@@ -40,6 +42,7 @@ export async function POST(req: Request) {
     const script = completionData?.script;
 
     if (!script) {
+      console.error(`[HeyGen][generate-video] El script del video está vacío para videoId: ${videoId}`);
       return NextResponse.json(
         { error: 'El script del video está vacío' },
         { status: 400 }
@@ -52,6 +55,10 @@ export async function POST(req: Request) {
     const videoDoc = await db.collection('videos').doc(videoId).get();
     const videoData = videoDoc.data();
     const dimension = videoData?.dimension;
+
+    if (!dimension) {
+      console.error(`[HeyGen][generate-video] No se encontró la dimensión en Firestore para videoId: ${videoId}`);
+    }
 
     console.log('Dimension from Firestore:', dimension);
 
@@ -75,6 +82,8 @@ export async function POST(req: Request) {
       avatarOffset: defaultOffset,
       avatarScale: defaultScale
     });
+
+    console.log(`[HeyGen][generate-video] Respuesta de HeyGen:`, result);
 
     // Verificar que tenemos un video_id válido
     if (!result.taskId) {

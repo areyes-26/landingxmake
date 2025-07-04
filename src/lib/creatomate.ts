@@ -186,9 +186,15 @@ export class CreatomateAPI {
    * @param videoDuration - Duración del video en segundos (opcional)
    * @returns Array de subtítulos con timing
    */
-  private createSynchronizedSubtitles(script: string, videoDuration?: number): Array<{text: string, startTime: number, duration: number}> {
+  public createSynchronizedSubtitles(script: string, videoDuration?: number): Array<{text: string, startTime: number, duration: number}> {
+    // Validar que el script no sea undefined o null
+    if (!script || typeof script !== 'string') {
+      console.warn('[Subtitles] Script inválido:', script);
+      return [];
+    }
+    
     // Dividir el script en oraciones
-    const sentences = script.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = script.split(/[.!?]+/).filter(s => s && s.trim().length > 0);
     
     const subtitles: Array<{text: string, startTime: number, duration: number}> = [];
     let currentTime = 0;
@@ -282,13 +288,19 @@ export class CreatomateAPI {
    * @returns Array de frases más cortas
    */
   private splitLongSentence(sentence: string): string[] {
+    // Validar que la oración no sea undefined o null
+    if (!sentence || typeof sentence !== 'string') {
+      console.warn('[splitLongSentence] Oración inválida:', sentence);
+      return [];
+    }
+    
     // Dividir por comas, puntos y comas, y conectores
     const phrases = sentence.split(/[,;]|\s+(y|o|pero|sin embargo|además|también|por eso|por lo tanto|que|cuando|donde|como|porque|ya que|puesto que)\s+/i);
     
     // Filtrar frases vacías y limpiar
     const cleanedPhrases = phrases
-      .map(phrase => phrase.trim())
-      .filter(phrase => phrase.length > 0 && phrase.length < 80); // Reducido a 80 caracteres
+      .map(phrase => phrase && phrase.trim())
+      .filter(phrase => phrase && phrase.length > 0 && phrase.length < 80); // Reducido a 80 caracteres
     
     // Si las frases siguen siendo muy largas, dividir por espacios
     const finalPhrases: string[] = [];

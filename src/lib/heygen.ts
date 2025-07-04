@@ -644,7 +644,16 @@ export class HeyGenAPI {
       console.log('Generating video with params:', params);
       // Determinar dimension
       let dimension = params.dimension || { width: 720, height: 1280 };
-      
+
+      // Validar dimensiones soportadas por HeyGen
+      const isValidDimension =
+        (dimension.width === 720 && dimension.height === 1280) ||
+        (dimension.width === 1080 && dimension.height === 1920) ||
+        (dimension.width === 1920 && dimension.height === 1080);
+      if (!isValidDimension) {
+        throw new Error('Dimensiones no soportadas por HeyGen. Usa 720x1280, 1080x1920 (vertical) o 1920x1080 (horizontal).');
+      }
+
       // NOTA: HeyGen a veces ignora las dimensiones especificadas y genera videos horizontales
       // incluso cuando se solicitan dimensiones verticales. Esto es un problema conocido de HeyGen.
       console.log('⚠️ HeyGen dimension warning: Requested dimensions may be ignored by HeyGen API');

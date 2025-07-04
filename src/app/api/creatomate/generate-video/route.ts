@@ -6,10 +6,15 @@ import { getTemplateByPlan, PlanType } from '@/lib/creatomate/templates/getTempl
 import { personalizeTemplate } from '@/lib/creatomate/templates/personalizeTemplate';
 import { CreatomateAPI } from '@/lib/creatomate';
 
+// Template default del Studio de Creatomate (hardcodeado)
+const DEFAULT_TEMPLATE_ID = '273cdd5f-f40a-4c72-9a08-55245e49bfbc';
+
 export async function POST(req: Request) {
+  let videoId: string | undefined;
+  
   try {
     const body = await req.json();
-    const { videoId } = body;
+    videoId = body.videoId;
     console.log(`[Creatomate][generate-video] POST body:`, body);
 
     if (!videoId) {
@@ -45,7 +50,7 @@ export async function POST(req: Request) {
     
     // Verificar que el video de HeyGen esté completado
     if (!videoData.heygenResults?.videoUrl || videoData.heygenResults?.status !== 'completed') {
-      console.warn(`[Creatomate][generate-video] El video de HeyGen no está listo para editar. videoId: ${videoId}, heygenResults:`, videoData.heygenResults);
+      console.error(`[Creatomate][generate-video] El video de HeyGen no está listo para editar. videoId: ${videoId}, heygenResults:`, videoData.heygenResults);
       return NextResponse.json(
         { error: 'El video de HeyGen no está listo para editar' },
         { status: 400 }
@@ -60,7 +65,7 @@ export async function POST(req: Request) {
     console.log(`[Creatomate][generate-video] Script para videoId ${videoId}:`, script ? script.substring(0, 100) : '[VACÍO]');
 
     if (!script) {
-      console.warn(`[Creatomate][generate-video] Script no encontrado para videoId: ${videoId}`);
+      console.error(`[Creatomate][generate-video] Script no encontrado para videoId: ${videoId}`);
       return NextResponse.json(
         { error: 'No se encontró el script del video' },
         { status: 400 }
@@ -76,39 +81,76 @@ export async function POST(req: Request) {
     if (!Array.isArray(subtitles) || subtitles.length === 0) {
       const api = new CreatomateAPI();
       const videoDuration = videoData.heygenResults?.duration ? parseFloat(videoData.heygenResults.duration) : undefined;
-      const generated = api['createSynchronizedSubtitles'](script, videoDuration);
+      const generated = api.createSynchronizedSubtitles(script, videoDuration);
       // Mapear a formato {text, start, end}
       subtitles = generated.map((s: any) => ({ text: s.text, start: s.startTime, end: s.startTime + s.duration }));
       console.log(`[Creatomate][generate-video] Subtítulos generados dinámicamente para videoId ${videoId}:`, subtitles.slice(0, 3));
     } else {
       // Si ya existen, asegurarse de que tengan el formato correcto
-      subtitles = subtitles.map((s: any) => ({ text: s.text, start: s.start ?? s.startTime ?? 0, end: s.end ?? (s.startTime !== undefined && s.duration !== undefined ? s.startTime + s.duration : 0) }));
+      subtitles = subtitles.map((s: any) => ({ 
+        text: s.text || '', 
+        start: s.start ?? s.startTime ?? 0, 
+        end: s.end ?? (s.startTime !== undefined && s.duration !== undefined ? s.startTime + s.duration : 0) 
+      }));
     }
-
-    // Armar el objeto videoData para los placeholders
-    const personalizedVideoData = {
-      avatarUrl: videoData.heygenResults?.videoUrl,
-      backgroundUrl: videoData.backgroundUrl || '',
-      logoUrl: videoData.logoUrl || '',
-      accentColor: videoData.accentColor || '#e74c3c',
-      subtitles,
-    };
-
-    // Seleccionar y personalizar la plantilla
-    const baseTemplate = getTemplateByPlan(plan);
-    const personalizedTemplate = personalizeTemplate(baseTemplate, personalizedVideoData);
-    console.log(`[Creatomate][generate-video] Plantilla personalizada para videoId ${videoId}:`, personalizedTemplate);
 
     const creatomate = getCreatomateClient();
     const webhookUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/creatomate/webhook`;
 
-    // Enviar la plantilla personalizada como 'source' a Creatomate
-    const result = await creatomate.createRender({
-      webhookUrl,
-      metadata: videoId,
-      outputFormat: 'mp4',
-      source: personalizedTemplate,
-    });
+    let result;
+
+    // Lógica híbrida: usar template hardcodeada para plan 'pro', template del dashboard para otros
+    if (plan === 'pro') {
+      console.log(`[Creatomate][generate-video] Usando template hardcodeada para plan ${plan}`);
+      
+      // Armar el objeto videoData para los placeholders
+      const personalizedVideoData = {
+        avatarUrl: videoData.heygenResults?.videoUrl,
+        backgroundUrl: videoData.backgroundUrl || '',
+        logoUrl: videoData.logoUrl || '',
+        accentColor: videoData.accentColor || '#e74c3c',
+        subtitles,
+      };
+
+      // Seleccionar y personalizar la plantilla
+      const baseTemplate = getTemplateByPlan(plan);
+      const personalizedTemplate = personalizeTemplate(baseTemplate, personalizedVideoData);
+      console.log(`[Creatomate][generate-video] Plantilla personalizada para videoId ${videoId}:`, personalizedTemplate);
+
+      // Enviar la plantilla personalizada como 'source' a Creatomate
+      result = await creatomate.createRender({
+        webhookUrl,
+        metadata: videoId,
+        outputFormat: 'mp4',
+        source: personalizedTemplate,
+      });
+    } else {
+      console.log(`[Creatomate][generate-video] Usando template del dashboard (${DEFAULT_TEMPLATE_ID}) para plan ${plan}`);
+      
+      // Preparar las modificaciones para el template del dashboard
+      const modifications = {
+        // Asegúrate de que estos nombres coincidan con los placeholders de tu template del dashboard
+        avatarUrl: videoData.heygenResults?.videoUrl,
+        backgroundUrl: videoData.backgroundUrl || '',
+        logoUrl: videoData.logoUrl || '',
+        accentColor: videoData.accentColor || '#e74c3c',
+        subtitles: subtitles
+      };
+      
+      console.log(`[Creatomate][generate-video] Modificaciones para template del dashboard:`, modifications);
+      
+      // Usar template del dashboard con modificaciones
+      // Nota: Los nombres de las modificaciones deben coincidir con los placeholders del template del dashboard
+      result = await creatomate.createRender({
+        templateId: DEFAULT_TEMPLATE_ID,
+        modifications,
+        webhookUrl,
+        metadata: videoId,
+        outputFormat: 'mp4',
+      });
+    }
+
+    console.log(`[Creatomate][generate-video] Respuesta de Creatomate:`, result);
 
     // Actualizar el estado en Firestore
     const updateData = {
@@ -121,7 +163,6 @@ export async function POST(req: Request) {
       updatedAt: Timestamp.now(),
     };
 
-    console.log(`[Creatomate][generate-video] Creatomate result para videoId ${videoId}:`, result);
     console.log(`[Creatomate][generate-video] Actualizando Firestore para videoId ${videoId} con:`, updateData);
 
     await videoRef.update(updateData);
@@ -132,7 +173,7 @@ export async function POST(req: Request) {
       creatomateRenderId: result.id,
     });
   } catch (error) {
-    console.error(`[Creatomate][generate-video] Error en videoId:`, error);
+    console.error(`[Creatomate][generate-video] Error${videoId ? ` en videoId ${videoId}` : ''}:`, error);
     return NextResponse.json(
       {
         error: 'Error al enviar el video a Creatomate',
