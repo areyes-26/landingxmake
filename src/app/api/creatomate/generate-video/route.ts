@@ -118,12 +118,14 @@ export async function POST(req: Request) {
       console.log(`[Creatomate][generate-video] Plantilla personalizada para videoId ${videoId}:`, personalizedTemplate);
 
       // Enviar la plantilla personalizada como 'source' a Creatomate
+      console.log(`[Creatomate][generate-video] Llamando a creatomate.createRender con source personalizado`);
       result = await creatomate.createRender({
         webhookUrl,
         metadata: videoId,
         outputFormat: 'mp4',
         source: personalizedTemplate,
       });
+      console.log(`[Creatomate][generate-video] createRender con source completado exitosamente`);
     } else {
       console.log(`[Creatomate][generate-video] Usando template del dashboard (${DEFAULT_TEMPLATE_ID}) para plan ${plan}`);
       
@@ -141,6 +143,7 @@ export async function POST(req: Request) {
       
       // Usar template del dashboard con modificaciones
       // Nota: Los nombres de las modificaciones deben coincidir con los placeholders del template del dashboard
+      console.log(`[Creatomate][generate-video] Llamando a creatomate.createRender con templateId: ${DEFAULT_TEMPLATE_ID}`);
       result = await creatomate.createRender({
         templateId: DEFAULT_TEMPLATE_ID,
         modifications,
@@ -148,6 +151,7 @@ export async function POST(req: Request) {
         metadata: videoId,
         outputFormat: 'mp4',
       });
+      console.log(`[Creatomate][generate-video] createRender completado exitosamente`);
     }
 
     console.log(`[Creatomate][generate-video] Respuesta de Creatomate:`, result);
@@ -174,12 +178,28 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error(`[Creatomate][generate-video] Error${videoId ? ` en videoId ${videoId}` : ''}:`, error);
+    console.error(`[Creatomate][generate-video] Stack trace:`, error instanceof Error ? error.stack : 'No stack trace available');
+    
+    // Determinar si es un error temporal de Creatomate
+    const isCreatomateError = error instanceof Error && (
+      error.message.includes('502') || 
+      error.message.includes('503') || 
+      error.message.includes('504') ||
+      error.message.includes('Bad Gateway')
+    );
+    
+    const statusCode = isCreatomateError ? 503 : 500;
+    const errorMessage = isCreatomateError 
+      ? 'Creatomate está temporalmente no disponible. Inténtalo de nuevo en unos minutos.'
+      : 'Error al enviar el video a Creatomate';
+    
     return NextResponse.json(
       {
-        error: 'Error al enviar el video a Creatomate',
+        error: errorMessage,
         details: error instanceof Error ? error.message : String(error),
+        retryable: isCreatomateError,
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 } 

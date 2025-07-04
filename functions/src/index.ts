@@ -232,21 +232,53 @@ export const pollHeygenVideoTask = functions.https.onRequest(async (req, res) =>
         res.status(500).json({ error: 'Error actualizando Firestore' });
         return;
       }
-      // 2. Luego llamar a Creatomate
-      try {
-        console.log(`[pollHeygenVideoTask] Enviando ${videoId} a Creatomate...`);
-        const creatomateResponse = await axios.post(`${baseUrl}/api/creatomate/generate-video`, {
-          videoId
-        }, {
-          headers: { 'Content-Type': 'application/json' },
-        });
-        if (creatomateResponse.status === 200) {
-          console.log(`[pollHeygenVideoTask] ${videoId} enviado a Creatomate exitosamente`);
-        } else {
-          console.error(`[pollHeygenVideoTask] Falló al enviar ${videoId} a Creatomate. Status:`, creatomateResponse.status, 'Data:', creatomateResponse.data);
+      // 2. Luego llamar a Creatomate con retry logic
+      const maxRetries = 3;
+      const retryDelay = 5000; // 5 segundos
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`[pollHeygenVideoTask] Enviando ${videoId} a Creatomate (intento ${attempt}/${maxRetries})...`);
+          const creatomateResponse = await axios.post(`${baseUrl}/api/creatomate/generate-video`, {
+            videoId
+          }, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 30000, // 30 segundos timeout
+          });
+          
+          if (creatomateResponse.status === 200) {
+            console.log(`[pollHeygenVideoTask] ${videoId} enviado a Creatomate exitosamente`);
+            break; // Éxito, salir del loop
+          } else {
+            console.error(`[pollHeygenVideoTask] Falló al enviar ${videoId} a Creatomate. Status:`, creatomateResponse.status, 'Data:', creatomateResponse.data);
+            if (attempt === maxRetries) {
+              console.error(`[pollHeygenVideoTask] Máximo número de intentos alcanzado para ${videoId}`);
+            }
+          }
+        } catch (creatomateError: any) {
+          console.error(`[pollHeygenVideoTask] Error enviando ${videoId} a Creatomate (intento ${attempt}/${maxRetries}):`, creatomateError.message);
+          
+          // Si es el último intento, no reintentar
+          if (attempt === maxRetries) {
+            console.error(`[pollHeygenVideoTask] Máximo número de intentos alcanzado para ${videoId}`);
+            break;
+          }
+          
+          // Si es un error 502/503/504 (servidor no disponible), reintentar
+          const isRetryableError = creatomateError.response?.status >= 500 || 
+                                  creatomateError.message.includes('502') ||
+                                  creatomateError.message.includes('503') ||
+                                  creatomateError.message.includes('504') ||
+                                  creatomateError.message.includes('Bad Gateway');
+          
+          if (isRetryableError) {
+            console.log(`[pollHeygenVideoTask] Error temporal detectado, reintentando en ${retryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+          } else {
+            console.error(`[pollHeygenVideoTask] Error no recuperable, no reintentando`);
+            break;
+          }
         }
-      } catch (creatomateError) {
-        console.error(`[pollHeygenVideoTask] Error enviando ${videoId} a Creatomate:`, creatomateError);
       }
       res.status(200).json({ success: true });
       return;

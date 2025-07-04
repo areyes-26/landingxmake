@@ -37,87 +37,126 @@ export class CreatomateAPI {
   constructor() {
     this.apiKey = process.env.CREATOMATE_API_KEY || '';
     this.baseUrl = CREATOMATE_API_URL;
+    
+    if (!this.apiKey) {
+      console.error('[Creatomate][API] ERROR: CREATOMATE_API_KEY no está configurada');
+    }
+    
+    console.log('[Creatomate][API] Inicializado con baseUrl:', this.baseUrl);
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
+    console.log(`[Creatomate][API] request - URL: ${url}`);
+    console.log(`[Creatomate][API] request - Method: ${options.method || 'GET'}`);
+    console.log(`[Creatomate][API] request - API Key length: ${this.apiKey.length}`);
     
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Creatomate API error: ${response.status} - ${errorText}`);
+      console.log(`[Creatomate][API] request - Response status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[Creatomate][API] request - Error response: ${errorText}`);
+        throw new Error(`Creatomate API error: ${response.status} - ${errorText}`);
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`[Creatomate][API] request - Fetch error:`, error);
+      throw error;
     }
-
-    return response;
   }
 
   async createRender(params: CreatomateRenderParams): Promise<CreatomateRenderResponse> {
-    try {
-      console.log('[Creatomate][API] createRender - Parámetros de entrada:', params);
-      
-      const requestBody: any = {};
-      if (params.source) {
-        requestBody.source = params.source;
-      }
-      if (params.templateId) {
-        requestBody.template_id = params.templateId;
-      }
-      if (params.modifications) {
-        requestBody.modifications = params.modifications;
-      }
-      if (params.webhookUrl) {
-        requestBody.webhook_url = params.webhookUrl;
-      }
-      if (params.metadata) {
-        requestBody.metadata = params.metadata;
-      }
-      if (params.outputFormat) {
-        requestBody.output_format = params.outputFormat;
-      }
-      if (params.frameRate) {
-        requestBody.frame_rate = params.frameRate;
-      }
-      if (params.renderScale) {
-        requestBody.render_scale = params.renderScale;
-      }
-      if (params.maxWidth) {
-        requestBody.max_width = params.maxWidth;
-      }
-      if (params.maxHeight) {
-        requestBody.max_height = params.maxHeight;
-      }
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 segundos
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[Creatomate][API] createRender - Intento ${attempt}/${maxRetries}`);
+        console.log('[Creatomate][API] createRender - Parámetros de entrada:', params);
+        
+        const requestBody: any = {};
+        if (params.source) {
+          requestBody.source = params.source;
+        }
+        if (params.templateId) {
+          requestBody.template_id = params.templateId;
+        }
+        if (params.modifications) {
+          requestBody.modifications = params.modifications;
+        }
+        if (params.webhookUrl) {
+          requestBody.webhook_url = params.webhookUrl;
+        }
+        if (params.metadata) {
+          requestBody.metadata = params.metadata;
+        }
+        if (params.outputFormat) {
+          requestBody.output_format = params.outputFormat;
+        }
+        if (params.frameRate) {
+          requestBody.frame_rate = params.frameRate;
+        }
+        if (params.renderScale) {
+          requestBody.render_scale = params.renderScale;
+        }
+        if (params.maxWidth) {
+          requestBody.max_width = params.maxWidth;
+        }
+        if (params.maxHeight) {
+          requestBody.max_height = params.maxHeight;
+        }
 
-      console.log('[Creatomate][API] createRender - requestBody:', requestBody);
+        console.log('[Creatomate][API] createRender - requestBody:', requestBody);
 
-      const response = await this.request('/renders', {
-        method: 'POST',
-        body: JSON.stringify(requestBody),
-      });
+        const response = await this.request('/renders', {
+          method: 'POST',
+          body: JSON.stringify(requestBody),
+        });
 
-      const data = await response.json();
-      console.log('[Creatomate][API] createRender - Respuesta completa:', data);
+        const data = await response.json();
+        console.log('[Creatomate][API] createRender - Respuesta completa:', data);
 
-      // La respuesta puede ser un array o un objeto individual
-      const renderData = Array.isArray(data) ? data[0] : data;
+        // La respuesta puede ser un array o un objeto individual
+        const renderData = Array.isArray(data) ? data[0] : data;
 
-      return {
-        id: renderData.id,
-        status: renderData.status || 'idle',
-        url: renderData.url,
-        error: renderData.error,
-      };
-    } catch (error) {
-      console.error('[Creatomate][API] createRender - Error:', error);
-      throw error;
+        return {
+          id: renderData.id,
+          status: renderData.status || 'idle',
+          url: renderData.url,
+          error: renderData.error,
+        };
+      } catch (error) {
+        console.error(`[Creatomate][API] createRender - Error en intento ${attempt}/${maxRetries}:`, error);
+        
+        // Si es el último intento, lanzar el error
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        // Si es un error 502 (Bad Gateway), reintentar
+        if (error instanceof Error && error.message.includes('502')) {
+          console.log(`[Creatomate][API] createRender - Error 502 detectado, reintentando en ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          continue;
+        }
+        
+        // Para otros errores, no reintentar
+        throw error;
+      }
     }
+    
+    throw new Error('Máximo número de reintentos alcanzado');
   }
 
   async checkRenderStatus(renderId: string): Promise<CreatomateRenderStatusResponse> {
