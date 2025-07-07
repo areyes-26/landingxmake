@@ -529,13 +529,20 @@ const Connections = () => {
 };
 
 function formatDate(date: Date | string | number) {
-  const d = new Date(date);
-  return d.toLocaleString();
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  const day = d.getDate();
+  const month = d.getMonth() + 1;
+  const year = d.getFullYear() % 100; // dos dígitos
+  const hours = d.getHours().toString().padStart(2, '0');
+  const minutes = d.getMinutes().toString().padStart(2, '0');
+  return `${day}/${month}/${year}, ${hours}:${minutes}`;
 }
 
 function HistorySection({ user }: { user: any }) {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -557,30 +564,58 @@ function HistorySection({ user }: { user: any }) {
         currency: doc.data().currency,
         createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
       }));
-      console.log('Topups:', topups);
       // Fetch video spends
       const videoQuery = query(
         collection(db, 'videos'),
         where('userId', '==', user.uid),
-        orderBy('fechaCreacion', 'desc')
+        orderBy('createdAt', 'desc')
       );
       const videoSnap = await getDocs(videoQuery);
       const spends = videoSnap.docs.map(doc => ({
         id: doc.id,
-        type: 'spend',
+        type: 'video',
         credits: doc.data().creditsUsed,
         title: doc.data().videoTitle || 'Video',
-        createdAt: doc.data().fechaCreacion?.toDate ? doc.data().fechaCreacion.toDate() : new Date(),
+        createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
       }));
-      console.log('Spends:', spends);
       // Merge and sort
-      const merged = [...topups, ...spends].sort((a, b) => b.createdAt - a.createdAt);
-      console.log('Merged history:', merged);
+      let merged = [...topups, ...spends].sort((a, b) => b.createdAt - a.createdAt);
+      // FILTRAR: solo mostrar registros válidos (credits debe ser número y no NaN)
+      merged = merged.filter(item => typeof item.credits === 'number' && !isNaN(item.credits));
       setHistory(merged);
       setLoading(false);
     };
     fetchHistory();
   }, [user]);
+
+  // Función para ordenar
+  const sortedHistory = (() => {
+    if (!sortConfig) return history;
+    const sorted = [...history];
+    sorted.sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+      if (sortConfig.key === 'createdAt') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      }
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  })();
+
+  // Handler para cambiar el orden
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev && prev.key === key) {
+        // Cambia la dirección
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
 
   return (
     <section className="content-section active" id="history">
@@ -588,26 +623,55 @@ function HistorySection({ user }: { user: any }) {
       <p className="section-description">Track your credit top-ups and video spending.</p>
       {loading ? (
         <div>Loading history...</div>
-      ) : history.length === 0 ? (
+      ) : sortedHistory.length === 0 ? (
         <div>No history found.</div>
       ) : (
         <div className="history-list">
-          {history.map(item => (
-            <div className="history-row" key={item.id}>
-              <div className="history-date">{formatDate(item.createdAt)}</div>
-              <div className="history-type">{item.type === 'topup' ? 'Top-up' : 'Spend'}</div>
-              <div className={`history-credits ${item.type === 'topup' ? 'plus' : 'minus'}`}>{item.type === 'topup' ? '+' : '-'}{item.credits}</div>
-              <div className="history-details">
-                {item.type === 'topup'
-                  ? `${item.amount ? `$${(item.amount / 100).toFixed(2)} ${item.currency?.toUpperCase() || ''}` : ''}`
-                  : item.title}
-              </div>
+          <div className="history-row history-header">
+            <div className="history-date" style={{ cursor: 'pointer' }} onClick={() => handleSort('createdAt')}>
+              <b>Date</b> {sortConfig?.key === 'createdAt' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
             </div>
-          ))}
+            <div className="history-type"><b>Type</b></div>
+            <div className="history-credits" style={{ cursor: 'pointer' }} onClick={() => handleSort('credits')}>
+              <b>Amount</b> {sortConfig?.key === 'credits' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+            </div>
+            <div className="history-details" style={{ textAlign: 'center' }}><b>Details</b></div>
+          </div>
+          {sortedHistory.map(item => {
+            // Determinar color y signo
+            let color = undefined;
+            let sign = '';
+            if (item.type === 'topup') {
+              color = '#4ade80'; // verde
+              sign = '+';
+            } else if (item.type === 'video') {
+              color = '#ef4444'; // rojo
+              sign = '-';
+            }
+            return (
+              <div className="history-row" key={item.id}>
+                <div className="history-date">{formatDate(item.createdAt)}</div>
+                <div className="history-type">{item.type === 'topup' ? 'Top-up' : 'Spend'}</div>
+                <div className="history-credits" style={{ color }}>{sign}{Math.abs(item.credits)}</div>
+                <div className="history-details" style={{ textAlign: 'center', paddingLeft: 12 }}>{item.type === 'topup'
+                  ? `${item.amount ? `$${(item.amount / 100).toFixed(2)} ${item.currency?.toUpperCase() || ''}` : ''}`
+                  : (typeof item.credits === 'number' ? getVideoCostExplanation(item.credits) : '')}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>
   );
+}
+
+function getVideoCostExplanation(credits: number) {
+  if (credits === 1) return 'Video de 30s (1 crédito)';
+  if (credits === 2) return 'Video de 1 min (2 créditos)';
+  if (credits === 4) return 'Video de 1:30 min (4 créditos)';
+  if (typeof credits === 'number') return `Video (${credits} créditos)`;
+  return '';
 }
 
 function AccountSettingPageContent() {

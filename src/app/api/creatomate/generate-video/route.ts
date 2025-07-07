@@ -110,60 +110,62 @@ export async function POST(req: Request) {
 
     let result;
 
-    // Lógica híbrida: usar template hardcodeada para plan 'pro', template del dashboard para otros
-    if (plan === 'pro') {
-      console.log(`[Creatomate][generate-video] Usando template hardcodeada para plan ${plan}`);
-      
-      // Armar el objeto videoData para los placeholders
-      const personalizedVideoData = {
-        avatarUrl: videoData.heygenResults?.videoUrl,
-        backgroundUrl: videoData.backgroundUrl || '',
-        logoUrl: videoData.logoUrl || '',
-        accentColor: videoData.accentColor || '#e74c3c',
-        subtitles,
-      };
+    // === PRUEBA ACTUAL: Template personalizado ===
+    // Usar template personalizado para todos los planes (más robusto)
+    console.log(`[Creatomate][generate-video] Usando template personalizada para plan ${plan}`);
+    
+    // Armar el objeto videoData para los placeholders
+    const personalizedVideoData = {
+      avatarUrl: videoData.heygenResults?.videoUrl,
+      backgroundUrl: videoData.backgroundUrl || '',
+      logoUrl: videoData.logoUrl || '',
+      accentColor: videoData.accentColor || '#e74c3c',
+      subtitles,
+    };
 
-      // Seleccionar y personalizar la plantilla
-      const baseTemplate = getTemplateByPlan(plan);
-      const personalizedTemplate = personalizeTemplate(baseTemplate, personalizedVideoData);
-      console.log(`[Creatomate][generate-video] Plantilla personalizada para videoId ${videoId}:`, personalizedTemplate);
+    // Seleccionar y personalizar la plantilla
+    const baseTemplate = getTemplateByPlan(plan);
+    const personalizedTemplate = personalizeTemplate(baseTemplate, personalizedVideoData);
+    console.log(`[Creatomate][generate-video] Plantilla personalizada para videoId ${videoId}:`, personalizedTemplate);
 
-      // Enviar la plantilla personalizada como 'source' a Creatomate
-      console.log(`[Creatomate][generate-video] Llamando a creatomate.createRender con source personalizado`);
-      result = await creatomate.createRender({
-        webhookUrl,
-        metadata: videoId,
-        outputFormat: 'mp4',
-        source: personalizedTemplate,
-      });
-      console.log(`[Creatomate][generate-video] createRender con source completado exitosamente`);
-    } else {
-      console.log(`[Creatomate][generate-video] Usando template del dashboard (${DEFAULT_TEMPLATE_ID}) para plan ${plan}`);
-      
-      // Preparar las modificaciones para el template del dashboard
-      const modifications = {
-        // Asegúrate de que estos nombres coincidan con los placeholders de tu template del dashboard
-        avatarUrl: videoData.heygenResults?.videoUrl,
-        backgroundUrl: videoData.backgroundUrl || '',
-        logoUrl: videoData.logoUrl || '',
-        accentColor: videoData.accentColor || '#e74c3c',
-        subtitles: subtitles.map((s: any) => s.text).join('|')
-      };
-      
-      console.log(`[Creatomate][generate-video] Modificaciones para template del dashboard:`, modifications);
-      
-      // Usar template del dashboard con modificaciones
-      // Nota: Los nombres de las modificaciones deben coincidir con los placeholders del template del dashboard
-      console.log(`[Creatomate][generate-video] Llamando a creatomate.createRender con templateId: ${DEFAULT_TEMPLATE_ID}`);
-      result = await creatomate.createRender({
-        templateId: DEFAULT_TEMPLATE_ID,
-        modifications,
-        webhookUrl,
-        metadata: videoId,
-        outputFormat: 'mp4',
-      });
-      console.log(`[Creatomate][generate-video] createRender completado exitosamente`);
-    }
+    // Enviar la plantilla personalizada como 'source' a Creatomate
+    console.log(`[Creatomate][generate-video] Llamando a creatomate.createRender con source personalizado`);
+    result = await creatomate.createRender({
+      webhookUrl,
+      metadata: videoId,
+      outputFormat: 'mp4',
+      source: personalizedTemplate,
+    });
+    console.log(`[Creatomate][generate-video] createRender con source completado exitosamente`);
+
+    // === FALLBACK: Si la prueba falla, descomenta este código ===
+    /*
+    // Usar template ID hardcodeado (método que funcionaba antes)
+    console.log(`[Creatomate][generate-video] Usando template ID hardcodeado: ${DEFAULT_TEMPLATE_ID}`);
+    
+    // Preparar las modificaciones para el template del dashboard
+    const modifications = {
+      "heygen-video.source": videoData.heygenResults?.videoUrl,
+      backgroundUrl: videoData.backgroundUrl || '',
+      logoUrl: videoData.logoUrl || '',
+      accentColor: videoData.accentColor || '#e74c3c',
+      subtitles: subtitles.map((s: any) => s.text).join('|'),
+      duration: videoData.heygenResults?.duration ? parseFloat(videoData.heygenResults.duration) : 10
+    };
+    
+    console.log(`[Creatomate][generate-video] Modificaciones para template del dashboard:`, modifications);
+    
+    // Usar template del dashboard con modificaciones
+    console.log(`[Creatomate][generate-video] Llamando a creatomate.createRender con templateId: ${DEFAULT_TEMPLATE_ID}`);
+    result = await creatomate.createRender({
+      templateId: DEFAULT_TEMPLATE_ID,
+      modifications,
+      webhookUrl,
+      metadata: videoId,
+      outputFormat: 'mp4',
+    });
+    console.log(`[Creatomate][generate-video] createRender completado exitosamente`);
+    */
 
     console.log(`[Creatomate][generate-video] Respuesta de Creatomate:`, result);
 

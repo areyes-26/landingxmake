@@ -64,7 +64,6 @@ export async function POST(req: NextRequest) {
       lookId,
       callToAction,
       tone,
-      email,
       specificCallToAction,
       duration,
       voiceId,
@@ -148,7 +147,6 @@ export async function POST(req: NextRequest) {
         callToAction,
         specificCallToAction,
         tone,
-        email,
         duration,
         voiceId,
         status: 'pending',
@@ -207,51 +205,6 @@ export async function POST(req: NextRequest) {
         },
         { status: 500 }
       );
-    }
-
-    // 6) Enviar a Google Sheets (opcional)
-    try {
-      const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbydTxZSMPhxChk5DHF-_YWT7sBHSXsIqovLy-8JVPuA9c2EJIYdif80S0JvICiBCPfO/exec';
-      console.log("🔗 Enviando a Google Sheets...");
-
-      const payload = {
-        requestDate: new Date().toISOString(),
-        videoTitle,
-        description,
-        topic,
-        avatarId,
-        id: firestoreDocId,
-        userEmail: email || '',
-        tone: tone || '',
-        videoCategory: '',
-        nombreEmpresa: '',
-        callToAction: callToAction || '',
-        specificCallToAction: specificCallToAction || '',
-        duration: duration || '',
-      };
-
-      const sheetsResponse = await fetch(googleScriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!sheetsResponse.ok) {
-        throw new Error(`Error en Google Sheets: ${sheetsResponse.status}`);
-      }
-
-      const sheetsText = await sheetsResponse.text();
-      console.log("📥 Respuesta de Google Sheets:", sheetsText);
-
-      try {
-        const sheetsJson = JSON.parse(sheetsText);
-        console.log("✅ Datos enviados a Google Sheets:", sheetsJson);
-      } catch (parseError) {
-        console.warn("⚠️ No se pudo parsear la respuesta de Google Sheets:", parseError);
-      }
-    } catch (sheetsError) {
-      console.error("⚠️ Error al enviar a Google Sheets:", sheetsError);
-      // No retornamos error aquí porque el documento ya se creó en Firestore
     }
 
     // 7) Retornar éxito - la Cloud Function se encargará de generar el script

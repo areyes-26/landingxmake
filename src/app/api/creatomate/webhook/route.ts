@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
     console.log('[Creatomate][webhook] Webhook recibido:', body);
 
     // Verificar que el webhook sea de Creatomate
-    const { render_id, status, url, error, metadata } = body;
+    const render_id = body.render_id || body.id;
+    const { status, url, error, metadata, modifications, output_format, render_scale, width, height, frame_rate, duration, file_size } = body;
 
     if (!render_id) {
       console.warn('[Creatomate][webhook] Faltante render_id en webhook:', body);
@@ -70,7 +71,18 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    if (status === 'completed' && url) {
+    // Guardar información adicional del render si está disponible
+    if (output_format) updateData.creatomateResults.outputFormat = output_format;
+    if (render_scale) updateData.creatomateResults.renderScale = render_scale;
+    if (width) updateData.creatomateResults.width = width;
+    if (height) updateData.creatomateResults.height = height;
+    if (frame_rate) updateData.creatomateResults.frameRate = frame_rate;
+    if (duration) updateData.creatomateResults.duration = duration;
+    if (file_size) updateData.creatomateResults.fileSize = file_size;
+    if (modifications) updateData.creatomateResults.modifications = modifications;
+
+    // Si el status es 'completed' o 'succeeded', marcar el video como completado
+    if ((status === 'completed' || status === 'succeeded') && url) {
       updateData.status = 'completed';
       updateData.creatomateResults.videoUrl = url;
       updateData.videoUrl = url;
@@ -82,7 +94,8 @@ export async function POST(request: NextRequest) {
           await sendNotificationToUser(currentData.userId, {
             type: 'video_ready',
             message: 'Your video is ready! Click to view it in your dashboard.',
-            videoId
+            videoId,
+            url: `/export-view?id=${videoId}`
           });
           console.log(`[Creatomate][webhook] Notificación de video listo enviada para video ${videoId}`);
         } catch (notifError) {

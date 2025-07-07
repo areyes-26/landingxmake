@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { 
@@ -27,6 +27,41 @@ export default function AuthPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const redirectPath = searchParams.get('redirect') ? decodeURIComponent(searchParams.get('redirect')!) : '/dashboard';
+
+    // --- Animación máquina de escribir para .AI (igual que en la navbar) ---
+    const [aiText, setAiText] = useState('');
+    const [typing, setTyping] = useState(true);
+    const [showStatic, setShowStatic] = useState(false);
+    const aiFull = '.AI';
+    const showCursor = !showStatic && (typing || aiText.length !== aiFull.length);
+
+    useEffect(() => {
+        if (showStatic) {
+            setAiText(aiFull);
+            return;
+        }
+        let timeout: NodeJS.Timeout;
+        if (typing) {
+            if (aiText.length < aiFull.length) {
+                timeout = setTimeout(() => setAiText(aiFull.slice(0, aiText.length + 1)), 1333);
+            } else {
+                timeout = setTimeout(() => setTyping(false), 60000);
+            }
+        } else {
+            if (aiText.length > 0) {
+                timeout = setTimeout(() => setAiText(aiFull.slice(0, aiText.length - 1)), 1000);
+            } else {
+                timeout = setTimeout(() => setTyping(true), 2000);
+            }
+        }
+        return () => clearTimeout(timeout);
+    }, [aiText, typing, showStatic]);
+
+    useEffect(() => {
+        if (searchParams.get('mode') === 'signup') {
+            setIsLogin(false);
+        }
+    }, [searchParams]);
 
     const handleSessionLogin = async (idToken: string) => {
         const res = await fetch('/api/sessionLogin', {
@@ -130,7 +165,7 @@ export default function AuthPage() {
     return (
         <div className="fixed inset-0 min-h-screen w-full bg-[#0c0d1f] flex flex-col items-center justify-center relative">
             <button
-                onClick={() => router.push('/inicio')}
+                onClick={() => router.push('/')}
                 className="absolute top-8 left-8 text-white/70 hover:text-white flex items-center gap-2 transition-colors"
             >
                 <svg 
@@ -154,12 +189,12 @@ export default function AuthPage() {
                 lg:max-w-2xl lg:p-12
             ">
                 <div className="flex justify-center mb-12">
-                    <div className="flex items-center gap-4 text-4xl font-semibold text-[#0ea5e9]">
-                        <div className="w-14 h-14 bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] rounded-lg flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(14,165,233,0.3)]">
-                            🎬
-                        </div>
-                        <span>CreateCast</span>
-                    </div>
+                    <button type="button" onClick={() => setShowStatic(true)} className="flex items-center gap-2 text-4xl font-extrabold tracking-tight select-none focus:outline-none">
+                        <span className="text-2xl sm:text-3xl font-extrabold tracking-tight select-none">
+                            Visiora
+                            <span className="ml-1 font-black drop-shadow-lg text-[#0ea5e9] transition-all duration-300" style={{minWidth: '2.5ch'}}>{aiText}</span>
+                        </span>
+                    </button>
                 </div>
 
                 <div className="flex justify-center mb-12">

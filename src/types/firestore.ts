@@ -62,5 +62,13 @@ export interface VideoGeneration {
     generatedAt?: Timestamp;
     renderId?: string;
     error?: string;
+    outputFormat?: string;
+    renderScale?: number;
+    width?: number;
+    height?: number;
+    frameRate?: string;
+    duration?: number;
+    fileSize?: number;
+    modifications?: any;
   };
 } 

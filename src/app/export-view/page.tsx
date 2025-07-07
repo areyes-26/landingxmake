@@ -14,8 +14,6 @@ import type { VideoData } from '@/types/video';
 import './custom-scrollbar.css';
 import './export-view.css';
 import { useAuth } from '@/hooks/useAuth';
-import { useVideoUrlRefresh } from '@/hooks/useVideoUrlRefresh';
-import { UrlExpirationIndicator } from '@/components/UrlExpirationIndicator';
 
 export default function ExportViewPage() {
   const router = useRouter();
@@ -40,13 +38,6 @@ export default function ExportViewPage() {
   const [igCaption, setIgCaption] = useState('');
   const [igLoading, setIgLoading] = useState(false);
   const [isReEditing, setIsReEditing] = useState(false);
-
-  // Usar el hook para manejar el refresco de URLs
-  const { isRefreshingUrl, refreshVideoUrl } = useVideoUrlRefresh({
-    videoData,
-    videoId: videoId || '',
-    onUrlRefreshed: setVideoData,
-  });
 
   useEffect(() => {
     if (!videoId) {
@@ -367,7 +358,7 @@ export default function ExportViewPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">
-            {isRefreshingUrl ? 'Refreshing video URL...' : 'Loading video...'}
+            Loading video...
           </p>
         </div>
       </div>
@@ -414,12 +405,6 @@ export default function ExportViewPage() {
                   <div className="play-icon"></div>
                       </div>
               )}
-              {isRefreshingUrl && (
-                <div className="video-refresh-overlay">
-                  <div className="refresh-spinner"></div>
-                  <p>Refreshing video URL...</p>
-                </div>
-              )}
                     </div>
             <div className="video-info">
               <h1 className="video-title">{videoData.videoTitle}</h1>
@@ -427,10 +412,6 @@ export default function ExportViewPage() {
                 <span className="video-date">
                   {formatFirebaseDate(videoData.createdAt)}
                 </span>
-                <UrlExpirationIndicator 
-                  videoUrl={videoData.creatomateResults?.videoUrl || videoData.heygenResults?.videoUrl || videoData.videoUrl}
-                  className="mt-2"
-                />
               </div>
             </div>
                     </div>
@@ -486,14 +467,6 @@ export default function ExportViewPage() {
                 </button>
               </div>
               <div className="action-buttons">
-                <button 
-                  className="refresh-btn" 
-                  onClick={refreshVideoUrl} 
-                  disabled={isRefreshingUrl || (!videoData.heygenResults?.videoId && !videoData.creatomateResults?.renderId)}
-                  title="Refresh video URL if expired"
-                >
-                  {isRefreshingUrl ? 'Refreshing...' : 'Refresh URL'}
-                </button>
                 <button 
                   className="download-btn" 
                   onClick={() => setShowDownloadModal(true)} 

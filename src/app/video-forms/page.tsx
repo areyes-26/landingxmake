@@ -111,7 +111,7 @@ export default function VideoFormsPage() {
       await fetch('/api/sessionLogout', { method: 'POST' });
       await signOut(auth);
       toast.success('Logged out successfully');
-      router.push('/inicio');
+              router.push('/');
       router.refresh();
     } catch (error) {
       console.error('Error logging out:', error);

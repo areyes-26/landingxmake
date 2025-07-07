@@ -281,7 +281,7 @@ export default function DashboardPage() {
           </div>
           
           <div className={styles.statusFilters}>
-            {['all', 'completed', 'processing', 'editing', 'error', 'pending'].map((status) => (
+            {['all', 'completed', 'processing', 'editing', 'error'].map((status) => (
               <div
                 key={status}
                 className={`${styles.statusFilter} ${activeFilter === status ? styles.active : ''} ${styles[status]} transition-all duration-200`}

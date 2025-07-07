@@ -34,6 +34,41 @@ export function NewNavigation() {
   const { notifications, unreadCount, loading: notifLoading } = useNotifications();
   const { settings, loading: settingsLoading, updateSetting } = useNotificationSettings();
 
+  // --- Animación máquina de escribir para .AI ---
+  const [aiText, setAiText] = useState('');
+  const [typing, setTyping] = useState(true);
+  const [showStatic, setShowStatic] = useState(false);
+  const aiFull = '.AI';
+
+  // Determinar si el cursor debe estar visible
+  const showCursor = !showStatic && (typing || aiText.length !== aiFull.length);
+
+  useEffect(() => {
+    if (showStatic) {
+      setAiText(aiFull);
+      return;
+    }
+    let timeout: NodeJS.Timeout;
+    if (typing) {
+      if (aiText.length < aiFull.length) {
+        // 4 segundos para escribir los 3 caracteres: 4000ms / 3 ≈ 1333ms por caracter
+        timeout = setTimeout(() => setAiText(aiFull.slice(0, aiText.length + 1)), 1333);
+      } else {
+        // Esperar 1 minuto antes de empezar a borrar
+        timeout = setTimeout(() => setTyping(false), 60000);
+      }
+    } else {
+      if (aiText.length > 0) {
+        // Borrado lento: 1 segundo por caracter
+        timeout = setTimeout(() => setAiText(aiFull.slice(0, aiText.length - 1)), 1000);
+      } else {
+        // Esperar 2 segundos antes de volver a escribir
+        timeout = setTimeout(() => setTyping(true), 2000);
+      }
+    }
+    return () => clearTimeout(timeout);
+  }, [aiText, typing, showStatic]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -54,7 +89,7 @@ export function NewNavigation() {
     try {
       await fetch('/api/sessionLogout', { method: 'POST' });
       await signOut(auth);
-      router.push('/inicio');
+      router.push('/');
       toast.success('Sesión cerrada exitosamente');
     } catch (error) {
       console.error('Error during logout:', error);
@@ -64,10 +99,11 @@ export function NewNavigation() {
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    setShowStatic(true); // Fijar .AI al hacer click
     if (user) {
       router.push('/dashboard');
     } else {
-      router.push('/inicio');
+      router.push('/');
     }
   };
 
@@ -81,26 +117,54 @@ export function NewNavigation() {
   };
 
   // No mostrar la navegación solo en la página de autenticación
-  if (pathname === '/auth') {
+  if (pathname === '/auth' || pathname === '/auth/forgot-password') {
     return null;
   }
 
-  // Navbar para landing page (/inicio) SIEMPRE visible, opciones públicas si no hay usuario
-  const isLanding = pathname === '/inicio';
+  // Navbar para landing page (/) SIEMPRE visible, opciones públicas si no hay usuario
+  const isLanding = pathname === '/';
 
   return (
-    <header className="w-full sticky top-0 z-50 bg-[rgba(12,13,31,0.95)] backdrop-blur-xl border-b border-[rgba(14,165,233,0.2)] px-4 sm:px-12 py-2 sm:py-3">
-      {/* Single row: logo and nav options perfectly aligned */}
-      <div className="flex flex-row justify-between items-center w-full">
+    <header
+      className="w-full flex justify-center sticky top-0 z-50"
+      style={{
+        background: 'none',
+        pointerEvents: 'none',
+      }}
+    >
+      {/* Panel flotante */}
+      <div
+        className="flex flex-row justify-between items-center w-full max-w-6xl"
+        style={{
+          background: 'rgba(12,13,31,0.18)',
+          borderRadius: '2.5rem',
+          boxShadow: '0 8px 32px 0 rgba(14,165,233,0.10), 0 1.5px 8px 0 rgba(0,0,0,0.18)',
+          border: '1.5px solid rgba(14,165,233,0.13)',
+          marginTop: '1.2rem',
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          padding: '0.5rem 2.5rem',
+          minHeight: '60px',
+          pointerEvents: 'auto',
+          maxWidth: '96rem',
+        }}
+      >
+        {/* Single row: logo and nav options perfectly aligned */}
         <div className="flex items-center h-full">
           <button 
             onClick={handleLogoClick}
             className="flex items-center hover:opacity-80 transition-opacity"
             style={{height: '40px'}} // Ensures the icon is vertically centered
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] rounded-lg flex items-center justify-center text-base sm:text-lg shadow-[0_0_20px_rgba(14,165,233,0.3)]">
-              🎬
-            </div>
+            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight select-none">
+              Visiora
+              <span
+                className="ml-1 font-black drop-shadow-lg text-[#0ea5e9] transition-all duration-300"
+                style={{minWidth: '2.5ch'}}
+              >
+                {aiText}
+              </span>
+            </span>
           </button>
         </div>
         <div className="flex flex-row justify-end items-center gap-4 w-full">
@@ -232,7 +296,7 @@ export function NewNavigation() {
                                 {n.message}
                               </div>
                               {n.type === 'video_ready' && n.videoId && (
-                                <Link href={`/videos/${n.videoId}`} className="text-xs text-cyan-400 hover:underline font-medium">View video</Link>
+                                <Link href={n.url || `/videos/${n.videoId}`} className="text-xs text-cyan-400 hover:underline font-medium">View video</Link>
                               )}
                               {n.type === 'youtube_export' && n.url && (
                                 <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 hover:underline font-medium">View on YouTube</a>
@@ -257,7 +321,7 @@ export function NewNavigation() {
               <Link href="#faq" className="text-[rgba(255,255,255,0.7)] hover:text-[#0ea5e9] transition-all duration-300">FAQ</Link>
               <Link href="/auth" className="text-[rgba(255,255,255,0.7)] hover:text-[#0ea5e9] transition-all duration-300">Login</Link>
               <Link
-                href="/auth"
+                href="/auth?mode=signup"
                 className="px-2 py-1 text-xs sm:px-5 sm:py-2 sm:text-base rounded-lg bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white shadow-[0_4px_15px_rgba(14,165,233,0.3)] hover:translate-y-[-2px] hover:shadow-[0_8px_25px_rgba(14,165,233,0.4)] transition-all duration-300"
               >
                 Try For Free

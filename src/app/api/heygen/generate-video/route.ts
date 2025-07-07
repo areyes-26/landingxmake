@@ -62,10 +62,9 @@ export async function POST(req: Request) {
 
     console.log('Dimension from Firestore:', dimension);
 
-    // Configurar offset y scale por defecto para videos verticales
-    // Estos valores posicionan el avatar en la parte inferior del video
-    const defaultOffset = { x: 0, y: 0.23 }; // Posición Y positiva mueve el avatar hacia abajo
-    const defaultScale = 1.14; // Tamaño del avatar
+    // Configurar offset y scale neutros para videos verticales
+    const defaultOffset = { x: 0, y: 0 }; // Centrado
+    const defaultScale = 1; // Sin escalado
     
     console.log('🎯 Configurando avatar con offset:', defaultOffset, 'y scale:', defaultScale);
     
