@@ -147,7 +147,7 @@ export default function DashboardPage() {
     }
     acc.all++;
     return acc;
-  }, { all: 0, completed: 0, processing: 0, error: 0, pending: 0 });
+  }, { all: 0, completed: 0, processing: 0, editing: 0, error: 0, pending: 0 });
   
   const handleDeleteClick = (videoId: string) => {
     setVideoToDelete(videoId);
@@ -281,7 +281,7 @@ export default function DashboardPage() {
           </div>
           
           <div className={styles.statusFilters}>
-            {['all', 'completed', 'processing', 'error', 'pending'].map((status) => (
+            {['all', 'completed', 'processing', 'editing', 'error', 'pending'].map((status) => (
               <div
                 key={status}
                 className={`${styles.statusFilter} ${activeFilter === status ? styles.active : ''} ${styles[status]} transition-all duration-200`}

@@ -82,16 +82,27 @@ export async function POST(req: Request) {
       const api = new CreatomateAPI();
       const videoDuration = videoData.heygenResults?.duration ? parseFloat(videoData.heygenResults.duration) : undefined;
       const generated = api.createSynchronizedSubtitles(script, videoDuration);
-      // Mapear a formato {text, start, end}
-      subtitles = generated.map((s: any) => ({ text: s.text, start: s.startTime, end: s.startTime + s.duration }));
+      // Mapear a formato {text, start, end} y filtrar subtítulos vacíos
+      subtitles = generated
+        .filter((s: any) => s.text && s.text.trim().length > 0)
+        .map((s: any) => ({ text: s.text.trim(), start: s.startTime, end: s.startTime + s.duration }));
       console.log(`[Creatomate][generate-video] Subtítulos generados dinámicamente para videoId ${videoId}:`, subtitles.slice(0, 3));
     } else {
-      // Si ya existen, asegurarse de que tengan el formato correcto
-      subtitles = subtitles.map((s: any) => ({ 
-        text: s.text || '', 
-        start: s.start ?? s.startTime ?? 0, 
-        end: s.end ?? (s.startTime !== undefined && s.duration !== undefined ? s.startTime + s.duration : 0) 
-      }));
+      // Si ya existen, asegurarse de que tengan el formato correcto y filtrar vacíos
+      subtitles = subtitles
+        .filter((s: any) => s.text && s.text.trim().length > 0)
+        .map((s: any) => ({ 
+          text: s.text.trim(), 
+          start: s.start ?? s.startTime ?? 0, 
+          end: s.end ?? (s.startTime !== undefined && s.duration !== undefined ? s.startTime + s.duration : 0) 
+        }));
+    }
+
+    // Verificar que tengamos subtítulos válidos
+    if (subtitles.length === 0) {
+      console.warn(`[Creatomate][generate-video] No se generaron subtítulos válidos para videoId ${videoId}, usando script como fallback`);
+      // Usar el script completo como fallback
+      subtitles = [{ text: script.substring(0, 200), start: 0, end: 10 }];
     }
 
     const creatomate = getCreatomateClient();
@@ -136,7 +147,7 @@ export async function POST(req: Request) {
         backgroundUrl: videoData.backgroundUrl || '',
         logoUrl: videoData.logoUrl || '',
         accentColor: videoData.accentColor || '#e74c3c',
-        subtitles: subtitles
+        subtitles: subtitles.map((s: any) => s.text).join('|')
       };
       
       console.log(`[Creatomate][generate-video] Modificaciones para template del dashboard:`, modifications);
