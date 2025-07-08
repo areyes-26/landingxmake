@@ -28,11 +28,11 @@ export default function AuthPage() {
     const router = useRouter();
     const redirectPath = searchParams.get('redirect') ? decodeURIComponent(searchParams.get('redirect')!) : '/dashboard';
 
-    // --- Animación máquina de escribir para .AI (igual que en la navbar) ---
+    // --- Animación máquina de escribir para .ai (igual que en la navbar) ---
     const [aiText, setAiText] = useState('');
     const [typing, setTyping] = useState(true);
     const [showStatic, setShowStatic] = useState(false);
-    const aiFull = '.AI';
+    const aiFull = '.ai';
     const showCursor = !showStatic && (typing || aiText.length !== aiFull.length);
 
     useEffect(() => {

@@ -304,7 +304,7 @@ export default function DashboardPage() {
               </select>
           </div>
           <div className={styles.actionButtons}>
-            <button className={`${styles.btn} ${styles.btnSecondary}`} disabled>Avatar Test</button>
+            {/* <button className={`${styles.btn} ${styles.btnSecondary}`} disabled>Avatar Test</button> */}
             <Link href="/video-forms" className={`${styles.btn} ${styles.btnPrimary}`}>Create New Video</Link>
           </div>
         </div>

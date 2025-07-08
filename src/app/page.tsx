@@ -10,18 +10,39 @@ function CarouselCard({
   icon,
   label,
   gradient,
+  video
 }: {
-  icon: string;
+  icon?: string;
   label: string;
-  gradient: string;
+  gradient?: string;
+  video?: string;
 }) {
   return (
-    <div className="flex-none w-72 sm:w-80 md:w-[23rem] h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-xl overflow-hidden relative bg-[rgba(255,255,255,0.03)] backdrop-blur-md border border-[rgba(14,165,233,0.15)] flex flex-col z-10">
-      <div className={`flex-1 w-full h-full flex items-center justify-center text-6xl text-white bg-gradient-to-br ${gradient}`}>
-        {icon}
-      </div>
-      <div className="absolute bottom-0 left-0 right-0 bg-[rgba(12,13,31,0.9)] backdrop-blur-md p-3 sm:p-4 md:p-5 text-white font-medium border-t border-[rgba(14,165,233,0.2)] text-sm sm:text-base">
-        {label}
+    <div className="relative rounded-2xl p-[2px] animate-gradient-border bg-[linear-gradient(120deg,#0ea5e9,#7c3aed,#0ea5e9)] shadow-[0_4px_24px_rgba(14,165,233,0.10)]" style={{overflow: 'hidden'}}>
+      <div className="flex-none w-72 sm:w-80 md:w-[23rem] h-[28rem] sm:h-[32rem] md:h-[36rem] rounded-2xl overflow-hidden relative bg-[rgba(255,255,255,0.03)] backdrop-blur-md flex flex-col z-10">
+        <div className="flex-1 w-full h-full flex items-center justify-center text-6xl text-white relative">
+          {video ? (
+            <video
+              src={video}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ zIndex: 1 }}
+            />
+          ) : (
+            <span className={`relative z-10 ${gradient ? `bg-gradient-to-br ${gradient}` : ''} w-full h-full flex items-center justify-center`}>{icon}</span>
+          )}
+          {/* Overlay para el borde y el fondo de gradiente si hay video */}
+          {video && gradient && (
+            <div className={`absolute inset-0 w-full h-full pointer-events-none z-10 bg-gradient-to-br ${gradient} opacity-60`}></div>
+          )}
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 bg-[#18192b] p-3 sm:p-4 md:p-5 text-white font-medium text-sm sm:text-base z-20 flex items-center gap-2">
+          {icon && <span className="text-lg sm:text-xl md:text-2xl">{icon}</span>}
+          {label}
+        </div>
       </div>
     </div>
   );
@@ -60,16 +81,18 @@ export default function InicioPage() {
       {[...Array(3)].map((_, seriesIndex) => (
         <div key={seriesIndex} className="flex gap-4 sm:gap-6 md:gap-8">
           {[
-            { label: 'Business Avatar', icon: '👩‍💼', gradient: 'from-[#0ea5e9] to-[#7c3aed]' },
-            { label: 'Gaming Character', icon: '🎮', gradient: 'from-[#7c3aed] to-[#0ea5e9]' },
-            { label: 'Creative Content', icon: '🎨', gradient: 'from-[#0ea5e9] to-[#06b6d4]' },
-            { label: 'Social Media', icon: '📱', gradient: 'from-[#06b6d4] to-[#7c3aed]' }
+            { label: 'Business Avatar', video: 'https://files2.heygen.ai/avatar/v3/d339b3e2c4b64c21a8c335f976bf1e19/full/2.2/preview_video_target.mp4', icon: '👩‍💼' },
+            { label: 'Gaming Character', video: 'https://files2.heygen.ai/avatar/v3/d52afa328644462aad0267090450b596/full/2.2/preview_video_target.mp4', icon: '🎮' },
+            { label: 'Creative Content', video: 'https://files2.heygen.ai/avatar/v3/4c27b9401f714a22b2df6122219e75e5/full/2.2/preview_video_target.mp4', icon: '🎨' },
+            { label: 'Social Media', video: 'https://files2.heygen.ai/avatar/v3/20a6b04271c44c63855e5e13ef96c708/full/2.2/preview_video_target.mp4', icon: '📱' },
+            { label: 'Education Avatar', video: 'https://files2.heygen.ai/avatar/v3/7d8265c9d5994e26bc5193a0fdebfd3d/full/2.2/preview_video_target.mp4', icon: '🎓' },
+            { label: 'Health & Wellness', video: 'https://files2.heygen.ai/avatar/v3/7cda83478bc14c07965b690934292a55_38730/preview_video_talk_1.mp4', icon: '🧘‍♂️' }
           ].map((item, index) => (
             <CarouselCard
               key={`${seriesIndex}-${index}`}
-              icon={item.icon}
               label={item.label}
-              gradient={item.gradient}
+              video={item.video}
+              icon={item.icon}
             />
           ))}
         </div>
@@ -240,7 +263,7 @@ export default function InicioPage() {
         <h3 className="text-[clamp(1.75rem,4vw,2.75rem)] sm:text-[2.75rem] mb-8 sm:mb-12 md:mb-16 bg-gradient-to-r from-white via-[#0ea5e9] to-[#7c3aed] bg-clip-text text-transparent font-bold">
           Choose Your Plan
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 sm:gap-14 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-10 max-w-6xl mx-auto">
           {[
             {
               title: 'Free Plan',
@@ -301,12 +324,12 @@ export default function InicioPage() {
           ].map((plan, index) => (
             <div
               key={index}
-              className={`bg-[rgba(255,255,255,0.02)] rounded-2xl p-10 sm:p-14 border backdrop-blur-md relative transition-all duration-300 hover:translate-y-[-8px] flex flex-col min-h-[800px] h-[900px] w-[400px] mx-auto ${plan.featured ? 'border-[rgba(124,58,237,0.4)] bg-[rgba(124,58,237,0.05)] shadow-[0_0_30px_rgba(124,58,237,0.2)]' : 'border-[rgba(14,165,233,0.1)] hover:border-[rgba(14,165,233,0.3)] hover:shadow-[0_20px_40px_rgba(14,165,233,0.15)]'}`}
+              className={`bg-[rgba(255,255,255,0.02)] rounded-2xl p-6 sm:p-10 border backdrop-blur-md relative transition-all duration-300 hover:translate-y-[-8px] flex flex-col min-h-[520px] h-auto w-full max-w-xs mx-auto md:min-h-[800px] md:h-[900px] md:w-[400px] ${plan.featured ? 'border-[rgba(124,58,237,0.4)] bg-[rgba(124,58,237,0.05)] shadow-[0_0_30px_rgba(124,58,237,0.2)]' : 'border-[rgba(14,165,233,0.1)] hover:border-[rgba(14,165,233,0.3)] hover:shadow-[0_20px_40px_rgba(14,165,233,0.15)]'}`}
               style={
                 plan.title === 'Free Plan'
-                  ? { right: 20 }
+                  ? { right: 0 }
                   : plan.title === 'Pro Plan'
-                  ? { left: 20, right: 'auto' }
+                  ? { left: 0, right: 'auto' }
                   : undefined
               }
             >
@@ -466,6 +489,14 @@ export default function InicioPage() {
       @keyframes gradient-move {
         0% { background-position: 0% 50%; }
         100% { background-position: 100% 50%; }
+      }
+      @keyframes gradient-border {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 100% 50%; }
+      }
+      .animate-gradient-border {
+        background-size: 200% 200%;
+        animation: gradient-border 6s linear infinite;
       }
       `}</style>
     </div>

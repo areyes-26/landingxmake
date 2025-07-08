@@ -62,12 +62,18 @@ export async function POST(req: Request) {
 
     console.log('Dimension from Firestore:', dimension);
 
-    // Configurar offset y scale neutros para videos verticales
-    const defaultOffset = { x: 0, y: 0 }; // Centrado
-    const defaultScale = 1; // Sin escalado
-    
-    console.log('🎯 Configurando avatar con offset:', defaultOffset, 'y scale:', defaultScale);
-    
+    // Ajustar dimensión si es horizontal y no es válida
+    let finalDimension = dimension;
+    let scale = 1;
+    if (dimension && dimension.width > dimension.height) {
+      // Horizontal
+      finalDimension = { width: 1920, height: 1080 };
+      scale = 1;
+    } else if (dimension && dimension.height > dimension.width) {
+      // Vertical
+      scale = 3.2;
+    }
+
     // Iniciar la generación del video con Heygen
     const result = await heygen.generateVideo({
       script,
@@ -77,9 +83,8 @@ export async function POST(req: Request) {
       lookId: undefined, // No enviar lookId separado
       tone,
       duration,
-      dimension: dimension || { width: 720, height: 1280 }, // Fallback a vertical HD
-      avatarOffset: defaultOffset,
-      avatarScale: defaultScale
+      dimension: finalDimension || { width: 720, height: 1280 }, // Fallback a vertical HD
+      avatarScale: scale
     });
 
     console.log(`[HeyGen][generate-video] Respuesta de HeyGen:`, result);

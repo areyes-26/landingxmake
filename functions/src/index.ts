@@ -287,9 +287,9 @@ export const pollHeygenVideoTask = functions.https.onRequest(async (req, res) =>
       updateData.error = status.error || 'Error al generar el video';
       updateData.heygenResults.error = status.error;
       console.log(`[pollHeygenVideoTask] ❌ ${videoId} marcado como error: ${status.error}`);
-    } else if (status.status === 'processing') {
-      // Reprogramar el polling en 1 minuto
-      console.log(`[pollHeygenVideoTask] Video ${videoId} sigue en processing, creando nueva tarea en Cloud Tasks para 1 minuto...`);
+    } else if (status.status === 'processing' || status.status === 'waiting') {
+      // Reprogramar el polling en 1 minuto si está en processing o waiting
+      console.log(`[pollHeygenVideoTask] Video ${videoId} sigue en ${status.status}, creando nueva tarea en Cloud Tasks para 1 minuto...`);
       await createPollingTask(videoId, 60);
     }
 

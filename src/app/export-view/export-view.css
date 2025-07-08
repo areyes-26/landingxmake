@@ -6,7 +6,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #0c0d1f 0%, #151629 50%, #1a1b35 100%);
+    background: #0c0d1f;
     color: white;
     min-height: 100vh;
     line-height: 1.6;
@@ -115,7 +115,7 @@ body {
 
 /* Video Preview Section */
 .video-section {
-    background: rgba(255, 255, 255, 0.02);
+    background: #0c0d1f;
     border-radius: 16px;
     padding: 2rem;
     border: 1px solid rgba(14, 165, 233, 0.1);
@@ -232,7 +232,7 @@ body {
 
 /* Copies Section */
 .copies-section {
-    background: rgba(255, 255, 255, 0.02);
+    background: #0c0d1f;
     border-radius: 16px;
     padding: 2rem;
     border: 1px solid rgba(14, 165, 233, 0.1);
@@ -775,7 +775,7 @@ body {
     padding-left: 2rem;
     padding-right: 2rem;
     padding-bottom: 2rem;
-    background: linear-gradient(135deg, #0c0d1f 0%, #151629 50%, #1a1b35 100%);
+    background: #0c0d1f;
     min-height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }

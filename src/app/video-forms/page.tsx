@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, type ChangeEvent, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronDown, PlayCircle, PauseCircle, Check } from "lucide-react";
+import { ChevronDown, PlayCircle, PauseCircle, Check, HelpCircle } from "lucide-react";
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { toast } from 'sonner';
@@ -370,7 +370,11 @@ export default function VideoFormsPage() {
   };
 
   const handleOrientationChange = (orientation: 'vertical' | 'horizontal') => {
-    setFormData(prev => ({ ...prev, orientation }));
+    if (orientation === 'horizontal') {
+      setFormData(prev => ({ ...prev, orientation, resolution: 'fullhd' }));
+    } else {
+      setFormData(prev => ({ ...prev, orientation }));
+    }
   };
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -451,8 +455,7 @@ export default function VideoFormsPage() {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#18192e] to-[#0e0f23] flex flex-col">
-      {/* Blur solo al contenido principal */}
+    <div className="video-forms-container flex flex-col">
       <div className={isAvatarModalOpen ? "blur-md transition-all duration-300" : "transition-all duration-300"}>
         <div className="flex-1 flex flex-col items-center justify-center py-8">
           <form className="video-forms-form" onSubmit={handleSubmit}>
@@ -610,9 +613,15 @@ export default function VideoFormsPage() {
                   </div>
 
                   <div className="video-forms-form-group">
-                    <label htmlFor="description" className="video-forms-form-label">
-                      Video Description
-                    </label>
+                    <div className="flex flex-row items-center gap-1 mb-1">
+                      <label htmlFor="description" className="video-forms-form-label m-0 p-0">Video Description</label>
+                      <span className="relative group cursor-pointer ml-1">
+                        <HelpCircle className="w-4 h-4 text-[#0ea5e9] align-middle relative top-[-4px]" />
+                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
+                          Write a detailed description for the video. This helps the AI understand the context and generate better content.
+                        </span>
+                      </span>
+                    </div>
                     <textarea
                       id="description"
                       name="description"
@@ -637,10 +646,9 @@ export default function VideoFormsPage() {
                 {/* Step 2: Call to Action */}
                 <div className={`video-forms-form-step ${currentStep === 1 ? 'active' : ''}`}>
                   <div className="video-forms-form-group">
-                    <label className="video-forms-form-label">Call to Action</label>
-                    <p className="video-forms-form-description">
-                      Select what action you want viewers to take
-                    </p>
+                    <div className="flex flex-row items-center gap-1 mb-1">
+                      <label className="video-forms-form-label m-0 p-0">Select the action you want viewers to take</label>
+                    </div>
                     <div className="video-forms-cta-options">
                       {CALL_TO_ACTION_OPTIONS.map((option) => (
                         <div
@@ -656,12 +664,15 @@ export default function VideoFormsPage() {
                   </div>
 
                   <div className="video-forms-form-group">
-                    <label htmlFor="specificCallToAction" className="video-forms-form-label">
-                      Custom CTA Text
-                    </label>
-                    <p className="video-forms-form-description">
-                      Customize your call to action message
-                    </p>
+                    <div className="flex flex-row items-center gap-1 mb-1">
+                      <label htmlFor="specificCallToAction" className="video-forms-form-label m-0 p-0">Customize the call to action message</label>
+                      <span className="relative group cursor-pointer ml-1">
+                        <HelpCircle className="w-4 h-4 text-[#0ea5e9] align-middle relative top-[-4px]" />
+                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-60 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
+                          Personalize the call to action message. Example: "Download the app now!" or "Request your free demo".
+                        </span>
+                      </span>
+                    </div>
                     <textarea
                       id="specificCallToAction"
                       name="specificCallToAction"
@@ -677,12 +688,15 @@ export default function VideoFormsPage() {
                 {/* Step 3: Final Details */}
                 <div className={`video-forms-form-step ${currentStep === 2 ? 'active' : ''}`}>
                   <div className="video-forms-form-group">
-                    <label htmlFor="topic" className="video-forms-form-label">
-                      Main Topic
-                    </label>
-                    <p className="video-forms-form-description">
-                      Describe what you want your video to be about
-                    </p>
+                    <div className="flex flex-row items-center gap-1 mb-1">
+                      <label htmlFor="topic" className="video-forms-form-label m-0 p-0">Main Topic</label>
+                      <span className="relative group cursor-pointer ml-1">
+                        <HelpCircle className="w-4 h-4 text-[#0ea5e9] align-middle relative top-[-4px]" />
+                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
+                          Briefly describe the main subject or idea for your video. This guides the AI in content generation.
+                        </span>
+                      </span>
+                    </div>
                     <textarea
                       id="topic"
                       name="topic"
@@ -703,7 +717,15 @@ export default function VideoFormsPage() {
                   </div>
 
                   <div className="video-forms-form-group">
-                    <label htmlFor="tone" className="video-forms-form-label">Tone</label>
+                    <div className="flex flex-row items-center gap-1 mb-1">
+                      <label htmlFor="tone" className="video-forms-form-label m-0 p-0">Tone</label>
+                      <span className="relative group cursor-pointer ml-1">
+                        <HelpCircle className="w-4 h-4 text-[#0ea5e9] align-middle relative top-[-4px]" />
+                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
+                          Select the mood or style you want for your video (e.g., professional, casual, inspirational).
+                        </span>
+                      </span>
+                    </div>
                     <div className="relative" ref={toneDropdownRef}>
                       <button
                         type="button"
@@ -799,9 +821,40 @@ export default function VideoFormsPage() {
 
                 {/* Navigation */}
                 <div className="video-forms-navigation">
-                  <div className="video-forms-credits-info">
-                    <div className="video-forms-credits-icon">💎</div>
-                    <span>{currentCost} credits</span>
+                  <div className="relative group video-forms-credits-info cursor-pointer transition-transform duration-200" style={{ minWidth: 120 }}>
+                    <div className={`video-forms-credits-icon text-2xl transition-transform duration-200 ${currentCost ? 'animate-pulse' : ''}`}>💎</div>
+                    <span className="video-forms-credits-amount font-semibold text-lg transition-transform duration-200">{currentCost} credits</span>
+                    {/* Tooltip con tabla de costos */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 w-72 bg-[#23243a] text-white text-xs rounded-lg px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg pointer-events-none text-center border border-[#0ea5e9]/30">
+                      <div className="font-bold mb-2 text-base">Video Credit Cost</div>
+                      <table className="w-full text-xs mb-2 border-separate border-spacing-y-1">
+                        <thead>
+                          <tr className="text-sky-400">
+                            <th className="text-left">Duration</th>
+                            <th>HD (720p)</th>
+                            <th>Full HD (1080p)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="text-left">30s</td>
+                            <td>1 credit</td>
+                            <td>2 credits</td>
+                          </tr>
+                          <tr>
+                            <td className="text-left">1 min</td>
+                            <td>2 credits</td>
+                            <td>3 credits</td>
+                          </tr>
+                          <tr>
+                            <td className="text-left">1:30 min</td>
+                            <td>4 credits</td>
+                            <td>4 credits</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <div className="text-[11px] text-white/70">The cost depends on the selected duration and quality. 1 credit ≈ 1 short video in HD.</div>
+                    </div>
                     {creditsWarning && (
                       <div className="video-forms-low-credits-warning">
                         <span className="video-forms-warning-icon">⚠️</span>
@@ -814,16 +867,6 @@ export default function VideoFormsPage() {
                         </Link>
                       </div>
                     )}
-                    {/* {userPlan !== 'pro' && (
-                      <div className="video-forms-upgrade-plan-button">
-                        <Link 
-                          href="/account-setting?section=pricing" 
-                          className="video-forms-upgrade-link"
-                        >
-                          🚀 Actualizar Plan
-                        </Link>
-                      </div>
-                    )} */}
                   </div>
 
                   <div className="flex items-center gap-4">

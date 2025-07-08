@@ -354,7 +354,7 @@ export default function ExportViewPage() {
 
   if (!videoData) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div style={{ minHeight: '100vh', background: '#0c0d1f' }} className="flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">
@@ -474,7 +474,7 @@ export default function ExportViewPage() {
                 >
                   Download Video
                 </button>
-                {videoData.creatomateResults?.videoUrl && (
+                {/* {videoData.creatomateResults?.videoUrl && (
                   <button 
                     className="re-edit-btn" 
                     onClick={handleReEdit}
@@ -483,7 +483,7 @@ export default function ExportViewPage() {
                   >
                     {isReEditing ? 'Re-editing...' : 'Re-edit Video'}
                   </button>
-                )}
+                )} */}
               </div>
             </div>
           </div>
