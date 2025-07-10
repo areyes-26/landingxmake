@@ -63,7 +63,7 @@ export default function GroupedAvatarsDropdown({ selectedAvatarId, onSelect, ava
             <span className="truncate">{selectedAvatar.name}</span>
           </>
         ) : (
-          <span>Selecciona un avatar</span>
+          <span>Select an avatar</span>
         )}
       </button>
 

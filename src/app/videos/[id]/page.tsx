@@ -7,6 +7,18 @@ import { doc, setDoc, serverTimestamp, getDoc, Timestamp } from 'firebase/firest
 import { db, auth } from '@/lib/firebase';
 import type { VideoData } from '@/types/video';
 import './video-preview.css';
+import '../../video-forms/styles.css';
+// Importa los templates de Creatomate
+import { proTemplate } from '@/lib/creatomate/templates/proTemplate';
+import { proTemplateV2 } from '@/lib/creatomate/templates/proTemplate';
+import { basicTemplate } from '@/lib/creatomate/templates/basicTemplate';
+import { freeTemplate } from '@/lib/creatomate/templates/freeTemplate';
+
+const STEPS = [
+  { title: 'Description' },
+  { title: 'Social Content' },
+  { title: 'Templates' },
+];
 
 const pollingIntervalMs = 2000;
 const maxPollingTimeMs = 60000; // 1 minuto máximo
@@ -29,6 +41,9 @@ export default function VideoSettingsPage() {
   const [pollingError, setPollingError] = useState<string | null>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const pollingStartTimeRef = useRef<number | null>(null);
+  // Nuevo estado para el stepper y template seleccionado
+  const [currentStep, setCurrentStep] = useState(0);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,6 +152,7 @@ export default function VideoSettingsPage() {
       await setDoc(videoRef, {
         videoTitle: videoSettings.videoTitle,
         status: isFormComplete ? 'processing' : 'draft',
+        selectedTemplate: selectedTemplate, // Guardar el template seleccionado
         updatedAt: serverTimestamp()
       }, { merge: true });
 
@@ -152,7 +168,11 @@ export default function VideoSettingsPage() {
         const response = await fetch('/api/heygen/generate-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ videoId: params.id, ...videoSettings }),
+          body: JSON.stringify({ 
+            videoId: params.id, 
+            ...videoSettings,
+            selectedTemplate: selectedTemplate // Enviar el template seleccionado
+          }),
         });
         if (!response.ok) throw new Error('Error initiating video generation.');
         toast.success('Changes saved successfully');
@@ -290,6 +310,9 @@ export default function VideoSettingsPage() {
     return !!(settings && getCopyValue(settings.script) && getCopyValue(settings.shortCopy) && getCopyValue(settings.longCopy));
   }
 
+  // Determinar templates según plan (puedes ajustar la lógica según tu backend)
+  const templates = [proTemplate, proTemplateV2]; // Añadir la nueva plantilla
+
   if (isLoading || !showContent) {
     return (
       <div className="generating-modern-bg">
@@ -303,93 +326,255 @@ export default function VideoSettingsPage() {
   }
 
   return (
-    <div className="container">
-      <div className="page-header">
-        <h1 className="page-title">Video Preview</h1>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          {videoSettings && videoSettings.script && videoSettings.shortCopy && videoSettings.longCopy && !showContent && (
-            <button
-              className="reload-btn"
-              onClick={() => fetchVideoSettings(params.id as string)}
-              style={{ background: 'linear-gradient(90deg, #0ea5e9, #7c3aed)', color: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem 1.25rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(14,165,233,0.15)' }}
-            >
-              ⟳ Reload
-            </button>
+    <div className="video-forms-container flex flex-col items-center justify-center min-h-screen">
+      <div className="video-forms-main-container" style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <h1 className="video-forms-form-title" style={{ textAlign: 'center', marginBottom: 30, marginTop: 24 }}>Video Preview</h1>
+        {/* Stepper de 2 pasos: Creation/Edition (estilos locales) */}
+        <div className="video-preview-switch-stepper" style={{ marginBottom: 0, justifyContent: 'center' }}>
+          <div className="video-preview-switch-slider">
+            <div className="video-preview-switch-track">
+              <div className="video-preview-switch-knob"></div>
+              <div className="video-preview-switch-label creation-label">Creation</div>
+              <div className="video-preview-switch-label edition-label active">Edition</div>
+            </div>
+          </div>
+        </div>
+        <p className="video-forms-form-subtitle" style={{ textAlign: 'center', marginTop: 50, marginBottom: 32, color: '#b3b3b3', fontSize: '1.08rem', fontWeight: 500 }}>
+          Here you can review the script your avatar will use, see the generated copy, and choose a template for your video edition.
+        </p>
+        <div className="video-forms-stepper-pill-row">
+          {STEPS.map((step, idx) => {
+            const isFilled = idx <= currentStep;
+            const pillClass =
+              'video-forms-stepper-pill' +
+              (isFilled ? ' completed' : '');
+            const numberClass =
+              'video-forms-stepper-pill-number' +
+              (isFilled ? ' filled' : '');
+            const isClickable = idx < currentStep;
+            return (
+              <div
+                key={step.title}
+                className={pillClass + (isClickable ? ' clickable' : '')}
+                style={{
+                  borderTopLeftRadius: idx === 0 ? '16px' : 0,
+                  borderTopRightRadius: idx === STEPS.length - 1 ? '16px' : 0,
+                  cursor: isClickable ? 'pointer' : 'default',
+                }}
+                onClick={() => {
+                  if (isClickable) setCurrentStep(idx);
+                }}
+              >
+                <span className={numberClass}>{idx + 1}</span>
+                <span className="video-forms-stepper-pill-label">{step.title}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="video-forms-form-container" style={{ marginTop: 0, position: 'relative', width: '100%', height: 'auto' }}>
+          {/* Paso 1: Description */}
+          {currentStep === 0 && (
+            <div className="video-forms-form-step active" style={{ paddingBottom: 0 }}>
+              <div className="video-forms-form-group" style={{ marginBottom: 18 }}>
+                <label className="video-forms-form-label">Title</label>
+                <input
+                  type="text"
+                  className="video-forms-input"
+                  value={videoSettings?.videoTitle || ''}
+                  onChange={(e) => setVideoSettings(prev => prev ? { ...prev, videoTitle: e.target.value } : null)}
+                  style={{ background: 'rgba(255,255,255,0.08)' }}
+                  placeholder="Enter your video title..."
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <button
+                  className="regenerate-btn"
+                  onClick={handleRegenerateTitle}
+                  disabled={isRegeneratingTitle}
+                  style={{ minWidth: 180 }}
+                >
+                  {isRegeneratingTitle ? '🤖 Regenerating...' : 'Regenerate Title'}
+                </button>
+              </div>
+              {/* Divider inside the panel */}
+              <div style={{ width: '100%', height: 1, background: 'rgba(124,58,237,0.13)', margin: '18px 0 24px 0' }} />
+              <div className="video-forms-form-group" style={{ marginBottom: 0 }}>
+                <label className="video-forms-form-label">Script</label>
+                <textarea
+                  className="video-forms-textarea"
+                  value={videoSettings?.script || ''}
+                  readOnly
+                  style={{ 
+                    background: 'rgba(255,255,255,0.04)', 
+                    minHeight: 320,
+                    resize: 'none'
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8, marginTop: 8 }}>
+                <button
+                  className="regenerate-btn"
+                  onClick={handleRegenerateScript}
+                  disabled={isRegeneratingScript}
+                  style={{ minWidth: 180 }}
+                >
+                  {isRegeneratingScript ? '🤖 Regenerating...' : 'Regenerate Script'}
+                </button>
+              </div>
+              {/* Navigation buttons bottom inside the panel */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 32 }}>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(currentStep + 1)}
+                  className="video-forms-nav-button video-forms-nav-button-primary"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           )}
-          <button className="save-btn" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </div>
-
-      <div className="section title-section">
-        <h2 className="section-title">Video Title</h2>
-        <div className="title-input-group">
-          <input
-            type="text"
-            className="video-title-input"
-            value={videoSettings?.videoTitle || ''}
-            onChange={(e) => setVideoSettings(prev => prev ? { ...prev, videoTitle: e.target.value } : null)}
-            placeholder="Enter your video title"
-          />
-        </div>
-        <button className="regenerate-btn" onClick={handleRegenerateTitle} disabled={isRegeneratingTitle}>
-          {isRegeneratingTitle ? '🤖 Regenerating...' : '🤖 Regenerate with AI'}
-        </button>
-        <div className="regenerate-hint">You can edit the title manually or ask AI to regenerate it.</div>
-      </div>
-
-      <div className="section">
-        <h2 className="section-title">Generated Content</h2>
-        <div className="content-tabs">
-          <div className="tab-buttons">
-            <button className={`tab-btn ${activeTab === 'script' ? 'active' : ''}`} onClick={() => setActiveTab('script')}>Script</button>
-            <button className={`tab-btn ${activeTab === 'social' ? 'active' : ''}`} onClick={() => setActiveTab('social')}>Social Content</button>
-          </div>
-
-          <div className={`tab-content ${activeTab === 'script' ? 'active' : ''}`}>
-            <div className="content-header">
-              <h3 className="content-type-title">Generated Script</h3>
-              <button className="regenerate-content-btn" onClick={handleRegenerateScript} disabled={isRegeneratingScript}>
-                {isRegeneratingScript ? '🤖 Regenerating...' : '🤖 Regenerate Script'}
-              </button>
+          {/* Paso 2: Social Content */}
+          {currentStep === 1 && (
+            <div className="video-forms-form-step active" style={{ paddingBottom: 0 }}>
+              <div className="video-forms-form-group">
+                <label className="video-forms-form-label">
+                  Short Copy
+                  <span className="relative group cursor-pointer ml-1 align-middle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-help w-4 h-4 align-middle" style={{ position: 'relative', top: '-2px' }}><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+                    <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
+                      El "Short Copy" es un texto breve y llamativo para redes sociales, ideal para captar la atención rápidamente.
+                    </span>
+                  </span>
+                </label>
+                <textarea
+                  className="video-forms-textarea"
+                  value={typeof videoSettings?.shortCopy === 'object' ? (videoSettings.shortCopy as any)?.content || '' : videoSettings?.shortCopy || ''}
+                  readOnly
+                  style={{ 
+                    background: 'rgba(255,255,255,0.04)', 
+                    width: 520.88, 
+                    height: 200,
+                    resize: 'none'
+                  }}
+                />
+              </div>
+              <div className="video-forms-form-group">
+                <label className="video-forms-form-label">
+                  Long Copy
+                  <span className="relative group cursor-pointer ml-1 align-middle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-help w-4 h-4 align-middle" style={{ position: 'relative', top: '-2px' }}><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+                    <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
+                      El "Long Copy" es un texto más extenso y descriptivo para redes sociales, ideal para explicar detalles o motivar a la acción.
+                    </span>
+                  </span>
+                </label>
+                <textarea
+                  className="video-forms-textarea"
+                  value={typeof videoSettings?.longCopy === 'object' ? (videoSettings.longCopy as any)?.content || '' : videoSettings?.longCopy || ''}
+                  readOnly
+                  style={{ 
+                    background: 'rgba(255,255,255,0.04)', 
+                    width: 520.88, 
+                    height: 200,
+                    resize: 'none'
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8, marginTop: 8 }}>
+                <button
+                  className="regenerate-btn"
+                  onClick={handleRegenerateSocial}
+                  disabled={isRegeneratingSocial}
+                  style={{ minWidth: 180 }}
+                >
+                  {isRegeneratingSocial ? '🤖 Regenerating...' : 'Regenerate Copy'}
+                </button>
+              </div>
+              {/* Navigation buttons bottom inside the panel */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(currentStep - 1)}
+                  className="video-forms-nav-button video-forms-nav-button-secondary"
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(currentStep + 1)}
+                  className="video-forms-nav-button video-forms-nav-button-primary"
+                >
+                  Next
+                </button>
+              </div>
             </div>
-            <div className="content-textarea-container">
-              <textarea
-                className="content-textarea"
-                value={videoSettings?.script || ''}
-                placeholder="Your generated script will appear here..."
-                readOnly
-              />
+          )}
+          {/* Paso 3: Video Templates */}
+          {currentStep === 2 && (
+            <div className="video-forms-form-step active" style={{ paddingBottom: 0 }}>
+              <div className="video-forms-form-group">
+                <label className="video-forms-form-label">
+                  Select a Template
+                  <span className="relative group cursor-pointer ml-1 align-middle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-help w-4 h-4 align-middle" style={{ position: 'relative', top: '-2px' }}><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+                    <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-60 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
+                      Elige un template de edición para personalizar el estilo visual y animaciones de tu video final.
+                    </span>
+                  </span>
+                </label>
+                <div className="template-cards-container" style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginTop: 16 }}>
+                  {templates.map((template: any) => (
+                    <div
+                      key={template.templateId || template.id || 'main-template'}
+                      className={`template-card${selectedTemplate === (template.templateId || template.id || 'main-template') ? ' selected' : ''}`}
+                      style={{
+                        border: selectedTemplate === (template.templateId || template.id || 'main-template') ? '2px solid #7c3aed' : '1.5px solid rgba(124,58,237,0.18)',
+                        borderRadius: 16,
+                        background: '#191a2e',
+                        padding: 16,
+                        cursor: 'pointer',
+                        minWidth: 180,
+                        maxWidth: 220,
+                        flex: '1 1 180px',
+                        boxShadow: selectedTemplate === (template.templateId || template.id || 'main-template') ? '0 2px 16px #7c3aed33' : 'none',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                      }}
+                      onClick={() => setSelectedTemplate(template.templateId || template.id || 'main-template')}
+                    >
+                      {/* Si tienes una imagen de preview, muéstrala. Si no, muestra un placeholder */}
+                      {template.previewUrl ? (
+                        <img src={template.previewUrl} alt={template.name || 'Template'} style={{ width: '100%', borderRadius: 12, marginBottom: 12 }} />
+                      ) : (
+                        <div style={{ width: '100%', height: 100, background: 'linear-gradient(135deg, #0ea5e9, #7c3aed)', borderRadius: 12, marginBottom: 12 }} />
+                      )}
+                      <div style={{ fontWeight: 600, color: '#fff', marginBottom: 4 }}>{template.name || 'Main Template'}</div>
+                      <div style={{ fontSize: 13, color: '#b3b3b3', textAlign: 'center' }}>{template.description || 'Default video template.'}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Navigation buttons bottom inside the panel */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(currentStep - 1)}
+                  className="video-forms-nav-button video-forms-nav-button-secondary"
+                >
+                  ← Back
+                </button>
+                <button
+                  className="video-forms-nav-button video-forms-nav-button-primary"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Create video'}
+                </button>
+              </div>
             </div>
-          </div>
-
-          <div className={`tab-content ${activeTab === 'social' ? 'active' : ''}`}>
-            <div className="content-header">
-              <h3 className="content-type-title">Social Media Content</h3>
-              <button className="regenerate-content-btn" onClick={handleRegenerateSocial} disabled={isRegeneratingSocial}>
-                {isRegeneratingSocial ? '🤖 Regenerating...' : '🤖 Regenerate Content'}
-              </button>
-            </div>
-            <div className="copy-section">
-              <h4 className="copy-title">Short Copy</h4>
-              <textarea
-                className="content-textarea short-copy"
-                value={typeof videoSettings?.shortCopy === 'object' ? (videoSettings.shortCopy as any)?.content || '' : videoSettings?.shortCopy || ''}
-                placeholder="Short copy for social media..."
-                readOnly
-              />
-            </div>
-            <div className="copy-section">
-              <h4 className="copy-title">Long Copy</h4>
-              <textarea
-                className="content-textarea long-copy"
-                value={typeof videoSettings?.longCopy === 'object' ? (videoSettings.longCopy as any)?.content || '' : videoSettings?.longCopy || ''}
-                placeholder="Long copy for social media..."
-                readOnly
-              />
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

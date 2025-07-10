@@ -781,10 +781,10 @@ body {
 }
 
 .back-to-dashboard-btn {
-    position: absolute;
-    top: 110px; /* Increased spacing from the top */
-    left: 2rem;
-    z-index: 10;
+    position: static;
+    top: unset;
+    left: unset;
+    margin-right: 24px;
     color: white;
 }
 

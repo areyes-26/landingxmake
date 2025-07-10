@@ -255,6 +255,8 @@
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
     position: relative;
+    display: flex;
+    flex-direction: column;
 }
 
 .videoCard:hover {
@@ -416,6 +418,7 @@
     display: flex;
     gap: 0.75rem;
     margin-top: 1.5rem;
+    margin-top: auto;
 }
 
 .actionBtn {

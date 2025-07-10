@@ -371,19 +371,22 @@ export default function ExportViewPage() {
   return (
     <>
       <div className="container export-view-container">
+        <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
           <Button
             variant="ghost"
             className="back-to-dashboard-btn"
+            style={{ position: 'static', top: 'unset', left: 'unset', marginRight: 24 }}
             onClick={() => router.push('/dashboard')}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
-        <div className="page-header text-center">
-          <h1 className="page-title">Video Details</h1>
-          <p className="page-subtitle">Review and manage your video content with optimized social media copies</p>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <h1 className="page-title">Video Details</h1>
+            <p className="page-subtitle">Review and manage your video content with optimized social media copies</p>
           </div>
-
+          <div style={{ width: 160 }}></div> {/* Espaciador para simetría visual */}
+        </div>
         <div className="content-grid">
           <div className="video-section">
             <h2 className="section-title">Video Preview</h2>

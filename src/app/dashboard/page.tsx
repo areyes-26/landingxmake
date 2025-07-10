@@ -125,7 +125,13 @@ export default function DashboardPage() {
 
   // Filter and sort videos
   const processedVideos = videos
-    .filter(video => activeFilter === 'all' || video.status === activeFilter)
+    .filter(video => {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'processing') {
+        return video.status === 'processing' || video.status === 'editing';
+      }
+      return video.status === activeFilter;
+    })
     .sort((a, b) => {
       switch (sortOrder) {
         case 'oldest':
@@ -142,12 +148,14 @@ export default function DashboardPage() {
 
   const statusCounts = videos.reduce((acc, video) => {
     const status = video.status || 'pending';
-    if (status in acc) {
+    if (status === 'editing') {
+      acc.processing++;
+    } else if (status in acc) {
       acc[status as keyof typeof acc]++;
     }
     acc.all++;
     return acc;
-  }, { all: 0, completed: 0, processing: 0, editing: 0, error: 0, pending: 0 });
+  }, { all: 0, completed: 0, processing: 0, error: 0, pending: 0 });
   
   const handleDeleteClick = (videoId: string) => {
     setVideoToDelete(videoId);
@@ -216,10 +224,13 @@ export default function DashboardPage() {
   };
 
   const handleViewDetails = (video: VideoData) => {
+    // Prevent access to video details while processing or editing
+    if (video.status === 'processing' || video.status === 'editing') {
+      return;
+    }
+    
     if (video.status === 'completed') {
       router.push(`/export-view?id=${video.id}`);
-    } else if (video.status === 'processing') {
-      router.push(`/videos/${video.id}/generating`);
     } else {
       router.push(`/videos/${video.id}`);
     }
@@ -281,7 +292,7 @@ export default function DashboardPage() {
           </div>
           
           <div className={styles.statusFilters}>
-            {['all', 'completed', 'processing', 'editing', 'error'].map((status) => (
+            {['all', 'completed', 'processing', 'error'].map((status) => (
               <div
                 key={status}
                 className={`${styles.statusFilter} ${activeFilter === status ? styles.active : ''} ${styles[status]} transition-all duration-200`}
@@ -337,12 +348,24 @@ export default function DashboardPage() {
                 <div className={styles.videoMeta}>
                   <div className={styles.videoDate}>{formatDate(video.createdAt)}</div>
                   <div className={styles.videoDescription}>{video.description}</div>
-                  <span className={`${styles.videoStatus} ${styles[`status${video.status?.charAt(0).toUpperCase() + video.status?.slice(1)}`]}`}>
-                    {video.status}
+                  <span className={`${styles.videoStatus} ${styles[`status${video.status === 'editing' ? 'Processing' : video.status?.charAt(0).toUpperCase() + video.status?.slice(1)}`]}`}>
+                    {video.status === 'editing' ? 'processing' : video.status}
                   </span>
                 </div>
                 <div className={styles.videoActions}>
-                    <button onClick={() => handleViewDetails(video)} className={`${styles.actionBtn} ${video.status === 'completed' ? styles.actionBtnPrimary : styles.actionBtnSecondary}`}>View Details</button>
+                    <button
+                      onClick={() => handleViewDetails(video)}
+                      disabled={video.status === 'processing' || video.status === 'editing'}
+                      className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
+                      style={{
+                        opacity: video.status === 'processing' || video.status === 'editing' ? 0.7 : 1,
+                        cursor: video.status === 'processing' || video.status === 'editing' ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {video.status === 'processing' || video.status === 'editing'
+                        ? 'Video creation currently in process'
+                        : 'View Details'}
+                    </button>
                 </div>
               </div>
             ))

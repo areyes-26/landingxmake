@@ -5,6 +5,9 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { getTemplateByPlan, PlanType } from '@/lib/creatomate/templates/getTemplateByPlan';
 import { personalizeTemplate } from '@/lib/creatomate/templates/personalizeTemplate';
 import { CreatomateAPI } from '@/lib/creatomate';
+import { proTemplate, proTemplateV2 } from '@/lib/creatomate/templates/proTemplate';
+import { basicTemplate } from '@/lib/creatomate/templates/basicTemplate';
+import { freeTemplate } from '@/lib/creatomate/templates/freeTemplate';
 
 // Template default del Studio de Creatomate (hardcodeado)
 const DEFAULT_TEMPLATE_ID = '273cdd5f-f40a-4c72-9a08-55245e49bfbc';
@@ -76,6 +79,10 @@ export async function POST(req: Request) {
     const plan: PlanType = videoData.plan || 'free';
     console.log(`[Creatomate][generate-video] Plan del usuario para videoId ${videoId}:`, plan);
 
+    // Obtener el template seleccionado por el usuario
+    const selectedTemplate = videoData.selectedTemplate;
+    console.log(`[Creatomate][generate-video] Template seleccionado para videoId ${videoId}:`, selectedTemplate);
+
     // Subtítulos: si existen en Firestore, usarlos; si no, generarlos
     let subtitles = completionData?.subtitles || [];
     if (!Array.isArray(subtitles) || subtitles.length === 0) {
@@ -110,16 +117,58 @@ export async function POST(req: Request) {
 
     let result;
 
-    // === PRUEBA ACTUAL: Template personalizado ===
-    // Usar template personalizado para todos los planes (más robusto)
-    console.log(`[Creatomate][generate-video] Usando template personalizada para plan ${plan}`);
+    // Verificar si hay un template específico seleccionado por el usuario
+    if (selectedTemplate && selectedTemplate !== 'main-template') {
+      // Usar el template seleccionado por el usuario
+      console.log(`[Creatomate][generate-video] Usando template seleccionado por usuario: ${selectedTemplate}`);
+      
+      // Buscar el template en las definiciones
+      const templates = [proTemplate, proTemplateV2, basicTemplate, freeTemplate];
+      const userTemplate = templates.find(t => 'templateId' in t && t.templateId === selectedTemplate);
+      
+      if (userTemplate && 'templateId' in userTemplate && userTemplate.templateId) {
+        // Usar template de Creatomate con modificaciones
+        const modifications = {
+          "background.source": videoData?.heygenResults?.videoUrl || '',
+          "avatar-video.source": videoData?.heygenResults?.videoUrl || '',
+          "branding-logo.source": videoData?.logoUrl || '',
+          "subtitles-container.background_color": videoData?.accentColor || '#e74c3c',
+          "subtitles-container.transcript_color": videoData?.accentColor || '#e74c3c',
+          "subtitles-container.transcript_source": "avatar-video",
+          "subtitles-container.transcript_effect": "fade",
+          "subtitles-container.transcript_maximum_length": 12,
+          "subtitles-container.fill_color": "#ffffff",
+          "subtitles-container.stroke_color": "#000000",
+          "subtitles-container.stroke_width": "0.5 vmin"
+        };
+        
+        console.log(`[Creatomate][generate-video] Llamando a creatomate.createRender con templateId: ${userTemplate.templateId}`);
+        result = await creatomate.createRender({
+          templateId: userTemplate.templateId,
+          modifications,
+          webhookUrl,
+          metadata: videoId,
+          outputFormat: 'mp4',
+        });
+        console.log(`[Creatomate][generate-video] createRender con templateId completado exitosamente`);
+      } else {
+        console.warn(`[Creatomate][generate-video] Template no encontrado: ${selectedTemplate}, usando template por defecto`);
+        // Fallback al template por defecto
+        await useDefaultTemplate();
+      }
+    } else {
+      // Usar template personalizado por defecto según el plan
+      console.log(`[Creatomate][generate-video] Usando template personalizada para plan ${plan}`);
+      await useDefaultTemplate();
+    }
     
+    async function useDefaultTemplate() {
     // Armar el objeto videoData para los placeholders
     const personalizedVideoData = {
-      avatarUrl: videoData.heygenResults?.videoUrl,
-      backgroundUrl: videoData.backgroundUrl || '',
-      logoUrl: videoData.logoUrl || '',
-      accentColor: videoData.accentColor || '#e74c3c',
+      avatarUrl: videoData?.heygenResults?.videoUrl || '',
+      backgroundUrl: videoData?.backgroundUrl || '',
+      logoUrl: videoData?.logoUrl || '',
+      accentColor: videoData?.accentColor || '#e74c3c',
       subtitles,
     };
 
@@ -137,36 +186,12 @@ export async function POST(req: Request) {
       source: personalizedTemplate,
     });
     console.log(`[Creatomate][generate-video] createRender con source completado exitosamente`);
+    }
 
-    // === FALLBACK: Si la prueba falla, descomenta este código ===
-    /*
-    // Usar template ID hardcodeado (método que funcionaba antes)
-    console.log(`[Creatomate][generate-video] Usando template ID hardcodeado: ${DEFAULT_TEMPLATE_ID}`);
+    if (!result) {
+      throw new Error('No se recibió respuesta de Creatomate');
+    }
     
-    // Preparar las modificaciones para el template del dashboard
-    const modifications = {
-      "heygen-video.source": videoData.heygenResults?.videoUrl,
-      backgroundUrl: videoData.backgroundUrl || '',
-      logoUrl: videoData.logoUrl || '',
-      accentColor: videoData.accentColor || '#e74c3c',
-      subtitles: subtitles.map((s: any) => s.text).join('|'),
-      duration: videoData.heygenResults?.duration ? parseFloat(videoData.heygenResults.duration) : 10
-    };
-    
-    console.log(`[Creatomate][generate-video] Modificaciones para template del dashboard:`, modifications);
-    
-    // Usar template del dashboard con modificaciones
-    console.log(`[Creatomate][generate-video] Llamando a creatomate.createRender con templateId: ${DEFAULT_TEMPLATE_ID}`);
-    result = await creatomate.createRender({
-      templateId: DEFAULT_TEMPLATE_ID,
-      modifications,
-      webhookUrl,
-      metadata: videoId,
-      outputFormat: 'mp4',
-    });
-    console.log(`[Creatomate][generate-video] createRender completado exitosamente`);
-    */
-
     console.log(`[Creatomate][generate-video] Respuesta de Creatomate:`, result);
 
     // Actualizar el estado en Firestore

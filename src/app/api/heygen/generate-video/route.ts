@@ -16,6 +16,7 @@ export async function POST(req: Request) {
       duration,
       orientation,
       resolution,
+      selectedTemplate,
     } = body;
 
     if (!videoId || !videoTitle || !voiceId || !avatarId) {
@@ -97,6 +98,7 @@ export async function POST(req: Request) {
     // Actualizar el estado en Firestore
     const updateData = {
       status: 'processing',
+      selectedTemplate: selectedTemplate, // Guardar el template seleccionado
       heygenResults: {
         status: 'generating',
         taskId: result.taskId,

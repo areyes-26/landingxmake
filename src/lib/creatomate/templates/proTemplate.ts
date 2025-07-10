@@ -73,4 +73,19 @@ export const proTemplate = {
       opacity: "0%"
     }
   ]
+};
+
+// Nueva plantilla PRO V2 con template_id de Creatomate
+export const proTemplateV2 = {
+  templateId: "04b1ae4c-cce7-4bd8-bf2a-71b1e604f38d",
+  name: "Pro Template V2",
+  description: "Nueva plantilla con tipografía mejorada y efectos visuales",
+  previewUrl: "", // Puedes añadir una URL de preview si la tienes
+  modifications: {
+    "background.source": "__BG__",
+    "avatar-video.source": "__AVATAR__",
+    "branding-logo.source": "__LOGO__",
+    "subtitles-container.background_color": "__ACCENT__",
+    "subtitles-container.transcript_color": "__ACCENT__"
+  }
 }; 

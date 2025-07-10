@@ -38,82 +38,112 @@
 
 /* Progress Steps */
 .video-forms-progress-container {
-  margin-bottom: 3rem;
+  margin-bottom: 0.5rem;
+  margin-top: 0;
+  position: relative;
+  z-index: 2;
 }
-
 .video-forms-progress-steps {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-}
-
-.video-forms-step {
-  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  flex-grow: 1;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 25px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
-  transition: all 0.3s ease;
-  font-weight: 500;
-  font-size: 0.9rem;
+  position: relative;
+  width: 100%;
+  background: none;
+  border-radius: 0;
+  z-index: 2;
+  padding: 0 8px;
 }
-
+.video-forms-step {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  background: none;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  transition: color 0.3s;
+}
 .video-forms-step.active {
-  background: rgba(14, 165, 233, 0.1);
-  border-color: rgba(14, 165, 233, 0.3);
   color: #0ea5e9;
-  box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
 }
-
 .video-forms-step.completed {
-  background: rgba(124, 58, 237, 0.1);
-  border-color: rgba(124, 58, 237, 0.3);
   color: #7c3aed;
 }
-
 .video-forms-step-number {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: #18192e;
+  color: #b3b3b3;
+  font-size: 1.08rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 600;
+  margin-bottom: 0.2rem;
+  border: 2px solid #23243a;
+  transition: background 0.3s, color 0.3s, border 0.3s;
+  z-index: 2;
 }
-
 .video-forms-step.active .video-forms-step-number {
-  background: #0ea5e9;
-  color: white;
+  background: linear-gradient(90deg, #0ea5e9 60%, #7c3aed 100%);
+  color: #fff;
+  border: 2px solid #0ea5e9;
 }
-
 .video-forms-step.completed .video-forms-step-number {
-  background: #7c3aed;
-  color: white;
+  background: #0ea5e9;
+  color: #fff;
+  border: 2px solid #0ea5e9;
 }
-
-/* Progress Bar */
+.video-forms-step-label {
+  font-size: 1.01rem;
+  font-weight: 600;
+  color: inherit;
+  text-align: center;
+  white-space: nowrap;
+  margin-top: 0.1rem;
+}
+/* Hilo entre los steps */
+.video-forms-step-connector {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: calc(100% - 32px);
+  height: 4px;
+  background: #23243a;
+  z-index: 1;
+  transform: translateY(-50%);
+  transition: background 0.3s;
+}
+.video-forms-step.completed ~ .video-forms-step-connector,
+.video-forms-step.active ~ .video-forms-step-connector {
+  background: linear-gradient(90deg, #0ea5e9 60%, #7c3aed 100%);
+}
 .video-forms-progress-bar {
+  position: absolute;
+  left: 0;
+  top: 28px;
   width: 100%;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
+  background: #23243a;
+  border-radius: 2px 2px 0 0;
+  z-index: 1;
   overflow: hidden;
 }
-
 .video-forms-progress-fill {
   height: 100%;
-  background: linear-gradient(135deg, #0ea5e9, #7c3aed);
-  border-radius: 2px;
-  transition: width 0.5s ease;
+  background: linear-gradient(90deg, #0ea5e9, #7c3aed);
+  border-radius: 2px 2px 0 0;
+  transition: width 0.5s cubic-bezier(.4,1.6,.6,1);
 }
-
-/* Form Container */
+/* Integración con el panel del forms */
 .video-forms-form-container {
   background: rgba(255, 255, 255, 0.02);
   border-radius: 16px;
@@ -121,6 +151,11 @@
   border: 1px solid rgba(14, 165, 233, 0.1);
   backdrop-filter: blur(10px);
   margin-bottom: 2rem;
+  margin-top: 0;
+  position: relative;
+  z-index: 1;
+  bottom: 32px;
+  padding-top: 68px;
 }
 
 /* Form Steps */
@@ -146,6 +181,7 @@
 .video-forms-form-label {
   display: block;
   margin-bottom: 0.75rem;
+  margin-top: 0.5rem;
   font-weight: 600;
   color: white;
   font-size: 1rem;
@@ -230,8 +266,16 @@
 }
 
 .video-forms-textarea {
+  width: 520.88px;
   min-height: 120px;
   resize: vertical;
+}
+
+/* Ajuste específico para el textarea de Main Topic */
+textarea.video-forms-textarea#topic {
+  height: 60px !important;
+  min-height: 60px !important;
+  max-height: 60px !important;
 }
 
 .video-forms-select {
@@ -536,7 +580,7 @@
   }
 
   .video-forms-form-container {
-    padding: 2rem;
+    padding: 1rem;
   }
 
   .video-forms-progress-steps {
@@ -999,11 +1043,13 @@
 /* Orientation Selector - más fino y compacto */
 .video-forms-orientation-options {
   display: flex;
-  gap: 1rem;
+  gap: 2rem;
+  justify-content: center;
+  margin-bottom: 0.5rem;
 }
 
 .video-forms-orientation-option {
-  width: 130px;
+  width: 220px;
   height: 92px;
   padding: 0;
   border: 1.5px solid rgba(14, 165, 233, 0.2);
@@ -1092,4 +1138,385 @@
   background-color: #1a1a2e;
   color: #e0e0e0;
   padding: 12px 10px;
+} 
+
+.modern-office-crop {
+  object-position: center top;
+  clip-path: inset(0px 0px 20px 0px);
+} 
+
+.video-forms-credits-tooltip {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px) scale(0.98);
+  bottom: 100%;
+  margin-bottom: 0.5rem;
+  z-index: 30;
+  width: 18rem;
+  min-width: 16rem;
+  max-width: 22rem;
+  background: rgba(35, 36, 58, 0.92);
+  color: #fff;
+  font-size: 0.95rem;
+  border-radius: 0.75rem;
+  padding: 1.1rem 1.2rem 1.2rem 1.2rem;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 8px 32px 0 rgba(14,165,233,0.10), 0 1.5px 8px 0 rgba(0,0,0,0.18);
+  border: 1.5px solid rgba(14,165,233,0.13);
+  text-align: center;
+  transition: opacity 0.25s, transform 0.35s cubic-bezier(.4,1.6,.6,1), box-shadow 0.3s;
+  backdrop-filter: blur(8px);
+}
+
+.group:hover .video-forms-credits-tooltip {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(-10px) scale(1);
+  box-shadow: 0 16px 40px 0 rgba(14,165,233,0.18), 0 2px 12px 0 rgba(0,0,0,0.22);
+}
+
+.video-forms-credits-icon {
+  width: 28px;
+  height: 28px;
+  background: rgba(14,165,233,0.13);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px 0 rgba(14,165,233,0.10);
+  transition: box-shadow 0.3s, background 0.3s;
+} 
+
+@keyframes videoGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(14,165,233,0.18), 0 2px 8px 0 rgba(14,165,233,0.10);
+    background: rgba(14,165,233,0.13);
+  }
+  50% {
+    box-shadow: 0 0 16px 6px rgba(14,165,233,0.32), 0 2px 8px 0 rgba(14,165,233,0.10);
+    background: rgba(14,165,233,0.22);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(14,165,233,0.18), 0 2px 8px 0 rgba(14,165,233,0.10);
+    background: rgba(14,165,233,0.13);
+  }
+}
+
+.video-forms-credits-glow {
+  animation: videoGlow 3.5s ease-in-out infinite;
+} 
+
+.video-forms-credits-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+.video-forms-credits-table th,
+.video-forms-credits-table td {
+  border: 1px solid rgba(14,165,233,0.18);
+  padding: 0.22rem 0.4rem;
+  text-align: center;
+  font-size: 0.97em;
+}
+.video-forms-credits-table th {
+  background: rgba(14,165,233,0.08);
+  font-weight: 600;
+  font-size: 1em;
+}
+.video-forms-credits-table tr:not(:last-child) td {
+  border-bottom: 1.5px solid rgba(14,165,233,0.18);
+} 
+
+.video-forms-visual-stepper-2 {
+  margin-bottom: 1.5rem;
+}
+.video-forms-visual-stepper-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #b3b3b3;
+  font-size: 1.08rem;
+  transition: color 0.3s;
+}
+.video-forms-visual-stepper-item.active {
+  color: #0ea5e9;
+}
+.video-forms-visual-stepper-circle {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0ea5e9 60%, #7c3aed 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px 0 rgba(14,165,233,0.10);
+  border: 2px solid #23243a;
+  margin-right: 0.2rem;
+}
+.video-forms-visual-stepper-item:not(.active) .video-forms-visual-stepper-circle {
+  background: #23243a;
+  color: #b3b3b3;
+  border: 2px solid #23243a;
+}
+.video-forms-visual-stepper-bar {
+  width: 3.2rem;
+  height: 3px;
+  background: linear-gradient(90deg, #0ea5e9 0%, #7c3aed 100%);
+  border-radius: 2px;
+  margin: 0 0.2rem;
+  opacity: 0.7;
+}
+.video-forms-visual-stepper-label {
+  font-size: 1.08rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+} 
+
+.video-forms-switch-stepper {
+  margin-bottom: 2.1rem;
+  display: flex;
+  justify-content: center;
+}
+.video-forms-switch-slider {
+  width: 340px;
+  max-width: 95vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-forms-switch-track {
+  position: relative;
+  width: 100%;
+  height: 48px;
+  background: rgba(35,36,58,0.92); /* Fondo oscuro neutro */
+  border-radius: 24px;
+  border: 1.5px solid rgba(124,58,237,0.18);
+  box-shadow: 0 4px 24px 0 rgba(124,58,237,0.10);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 0 4px;
+}
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+.video-forms-switch-knob {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 155px;
+  height: 40px;
+  background: linear-gradient(270deg, #a259f7, #7c3aed, #38bdf8, #a259f7);
+  background-size: 400% 400%;
+  animation: gradientMove 3s ease-in-out infinite alternate;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px 0 rgba(124,58,237,0.13);
+  transition: left 0.5s cubic-bezier(.4,1.6,.6,1);
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-forms-switch-knob.right {
+  left: 170px;
+}
+.video-forms-switch-label {
+  flex: 1 1 0;
+  text-align: center;
+  z-index: 3;
+  font-size: 1.13rem;
+  font-weight: 600;
+  color: #b3b3b3;
+  transition: color 0.3s;
+  cursor: default;
+  user-select: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.video-forms-switch-label.active {
+  color: #fff;
+  text-shadow: 0 2px 8px #a259f7cc;
+}
+.creation-label {
+  margin-left: -8px;
+}
+.edition-label {
+  margin-right: 8px;
+}
+@media (max-width: 480px) {
+  .video-forms-switch-slider { width: 98vw; }
+  .video-forms-switch-track { height: 40px; }
+  .video-forms-switch-knob { width: 44vw; min-width: 100px; height: 32px; }
+  .video-forms-switch-knob.right { left: calc(50vw - 8px); }
+} 
+
+.video-forms-stepper-pill-row {
+  display: flex;
+  width: 100%;
+  position: relative;
+  z-index: 3;
+  margin-bottom: -20px;
+  margin-top: 14px; /* Aumentado para separar del borde superior */
+}
+.video-forms-stepper-pill {
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.7rem 1.2rem 0.7rem 0.9rem;
+  background: #18192e;
+  color: #b3b3b3;
+  font-weight: 600;
+  font-size: 1.08rem;
+  border-top: 1.5px solid rgba(14,165,233,0.13);
+  border-right: 0px solid transparent;
+  border-left: 0px solid transparent;
+  border-bottom: 1.5px solid rgba(14,165,233,0.13);
+  transition: background 0.3s, color 0.3s;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Borde izquierdo solo para el primer paso */
+.video-forms-stepper-pill:first-child {
+  border-left: 1.5px solid rgba(14,165,233,0.13);
+}
+
+/* Borde derecho solo para el último paso */
+.video-forms-stepper-pill:last-child {
+  border-right: 1.5px solid rgba(14,165,233,0.13);
+}
+
+/* Cuando un paso está completado, el color de fondo cubre el borde */
+.video-forms-stepper-pill.completed {
+  background: linear-gradient(90deg, rgba(36,37,60,0.98) 60%, rgba(124,58,237,0.22) 100%);
+  color: #fff;
+  z-index: 2;
+  border-right: 0px solid transparent;
+  border-left: 0px solid transparent;
+}
+
+/* El paso completado que es el primero debe mantener su borde izquierdo */
+.video-forms-stepper-pill.completed:first-child {
+  border-left: 1.5px solid rgba(14,165,233,0.13);
+}
+
+/* El paso completado que es el último debe mantener su borde derecho */
+.video-forms-stepper-pill.completed:last-child {
+  border-right: 1.5px solid rgba(14,165,233,0.13);
+}
+
+.video-forms-stepper-pill-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #23243a;
+  color: #b3b3b3;
+  font-size: 1.08rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.7rem;
+  border: 2px solid #23243a;
+  transition: background 0.3s, color 0.3s, border 0.3s;
+}
+.video-forms-stepper-pill-number.filled {
+  background: linear-gradient(135deg, #0ea5e9, #7c3aed) !important;
+  color: #fff;
+  border: 2px solid #7c3aed;
+}
+.video-forms-stepper-pill.active .video-forms-stepper-pill-number,
+.video-forms-stepper-pill.completed .video-forms-stepper-pill-number {
+  background: linear-gradient(135deg, #0ea5e9, #7c3aed) !important;
+  color: #fff;
+  border: 2px solid #7c3aed;
+}
+.video-forms-stepper-pill-label {
+  font-size: 1.08rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 0.2rem;
+  margin-left: 0.4rem; /* Reducido para centrar mejor el texto */
+}
+
+/* Ajuste para el último paso: sin margen derecho extra */
+.video-forms-stepper-pill:last-child .video-forms-stepper-pill-label {
+  margin-right: 0;
+} 
+
+/* Centrar el label de Orientation sobre las opciones */
+.video-forms-form-group > label.video-forms-form-label {
+  display: block;
+  text-align: left;
+  width: 100%;
+  margin-bottom: 1rem;
+} 
+
+/* === ESTILOS DE HELP ICON Y TOOLTIP DE EXPORT-VIEW === */
+.help-icon {
+    width: 16px;
+    height: 16px;
+    background: rgba(14, 165, 233, 0.2);
+    color: #0ea5e9;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    margin-left: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: help;
+    position: relative;
+}
+
+.help-icon:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 130%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(12, 13, 31, 0.95);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 400;
+    white-space: nowrap;
+    z-index: 1000;
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -4px;
+    border-width: 4px;
+    border-style: solid;
+    border-color: rgba(12, 13, 31, 0.95) transparent transparent transparent;
 } 

@@ -15,6 +15,7 @@ import { calculateCreditCost, type VideoOptions } from '@/lib/creditPricing';
 import './styles.css';
 import { AvatarSelector } from '@/components/ui/AvatarSelector';
 import { AvatarModalSelector } from '@/components/ui/AvatarModalSelector';
+import React from 'react';
 
 interface FormData {
   videoTitle: string;
@@ -45,16 +46,16 @@ interface Step {
 
 const STEPS: Step[] = [
   {
-    title: "Basic Details",
-    fields: ["videoTitle", "description", "duration"]
+    title: "Video Details",
+    fields: ["videoTitle", "topic", "description", "duration"]
   },
   {
     title: "Call to Action",
     fields: ["callToAction", "specificCallToAction"]
   },
   {
-    title: "Final Video Details",
-    fields: ["topic", "tone", "avatarId", "voiceId"]
+    title: "Avatar",
+    fields: ["tone", "avatarId", "voiceId"]
   }
 ];
 
@@ -86,7 +87,6 @@ const DESCRIPTION_LIMITS: Record<string, number> = {
 };
 
 const MAIN_TOPIC_LIMIT = 120;
-
 // SVGs para orientación
 const VerticalIcon = () => (
   <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -99,12 +99,28 @@ const HorizontalIcon = () => (
   </svg>
 );
 
+// 1. Agregar el SVG del diamante (DiamondIcon) al inicio del archivo:
+const DiamondIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" {...props}>
+    <path d="M10 2L2 8.5L10 18L18 8.5L10 2Z" fill="url(#diamond-gradient)" stroke="#0ea5e9" strokeWidth="1.2"/>
+    <defs>
+      <linearGradient id="diamond-gradient" x1="2" y1="2" x2="18" y2="18" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#38bdf8"/>
+        <stop offset="1" stopColor="#0ea5e9"/>
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 export default function VideoFormsPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { userPlan } = useUserPlan();
   const [currentStep, setCurrentStep] = useState(0);
   const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
+
+  // 1. Estado para el switch visual
+  const [isEditionStep, setIsEditionStep] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -210,15 +226,19 @@ export default function VideoFormsPage() {
 
     // Calcular dimension antes de enviar
     let dimension = { width: 720, height: 1280 };
-    if (formData.orientation && formData.resolution) {
-      if (formData.orientation === 'vertical' && formData.resolution === 'hd') {
-        dimension = { width: 720, height: 1280 };
-      } else if (formData.orientation === 'vertical' && formData.resolution === 'fullhd') {
-        dimension = { width: 1080, height: 1920 };
-      } else if (formData.orientation === 'horizontal' && formData.resolution === 'hd') {
-        dimension = { width: 1280, height: 720 };
-      } else if (formData.orientation === 'horizontal' && formData.resolution === 'fullhd') {
-        dimension = { width: 1920, height: 1080 };
+    if (formData.orientation) {
+      if (userPlan === 'pro') {
+        if (formData.orientation === 'vertical') {
+          dimension = { width: 1080, height: 1920 };
+        } else {
+          dimension = { width: 1920, height: 1080 };
+        }
+      } else {
+        if (formData.orientation === 'vertical') {
+          dimension = { width: 720, height: 1280 };
+        } else {
+          dimension = { width: 1280, height: 720 };
+        }
       }
     }
 
@@ -258,6 +278,7 @@ export default function VideoFormsPage() {
       }
 
       setStatus('Video created successfully!');
+      setIsEditionStep(true); // Animar el switch
       router.push(`/videos/${data.firestoreId}`);
 
     } catch (error) {
@@ -270,14 +291,18 @@ export default function VideoFormsPage() {
 
   // Efectos para cargar datos
   useEffect(() => {
+    const validPlans = ['free', 'premium', 'pro'];
+    if (!userPlan || !validPlans.includes(userPlan.toLowerCase())) {
+      // No hacer fetch hasta que el plan sea válido
+      return;
+    }
     const fetchVoices = async () => {
       try {
         setLoadingVoices(true);
-        const response = await fetch(`/api/voices?plan=${userPlan}`);
+        const response = await fetch(`/api/voices?plan=${userPlan.toLowerCase()}`);
         if (response.ok) {
           const data = await response.json();
           setVoices(data.data || []);
-          
           // Show plan-based voice limit info
           if (data.userPlan && data.totalVoices && data.filteredCount) {
             console.log(`User plan: ${data.userPlan}, Available voices: ${data.filteredCount}/${data.totalVoices}`);
@@ -289,7 +314,6 @@ export default function VideoFormsPage() {
         setLoadingVoices(false);
       }
     };
-
     fetchVoices();
   }, [userPlan]);
 
@@ -370,10 +394,10 @@ export default function VideoFormsPage() {
   };
 
   const handleOrientationChange = (orientation: 'vertical' | 'horizontal') => {
-    if (orientation === 'horizontal') {
+    if (userPlan === 'pro') {
       setFormData(prev => ({ ...prev, orientation, resolution: 'fullhd' }));
     } else {
-      setFormData(prev => ({ ...prev, orientation }));
+      setFormData(prev => ({ ...prev, orientation, resolution: 'hd' }));
     }
   };
 
@@ -469,25 +493,46 @@ export default function VideoFormsPage() {
                 </p>
               </div>
 
-              {/* Progress Steps */}
-              <div className="video-forms-progress-container">
-                <div className="video-forms-progress-steps">
-                  {STEPS.map((step, index) => (
+              {/* Stepper visual de 2 pasos: Creation / Edition */}
+              <div className="video-forms-switch-stepper">
+                <div className="video-forms-switch-slider">
+                  <div className="video-forms-switch-track">
+                    <div className={`video-forms-switch-knob${isEditionStep ? ' right' : ''}`}></div>
+                    <div className={`video-forms-switch-label creation-label${!isEditionStep ? ' active' : ''}`}>Creation</div>
+                    <div className={`video-forms-switch-label edition-label${isEditionStep ? ' active' : ''}`}>Edition</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Nuevo Stepper integrado al borde superior del panel */}
+              <div className="video-forms-stepper-pill-row">
+                {STEPS.map((step, idx) => {
+                  const isFilled = idx <= currentStep;
+                  const pillClass =
+                    'video-forms-stepper-pill' +
+                    (isFilled ? ' completed' : '');
+                  const numberClass =
+                    'video-forms-stepper-pill-number' +
+                    (isFilled ? ' filled' : '');
+                  const isClickable = idx < currentStep;
+                  return (
                     <div
-                      key={index}
-                      className={`video-forms-step ${index === currentStep ? 'active' : index < currentStep ? 'completed' : ''}`}
+                      key={step.title}
+                      className={pillClass + (isClickable ? ' clickable' : '')}
+                      style={{
+                        borderTopLeftRadius: idx === 0 ? '16px' : 0,
+                        borderTopRightRadius: idx === STEPS.length - 1 ? '16px' : 0,
+                        cursor: isClickable ? 'pointer' : 'default',
+                      }}
+                      onClick={() => {
+                        if (isClickable) setCurrentStep(idx);
+                      }}
                     >
-                      <div className="video-forms-step-number">{index + 1}</div>
-                      <span className="video-forms-step-text">{step.title}</span>
+                      <span className={numberClass}>{idx + 1}</span>
+                      <span className="video-forms-stepper-pill-label">{step.title}</span>
                     </div>
-                  ))}
-                </div>
-                <div className="video-forms-progress-bar">
-                  <div 
-                    className="video-forms-progress-fill" 
-                    style={{ width: `${((currentStep) / (STEPS.length - 1)) * 100}%` }}
-                  />
-                </div>
+                  );
+                })}
               </div>
 
               {/* Form Container */}
@@ -495,10 +540,12 @@ export default function VideoFormsPage() {
                 {/* Step 1: Basic Details */}
                 <div className={`video-forms-form-step ${currentStep === 0 ? 'active' : ''}`}>
                   <div className="video-forms-form-group">
-                    <label className="video-forms-form-label">Video Duration</label>
-                    <p className="video-forms-form-description">
+                    <label className="video-forms-form-label" style={{ display: 'block', width: '100%', textAlign: 'center' }}>
                       Select the duration that best suits your content
-                    </p>
+                    </label>
+                    {/* <p className="video-forms-form-description">
+                      Select the duration that best suits your content
+                    </p> */}
                     <div className="video-forms-duration-options">
                       {Object.entries(DURATION_LIMITS).map(([key, value]) => (
                         <div
@@ -514,86 +561,29 @@ export default function VideoFormsPage() {
 
                   {/* Orientation + Quality Selector juntos */}
                   <div className="video-forms-form-group">
-                    <div className="video-forms-orientation-quality-row">
-                      <div style={{ flex: 1 }}>
-                        <label className="video-forms-form-label">Orientation</label>
-                        {(userPlan === 'pro' || userPlan === 'premium') ? (
-                          <div className="video-forms-orientation-options">
-                            <div
-                              onClick={() => handleOrientationChange('vertical')}
-                              className={`video-forms-orientation-option ${formData.orientation === 'vertical' ? 'selected' : ''}`}
-                            >
-                              <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><VerticalIcon /></span>
-                              <div className="video-forms-duration-time">Vertical (9:16)</div>
-                            </div>
-                            <div
-                              onClick={() => handleOrientationChange('horizontal')}
-                              className={`video-forms-orientation-option ${formData.orientation === 'horizontal' ? 'selected' : ''}`}
-                            >
-                              <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><HorizontalIcon /></span>
-                              <div className="video-forms-duration-time">Horizontal (16:9)</div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="video-forms-orientation-options">
-                            <div
-                              className={`video-forms-orientation-option ${formData.orientation === 'vertical' ? 'selected' : ''}`}
-                              style={{ cursor: 'default' }}
-                            >
-                              <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><VerticalIcon /></span>
-                              <div className="video-forms-duration-time">Vertical (9:16)</div>
-                            </div>
-                            <div
-                              className="video-forms-orientation-option"
-                              style={{ cursor: 'not-allowed', opacity: 0.7 }}
-                            >
-                              <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><HorizontalIcon /></span>
-                              <div className="video-forms-duration-time">Horizontal (16:9)</div>
-                            </div>
-                          </div>
-                        )}
+                    <label className="video-forms-form-label" style={{ display: 'block', textAlign: 'center', width: '100%', marginBottom: '1rem' }}>Orientation</label>
+                    <div className="video-forms-orientation-options">
+                      <div
+                        onClick={() => handleOrientationChange('vertical')}
+                        className={`video-forms-orientation-option ${formData.orientation === 'vertical' ? 'selected' : ''}`}
+                      >
+                        <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><VerticalIcon /></span>
+                        <div className="video-forms-duration-time">Vertical (9:16)</div>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <label className="video-forms-form-label">Quality</label>
-                        {userPlan === 'pro' ? (
-                          <div className="video-forms-orientation-options">
-                            <div
-                              onClick={() => handleResolutionChange('hd')}
-                              className={`video-forms-orientation-option ${formData.resolution === 'hd' ? 'selected' : ''}`}
-                            >
-                              <div className="video-forms-duration-time">HD (720p)</div>
-                            </div>
-                            <div
-                              onClick={() => handleResolutionChange('fullhd')}
-                              className={`video-forms-orientation-option ${formData.resolution === 'fullhd' ? 'selected' : ''}`}
-                            >
-                              <div className="video-forms-duration-time">Full HD (1080p)</div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="video-forms-orientation-options">
-                            <div
-                              className={`video-forms-orientation-option ${formData.resolution === 'hd' ? 'selected' : ''}`}
-                              style={{ cursor: 'default' }}
-                            >
-                              <div className="video-forms-duration-time">HD (720p)</div>
-                            </div>
-                            <div
-                              className="video-forms-orientation-option"
-                              style={{ cursor: 'not-allowed', opacity: 0.7 }}
-                            >
-                              <div className="video-forms-duration-time">Full HD (1080p)</div>
-                            </div>
-                          </div>
-                        )}
+                      <div
+                        onClick={() => handleOrientationChange('horizontal')}
+                        className={`video-forms-orientation-option ${formData.orientation === 'horizontal' ? 'selected' : ''}`}
+                      >
+                        <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><HorizontalIcon /></span>
+                        <div className="video-forms-duration-time">Horizontal (16:9)</div>
                       </div>
                     </div>
-                    {userPlan === 'free' && (
-                      <div className="video-forms-plan-upgrade-hint">
-                        <span className="video-forms-upgrade-icon">💡</span>
-                        <span>Upgrade to Pro to change orientation and quality</span>
-                      </div>
-                    )}
+                  {userPlan === 'free' && (
+                    <div className="video-forms-plan-upgrade-hint">
+                      <span className="video-forms-upgrade-icon">💡</span>
+                      <span>Upgrade to Pro to unlock Full HD quality</span>
+                    </div>
+                  )}
                   </div>
 
                   <div className="video-forms-form-group">
@@ -611,16 +601,38 @@ export default function VideoFormsPage() {
                       required
                     />
                   </div>
+                  <div className="video-forms-form-group">
+                    <div className="flex flex-row items-center gap-1 mb-1">
+                      <label htmlFor="topic" className="video-forms-form-label m-0 p-0">Main Topic</label>
+                      <div className="help-icon">?
+                        <div className="tooltip">Briefly describe the main subject or idea for your video. This guides the AI in content generation.</div>
+                      </div>
+                    </div>
+                    <textarea
+                      id="topic"
+                      name="topic"
+                      value={formData.topic}
+                      onChange={e => {
+                        let value = e.target.value;
+                        if (value.length > MAIN_TOPIC_LIMIT) value = value.slice(0, MAIN_TOPIC_LIMIT);
+                        setFormData(prev => ({ ...prev, topic: value }));
+                      }}
+                      className="video-forms-textarea"
+                      placeholder="Example: I want it to be about the Club World Cup"
+                      maxLength={MAIN_TOPIC_LIMIT}
+                      style={{ resize: 'none' }}
+                    />
+                    <div className="video-forms-char-counter">
+                      {formData.topic.length}/{MAIN_TOPIC_LIMIT} characters
+                    </div>
+                  </div>
 
                   <div className="video-forms-form-group">
                     <div className="flex flex-row items-center gap-1 mb-1">
                       <label htmlFor="description" className="video-forms-form-label m-0 p-0">Video Description</label>
-                      <span className="relative group cursor-pointer ml-1">
-                        <HelpCircle className="w-4 h-4 text-[#0ea5e9] align-middle relative top-[-4px]" />
-                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
-                          Write a detailed description for the video. This helps the AI understand the context and generate better content.
-                        </span>
-                      </span>
+                      <div className="help-icon">?
+                        <div className="tooltip">Write a detailed description for the video. This helps the AI understand the context and generate better content.</div>
+                      </div>
                     </div>
                     <textarea
                       id="description"
@@ -647,7 +659,7 @@ export default function VideoFormsPage() {
                 <div className={`video-forms-form-step ${currentStep === 1 ? 'active' : ''}`}>
                   <div className="video-forms-form-group">
                     <div className="flex flex-row items-center gap-1 mb-1">
-                      <label className="video-forms-form-label m-0 p-0">Select the action you want viewers to take</label>
+                      <label className="video-forms-form-label m-0 p-0">Invite your viewers to take action at the end of your video.</label>
                     </div>
                     <div className="video-forms-cta-options">
                       {CALL_TO_ACTION_OPTIONS.map((option) => (
@@ -666,12 +678,9 @@ export default function VideoFormsPage() {
                   <div className="video-forms-form-group">
                     <div className="flex flex-row items-center gap-1 mb-1">
                       <label htmlFor="specificCallToAction" className="video-forms-form-label m-0 p-0">Customize the call to action message</label>
-                      <span className="relative group cursor-pointer ml-1">
-                        <HelpCircle className="w-4 h-4 text-[#0ea5e9] align-middle relative top-[-4px]" />
-                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-60 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
-                          Personalize the call to action message. Example: "Download the app now!" or "Request your free demo".
-                        </span>
-                      </span>
+                      <div className="help-icon">?
+                        <div className="tooltip">Tell your viewers what to do next. Example: 'Follow me on Instagram @Visiora' or 'Check out my YouTube channel @Visiora'.</div>
+                      </div>
                     </div>
                     <textarea
                       id="specificCallToAction"
@@ -687,69 +696,25 @@ export default function VideoFormsPage() {
 
                 {/* Step 3: Final Details */}
                 <div className={`video-forms-form-step ${currentStep === 2 ? 'active' : ''}`}>
+                  {/* Avatar selection primero */}
                   <div className="video-forms-form-group">
-                    <div className="flex flex-row items-center gap-1 mb-1">
-                      <label htmlFor="topic" className="video-forms-form-label m-0 p-0">Main Topic</label>
-                      <span className="relative group cursor-pointer ml-1">
-                        <HelpCircle className="w-4 h-4 text-[#0ea5e9] align-middle relative top-[-4px]" />
-                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
-                          Briefly describe the main subject or idea for your video. This guides the AI in content generation.
-                        </span>
-                      </span>
-                    </div>
-                    <textarea
-                      id="topic"
-                      name="topic"
-                      value={formData.topic}
-                      onChange={e => {
-                        let value = e.target.value;
-                        if (value.length > MAIN_TOPIC_LIMIT) value = value.slice(0, MAIN_TOPIC_LIMIT);
-                        setFormData(prev => ({ ...prev, topic: value }));
+                    <label className="video-forms-form-label">Avatar Selection</label>
+                    <AvatarSelector
+                      onAvatarSelect={(avatarId, lookId) => {
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          avatarId, 
+                          lookId 
+                        }));
+                        setIsAvatarModalOpen(false);
                       }}
-                      className="video-forms-textarea"
-                      placeholder="Example: I want it to be about the Club World Cup"
-                      maxLength={MAIN_TOPIC_LIMIT}
-                      style={{ resize: 'none', height: '56px' }}
+                      selectedAvatarId={formData.avatarId}
+                      selectedLookId={formData.lookId}
+                      isModalOpen={isAvatarModalOpen}
+                      setIsModalOpen={setIsAvatarModalOpen}
                     />
-                    <div className="video-forms-char-counter">
-                      {formData.topic.length}/{MAIN_TOPIC_LIMIT} characters
-                    </div>
                   </div>
-
-                  <div className="video-forms-form-group">
-                    <div className="flex flex-row items-center gap-1 mb-1">
-                      <label htmlFor="tone" className="video-forms-form-label m-0 p-0">Tone</label>
-                      <span className="relative group cursor-pointer ml-1">
-                        <HelpCircle className="w-4 h-4 text-[#0ea5e9] align-middle relative top-[-4px]" />
-                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 bg-[#23243a] text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg pointer-events-none text-center">
-                          Select the mood or style you want for your video (e.g., professional, casual, inspirational).
-                        </span>
-                      </span>
-                    </div>
-                    <div className="relative" ref={toneDropdownRef}>
-                      <button
-                        type="button"
-                        className="voice-select text-left"
-                        onClick={() => setIsToneDropdownOpen(!isToneDropdownOpen)}
-                      >
-                        {TONE_OPTIONS.find(o => o.value === formData.tone)?.label || 'Select a tone'}
-                      </button>
-                      {isToneDropdownOpen && (
-                        <div className="voice-options-container">
-                          {TONE_OPTIONS.map(option => (
-                            <div
-                              key={option.value}
-                              className="voice-option"
-                              onClick={() => handleSelectTone(option)}
-                            >
-                              <span className="voice-option-text">{option.label}</span>
-                              {formData.tone === option.value && <Check className="w-4 h-4 text-sky-400" />}
-                            </div>
-                      ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  {/* Voice segundo */}
                   <div className="video-forms-form-group">
                     <label htmlFor="voiceId" className="video-forms-form-label">
                       Voice
@@ -786,7 +751,7 @@ export default function VideoFormsPage() {
                                 </button>
                               )}
                             </div>
-                      ))}
+                          ))}
                         </div>
                       )}
                     </div>
@@ -800,34 +765,52 @@ export default function VideoFormsPage() {
                       </div>
                     )}
                   </div>
+                  {/* Tone último */}
                   <div className="video-forms-form-group">
-                    <label className="video-forms-form-label">Avatar</label>
-                    <AvatarSelector
-                      onAvatarSelect={(avatarId, lookId) => {
-                        setFormData(prev => ({ 
-                          ...prev, 
-                          avatarId, 
-                          lookId 
-                        }));
-                        setIsAvatarModalOpen(false);
-                      }}
-                      selectedAvatarId={formData.avatarId}
-                      selectedLookId={formData.lookId}
-                      isModalOpen={isAvatarModalOpen}
-                      setIsModalOpen={setIsAvatarModalOpen}
-                    />
+                    <div className="flex flex-row items-center gap-1 mb-1">
+                      <label htmlFor="tone" className="video-forms-form-label m-0 p-0">Tone</label>
+                      <div className="help-icon">?
+                        <div className="tooltip">Select the mood or style you want for your video (e.g., professional, casual, inspirational).</div>
+                      </div>
+                    </div>
+                    <div className="relative" ref={toneDropdownRef}>
+                      <button
+                        type="button"
+                        className="voice-select text-left"
+                        onClick={() => setIsToneDropdownOpen(!isToneDropdownOpen)}
+                      >
+                        {TONE_OPTIONS.find(o => o.value === formData.tone)?.label || 'Select a tone'}
+                      </button>
+                      {isToneDropdownOpen && (
+                        <div className="voice-options-container">
+                          {TONE_OPTIONS.map(option => (
+                            <div
+                              key={option.value}
+                              className="voice-option"
+                              onClick={() => handleSelectTone(option)}
+                            >
+                              <span className="voice-option-text">{option.label}</span>
+                              {formData.tone === option.value && <Check className="w-4 h-4 text-sky-400" />}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Navigation */}
                 <div className="video-forms-navigation">
                   <div className="relative group video-forms-credits-info cursor-pointer transition-transform duration-200" style={{ minWidth: 120 }}>
-                    <div className={`video-forms-credits-icon text-2xl transition-transform duration-200 ${currentCost ? 'animate-pulse' : ''}`}>💎</div>
+                    {/* 2. Reemplazar el icono y mejorar el fondo del contador: */}
+                    <div className={`video-forms-credits-icon video-forms-credits-glow`}>
+                      <DiamondIcon style={{width: 20, height: 20, display: 'block'}} />
+                    </div>
                     <span className="video-forms-credits-amount font-semibold text-lg transition-transform duration-200">{currentCost} credits</span>
-                    {/* Tooltip con tabla de costos */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 w-72 bg-[#23243a] text-white text-xs rounded-lg px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg pointer-events-none text-center border border-[#0ea5e9]/30">
+                    {/* 3. Mejorar el tooltip de la tabla de costos: */}
+                    <div className="video-forms-credits-tooltip">
                       <div className="font-bold mb-2 text-base">Video Credit Cost</div>
-                      <table className="w-full text-xs mb-2 border-separate border-spacing-y-1">
+                      <table className="video-forms-credits-table w-full text-xs mb-2">
                         <thead>
                           <tr className="text-sky-400">
                             <th className="text-left">Duration</th>
@@ -853,7 +836,6 @@ export default function VideoFormsPage() {
                           </tr>
                         </tbody>
                       </table>
-                      <div className="text-[11px] text-white/70">The cost depends on the selected duration and quality. 1 credit ≈ 1 short video in HD.</div>
                     </div>
                     {creditsWarning && (
                       <div className="video-forms-low-credits-warning">
@@ -889,7 +871,10 @@ export default function VideoFormsPage() {
                           disabled={!isCurrentStepValid || !canAffordCurrent}
                           className="video-forms-nav-button video-forms-nav-button-primary"
                         >
-                          Next →
+                          <span style={{ marginLeft: 6 }}>Next</span>
+                          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ marginLeft: 2, verticalAlign: 'middle' }}>
+                            <polyline points="6 4 12 10 6 16" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
                         </button>
                         {!isCurrentStepValid && (
                           <span className="tooltip-text">Please fill in all fields to continue</span>
@@ -904,7 +889,7 @@ export default function VideoFormsPage() {
                           disabled={isLoading || !isCurrentStepValid || !canAffordCurrent}
                           className="video-forms-nav-button video-forms-nav-button-primary"
                         >
-                          {isLoading ? "Creating..." : "🚀 Create Video"}
+                          {isLoading ? "Creating..." : <><span>Start Edition</span><span style={{ marginLeft: 8 }}>🛠️</span></>}
                         </button>
                         {!isCurrentStepValid && (
                           <span className="tooltip-text">Please fill in all fields to create the video</span>

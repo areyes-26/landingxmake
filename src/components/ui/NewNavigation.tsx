@@ -48,6 +48,9 @@ export function NewNavigation() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Estado para saber si el modal de avatar está abierto
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+
   useEffect(() => {
     if (showStatic) {
       setAiText(aiFull);
@@ -88,6 +91,16 @@ export function NewNavigation() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  useEffect(() => {
+    // Escuchar evento global personalizado para abrir/cerrar el modal de avatar
+    const listener = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setAvatarModalOpen(!!customEvent.detail?.open);
+    };
+    window.addEventListener('avatar-modal-toggle', listener);
+    return () => window.removeEventListener('avatar-modal-toggle', listener);
   }, []);
 
   const handleLogout = async () => {
@@ -137,6 +150,10 @@ export function NewNavigation() {
         pointerEvents: 'none',
       }}
     >
+      {/* Blur encima de la navbar cuando el modal de avatar está abierto */}
+      {avatarModalOpen && (
+        <div style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: 100, zIndex: 60, pointerEvents: 'auto', backdropFilter: 'blur(8px)', background: 'rgba(0,0,0,0.25)'}}></div>
+      )}
       {/* Panel flotante */}
       <div
         className="flex flex-row justify-between items-center w-full max-w-6xl"
@@ -495,22 +512,48 @@ export function NewNavigation() {
         )}
         {showUpgradeModal && (
           <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center">
-            <div className="bg-[#18192b] rounded-2xl shadow-2xl p-8 max-w-xs w-full flex flex-col items-center animate-fade-in">
-              <div className="text-lg font-semibold text-white mb-4 text-center">¿Do you want more features? <br/>Upgrade to pro now!</div>
-              <div className="flex gap-4 mt-2 w-full justify-center">
-                <button
-                  className="px-4 py-2 rounded-lg bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white font-semibold shadow-md hover:scale-105 transition-transform"
-                  onClick={() => { setShowUpgradeModal(false); router.push('/account-setting?section=pricing'); }}
-                >
-                  Yes, show me
-                </button>
-                <button
-                  className="px-4 py-2 rounded-lg bg-[#23243a] text-white font-semibold border border-[#23243a] hover:bg-[#23243a]/80 transition-colors"
-                  onClick={() => setShowUpgradeModal(false)}
-                >
-                  Cancel
-                </button>
-              </div>
+            <div className="bg-[rgba(26,27,53,0.85)] border border-[rgba(14,165,233,0.2)] rounded-[16px] shadow-[0_10px_30px_rgba(0,0,0,0.3)] p-8 max-w-[450px] w-[90%] flex flex-col items-center animate-fade-in backdrop-blur-md text-center"
+            >
+              {userPlan && userPlan.toLowerCase() === 'pro' ? (
+                <>
+                  <div className="text-lg font-semibold text-white mb-4 text-center">
+                    You are already on the <span className="font-bold text-[#38bdf8]">PRO</span> plan.<br />
+                    Do you need more credits?
+                  </div>
+                  <div className="flex gap-4 mt-2 w-full justify-center">
+                    <button
+                      className="px-4 py-2 rounded-lg bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white font-semibold shadow-md hover:scale-105 transition-transform"
+                      onClick={() => { setShowUpgradeModal(false); router.push('/account-setting/credit-topup'); }}
+                    >
+                      Charge credits
+                    </button>
+                    <button
+                      className="px-4 py-2 rounded-lg bg-[#23243a] text-white font-semibold border border-[#23243a] hover:bg-[#23243a]/80 transition-colors"
+                      onClick={() => setShowUpgradeModal(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-lg font-semibold text-white mb-4 text-center">¿Do you want more features? <br/>Upgrade to pro now!</div>
+                  <div className="flex gap-4 mt-2 w-full justify-center">
+                    <button
+                      className="px-4 py-2 rounded-lg bg-gradient-to-br from-[#0ea5e9] to-[#7c3aed] text-white font-semibold shadow-md hover:scale-105 transition-transform"
+                      onClick={() => { setShowUpgradeModal(false); router.push('/account-setting?section=pricing'); }}
+                    >
+                      Yes, show me
+                    </button>
+                    <button
+                      className="px-4 py-2 rounded-lg bg-[#23243a] text-white font-semibold border border-[#23243a] hover:bg-[#23243a]/80 transition-colors"
+                      onClick={() => setShowUpgradeModal(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

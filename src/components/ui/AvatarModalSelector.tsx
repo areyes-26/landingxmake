@@ -189,43 +189,52 @@ export function AvatarModalSelector({
   const totalLookPages = selectedGroup ? Math.ceil(selectedGroup.looks.length / itemsPerPage) : 0;
   const currentLooks = selectedGroup ? selectedGroup.looks.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage) : [];
 
+  // Notificar a la navbar cuando el modal se abre/cierra
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('avatar-modal-toggle', { detail: { open: isOpen } }));
+    // Limpieza opcional: al desmontar, asegúrate de notificar cerrado
+    return () => {
+      window.dispatchEvent(new CustomEvent('avatar-modal-toggle', { detail: { open: false } }));
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md transition-all duration-300"></div>
+        <div className="fixed inset-0 z-60 bg-black/30 backdrop-blur-md transition-all duration-300"></div>
       )}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="bg-gray-900/80 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-gray-700">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-700">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
+              <div className="flex items-center gap-2">
                 {showLooks && (
                   <button
                     type="button"
                     onClick={handleBackToGroups}
-                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                    className="p-1 hover:bg-gray-800 rounded-lg transition-colors"
                   >
-                    <ChevronLeft className="w-5 h-5 text-gray-300" />
+                    <ChevronLeft className="w-4 h-4 text-gray-300" />
                   </button>
                 )}
-                <h2 className="text-xl font-semibold text-white">
-                  {showLooks ? `Seleccionar Look - ${selectedGroup ? getGroupName(selectedGroup) : ''}` : 'Seleccionar Avatar'}
+                <h2 className="text-base font-medium text-white">
+                  {showLooks ? `Select Look - ${selectedGroup ? getGroupName(selectedGroup) : ''}` : 'Select Avatar'}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                className="p-1 hover:bg-gray-800 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-300" />
+                <X className="w-4 h-4 text-gray-300" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)] avatar-options-container">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -259,7 +268,10 @@ export function AvatarModalSelector({
                           <img
                             src={look.preview_image_url}
                             alt={getLookName(look)}
-                            className="w-full h-full object-cover"
+                            className={
+                              `w-full h-full object-cover` +
+                              (selectedGroup && getGroupName(selectedGroup) === 'Modern Office Professional' ? ' modern-office-crop' : '')
+                            }
                           />
                           {isLookSelected(look) && (
                             <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">

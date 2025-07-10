@@ -7,6 +7,8 @@
 /* Main Layout */
 .main-container {
     display: flex;
+    max-width: 96rem;
+    margin: 0 auto;
     /* height: 100vh; */ /* No forzar altura */
 }
 
@@ -25,15 +27,15 @@ main.content {
 
 /* Sidebar */
 .sidebar {
-    width: 300px;
+    width: 200px;
     height: 370px; /* Alto fijo para que termine justo debajo de la última opción */
     background: rgba(20, 22, 40, 0.85);
     border-radius: 1.5rem;
     box-shadow: 0 8px 32px 0 rgba(14,165,233,0.10), 0 1.5px 8px 0 rgba(0,0,0,0.18);
     display: flex;
     flex-direction: column;
-    padding: 2rem 0 2.5rem 0;
-    margin: 1.2rem 0 1.2rem 1.2rem;
+    padding: 1.2rem 0 1.5rem 0;
+    margin: 1.2rem 0 1.2rem 0;
     /* El alto es fijo, termina justo debajo de la última opción */
 }
 
@@ -79,7 +81,7 @@ main.content {
 /* Content Area */
 .content {
     flex: 1;
-    padding: 3rem;
+    padding: 2rem 1.5rem;
     overflow-y: auto;
 }
 
@@ -209,16 +211,16 @@ main.content {
 /* Pricing Plans */
 .pricing-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* antes 300px, ahora 20% menos */
+    gap: 1.6rem; /* antes 2rem, ahora 20% menos */
+    margin-top: 1.6rem; /* antes 2rem, ahora 20% menos */
 }
 
 .pricing-card {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(14, 165, 233, 0.1);
-    border-radius: 16px;
-    padding: 2rem;
+    border-radius: 13px; /* antes 16px, ahora 20% menos */
+    padding: 1.6rem; /* antes 2rem, ahora 20% menos */
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
     position: relative;
@@ -250,71 +252,72 @@ main.content {
     transform: translateX(-50%);
     background: linear-gradient(135deg, #0ea5e9, #7c3aed);
     color: white;
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.8rem; /* antes 0.5rem 1rem */
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.64rem; /* antes 0.8rem */
     font-weight: 600;
 }
 
 .plan-name {
-    font-size: 1.4rem;
+    font-size: 1.12rem; /* antes 1.4rem */
     font-weight: 700;
     color: white;
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem; /* antes 1rem */
     text-align: center;
 }
 
 .plan-price {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.6rem; /* antes 2rem */
 }
 
 .price-amount {
-    font-size: 3rem;
+    font-size: 2.4rem; /* antes 3rem */
     font-weight: 700;
     color: #0ea5e9;
 }
 
 .price-period {
     color: rgba(255, 255, 255, 0.6);
-    font-size: 1rem;
+    font-size: 0.8rem; /* antes 1rem */
 }
 
 .plan-features {
     list-style: none;
-    margin-bottom: 2rem;
+    margin-bottom: 1.6rem; /* antes 2rem */
 }
 
 .feature-item {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
+    gap: 0.6rem; /* antes 0.75rem */
+    margin-bottom: 0.6rem; /* antes 0.75rem */
     color: rgba(255, 255, 255, 0.8);
+    font-size: 0.92rem; /* más compacto */
 }
 
 .feature-check {
-    width: 20px;
-    height: 20px;
+    width: 16px; /* antes 20px */
+    height: 16px; /* antes 20px */
     background: rgba(34, 197, 94, 0.2);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #22c55e;
-    font-size: 0.8rem;
+    font-size: 0.64rem; /* antes 0.8rem */
     font-weight: 600;
 }
 
 .plan-button {
     width: 100%;
-    padding: 1rem;
+    padding: 0.8rem; /* antes 1rem */
     border: none;
-    border-radius: 8px;
+    border-radius: 6px; /* antes 8px */
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 1rem;
+    font-size: 0.8rem; /* antes 1rem */
     margin-top: auto;
 }
 
@@ -413,6 +416,11 @@ main.content {
     .sidebar {
         width: 100%;
         padding: 1rem 0;
+        height: auto; /* Quitar altura fija */
+        min-height: unset;
+        border-radius: 1.2rem; /* Más compacto en mobile */
+        box-shadow: 0 4px 16px 0 rgba(14,165,233,0.08), 0 1px 4px 0 rgba(0,0,0,0.12);
+        margin: 1rem 0 0 0;
     }
 
     .sidebar-nav {

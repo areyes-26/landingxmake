@@ -180,9 +180,6 @@ export function AvatarSelector({ onAvatarSelect, selectedAvatarId, selectedLookI
     <div className="space-y-6">
       {/* Avatar Selection Button */}
       <div>
-        <label className="video-forms-form-label">
-          Selecciona un Avatar
-        </label>
         <Button
           type="button"
           onClick={() => setModalOpen(true)}
