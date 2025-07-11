@@ -120,7 +120,7 @@
 /* Hero Section */
 .hero {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 0px;
 }
 
 .hero-title {
@@ -742,5 +742,279 @@
 
     .comparison-value {
         font-size: 1.8rem;
+    }
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: rgba(12, 13, 31, 0.95);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    border-radius: 24px;
+    padding: 15px 2rem 2rem 2rem;
+    max-width: 800px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.modal-content .upgrade-content {
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+.modal-content .upgrade-badge {
+    padding: 0.4rem 1.2rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.75rem;
+    display: inline-block;
+}
+
+.modal-content .upgrade-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.4rem;
+    text-align: center;
+}
+
+.modal-content .upgrade-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.modal-content .benefits-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.modal-content .benefit-item {
+    padding: 0.75rem 0.5rem;
+    aspect-ratio: 1;
+}
+
+.modal-content .benefit-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+}
+
+.modal-content .benefit-title {
+    font-size: 0.8rem;
+    margin-bottom: 0.4rem;
+}
+
+.modal-content .benefit-description {
+    font-size: 0.7rem;
+    line-height: 1.2;
+}
+
+.modal-content .comparison {
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.modal-content .comparison-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+}
+
+.modal-content .price-comparison {
+    gap: 0.75rem;
+}
+
+.modal-content .price-item {
+    padding: 0.75rem 1rem;
+    min-width: 130px;
+}
+
+.modal-content .price-amount {
+    font-size: 1.3rem;
+}
+
+.modal-content .vs-divider {
+    width: 45px;
+    height: 45px;
+    font-size: 0.9rem;
+}
+
+.modal-content .savings-highlight {
+    padding: 0.75rem;
+}
+
+.modal-content .savings-badge {
+    font-size: 0.9rem;
+}
+
+.modal-content .savings-detail {
+    font-size: 0.75rem;
+}
+
+.modal-cta {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.modal-cta .back-btn {
+    width: 200px;
+    padding: 1rem 1.5rem;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 55px;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.credits-btn {
+    width: 200px;
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 55px;
+}
+
+.credits-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.credits-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.modal-cta .upgrade-btn {
+    width: 200px;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #0ea5e9, #7c3aed);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    box-shadow: 0 4px 20px rgba(14, 165, 233, 0.4);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 55px;
+}
+
+.modal-cta .upgrade-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(14, 165, 233, 0.5);
+}
+
+.modal-cta .upgrade-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Modal Responsive */
+@media (max-width: 768px) {
+    .modal-content {
+        padding: 1.5rem;
+        margin: 1rem;
+        max-height: 90vh;
+    }
+
+    .modal-content .benefits-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+
+    .modal-content .comparison {
+        padding: 1rem;
+    }
+
+    .modal-content .price-comparison {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .modal-content .vs-divider {
+        transform: rotate(90deg);
+    }
+
+    .modal-cta {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .modal-cta .back-btn,
+    .modal-cta .credits-btn,
+    .modal-cta .upgrade-btn {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
     }
 } 

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import './credit-topup.css';
 
-
 const CREDIT_PACKS = [
   { credits: 25, price: 10, stripePriceId: 'price_1Rb9iCQKaNQdxodokSsMazhn', pricePerCredit: 0.40, features: ['Perfect for testing', '~25 short videos', 'No expiration date'], popular: false },
   { credits: 50, price: 25, stripePriceId: 'price_1Rb9iQQKaNQdxodoNtRXtlR6', pricePerCredit: 0.50, features: ['Great value package', '~50 short videos', 'No expiration date', 'Priority processing'], popular: true },
@@ -16,19 +15,30 @@ export default function CreditTopupPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [loadingPro, setLoadingPro] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [selectedPack, setSelectedPack] = useState<typeof CREDIT_PACKS[0] | null>(null);
   const { user } = useAuth();
 
   const handleBuy = async (pack: typeof CREDIT_PACKS[0]) => {
-    setLoading(pack.credits.toString());
+    setSelectedPack(pack);
+    setShowUpgradeModal(true);
+  };
+
+  const handleProceedWithCredits = async () => {
+    if (!selectedPack) return;
+    
+    setLoading(selectedPack.credits.toString());
     setError(null);
+    setShowUpgradeModal(false);
+    
     try {
       const res = await fetch('/api/create-stripe-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'credit_topup',
-          credits: pack.credits,
-          stripePriceId: pack.stripePriceId,
+          credits: selectedPack.credits,
+          stripePriceId: selectedPack.stripePriceId,
           email: user?.email,
           userId: user?.uid,
         }),
@@ -46,13 +56,24 @@ export default function CreditTopupPage() {
     }
   };
 
-  const handleUpgradeToPro = async () => {
+  const handleUpgradeToPro = () => {
+    setShowUpgradeModal(false);
+    router.push('/account-setting?section=pricing');
+  };
+
+  const handleCloseModal = () => {
+    setShowUpgradeModal(false);
+    setSelectedPack(null);
+  };
+
+  const handleUpgradeToProFromModal = async () => {
     if (!user) {
       setError("You must be logged in to upgrade.");
       return;
     }
     setLoadingPro(true);
     setError(null);
+    setShowUpgradeModal(false);
     try {
       const response = await fetch('/api/create-stripe-session', {
         method: 'POST',
@@ -117,69 +138,81 @@ export default function CreditTopupPage() {
       {error && <div className="text-red-500 text-center mt-6">{error}</div>}
       </section>
 
-      {/* Upgrade to Pro Section */}
-      <section className="upgrade-section">
-        <div className="upgrade-content">
-          <div className="upgrade-badge">Better Value</div>
-          <h2 className="upgrade-title">Why not upgrade to Pro?</h2>
-          <p className="upgrade-subtitle">Get unlimited credits, better video quality, more avatars, and premium features. More cost-effective than buying credits individually.</p>
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            
+            <div className="upgrade-content">
+              <div className="upgrade-badge">Better Value</div>
+              <h2 className="upgrade-title">Why not upgrade to Pro?</h2>
+              <p className="upgrade-subtitle">Get unlimited credits, better video quality, more avatars, and premium features. More cost-effective than buying credits individually.</p>
 
-          <div className="benefits-grid">
-            <div className="benefit-item">
-              <div className="benefit-icon">🎥</div>
-              <h3 className="benefit-title">Superior Quality</h3>
-              <p className="benefit-description">1080p 60fps videos vs 720p. Professional-grade output for your content.</p>
-            </div>
-            <div className="benefit-item">
-              <div className="benefit-icon">👥</div>
-              <h3 className="benefit-title">100+ Avatars</h3>
-              <p className="benefit-description">Access to our complete avatar library including 50+ Pro Avatars with advanced expressions.</p>
-            </div>
-            <div className="benefit-item">
-              <div className="benefit-icon">⚡</div>
-              <h3 className="benefit-title">Faster Processing</h3>
-              <p className="benefit-description">Priority queue processing. Your videos are ready 3x faster than standard users.</p>
-            </div>
-            <div className="benefit-item">
-              <div className="benefit-icon">🎧</div>
-              <h3 className="benefit-title">Priority Support</h3>
-              <p className="benefit-description">Get help when you need it with dedicated priority support and faster response times.</p>
-            </div>
-          </div>
-
-          <div className="comparison">
-            <h3 className="comparison-title">💰 Price Comparison</h3>
-            <div className="comparison-content">
-              <div className="price-comparison">
-                <div className="price-item">
-                  <div className="price-label">Buying 100 Credits</div>
-                  <div className="price-amount">$50.00</div>
-                  <div className="price-detail">= $0.50 per credit</div>
+              <div className="benefits-grid">
+                <div className="benefit-item">
+                  <div className="benefit-icon">🎥</div>
+                  <h3 className="benefit-title">Superior Quality</h3>
+                  <p className="benefit-description">1080p 60fps videos vs 720p. Professional-grade output for your content.</p>
                 </div>
-                <div className="vs-divider">
-                  <span>VS</span>
+                <div className="benefit-item">
+                  <div className="benefit-icon">👥</div>
+                  <h3 className="benefit-title">100+ Avatars</h3>
+                  <p className="benefit-description">Access to our complete avatar library including 50+ Pro Avatars with advanced expressions.</p>
                 </div>
-                <div className="price-item highlight">
-                  <div className="price-label">Pro Plan (750 credits)</div>
-                  <div className="price-amount">$69.99</div>
-                  <div className="price-detail">= $0.09 per credit</div>
+                <div className="benefit-item">
+                  <div className="benefit-icon">⚡</div>
+                  <h3 className="benefit-title">Faster Processing</h3>
+                  <p className="benefit-description">Priority queue processing. Your videos are ready 3x faster than standard users.</p>
+                </div>
+                <div className="benefit-item">
+                  <div className="benefit-icon">🎧</div>
+                  <h3 className="benefit-title">Priority Support</h3>
+                  <p className="benefit-description">Get help when you need it with dedicated priority support and faster response times.</p>
                 </div>
               </div>
-              <div className="savings-highlight">
-                <div className="savings-badge">You save 82% per credit with Pro Plan</div>
-                <div className="savings-detail">Pro Plan: Get 7.5x more value for your money</div>
+
+              <div className="comparison">
+                <h3 className="comparison-title">💰 Price Comparison</h3>
+                <div className="comparison-content">
+                  <div className="price-comparison">
+                    <div className="price-item">
+                      <div className="price-label">Buying 100 Credits</div>
+                      <div className="price-amount">$50.00</div>
+                      <div className="price-detail">= $0.50 per credit</div>
+                    </div>
+                    <div className="vs-divider">
+                      <span>VS</span>
+                    </div>
+                    <div className="price-item highlight">
+                      <div className="price-label">Pro Plan (750 credits)</div>
+                      <div className="price-amount">$69.99</div>
+                      <div className="price-detail">= $0.09 per credit</div>
+                    </div>
+                  </div>
+                  <div className="savings-highlight">
+                    <div className="savings-badge">You save 82% per credit with Pro Plan</div>
+                    <div className="savings-detail">Pro Plan: Get 7.5x more value for your money</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-cta">
+                <button onClick={handleCloseModal} className="back-btn">
+                  Back
+                </button>
+                <div className="action-buttons">
+                  <button onClick={handleProceedWithCredits} className="credits-btn" disabled={!!loading}>
+                    {loading ? 'Redirecting...' : `No, I want ${selectedPack?.credits} credits`}
+                  </button>
+                  <button onClick={handleUpgradeToProFromModal} className="upgrade-btn" disabled={loadingPro}>
+                    {loadingPro ? 'Redirecting...' : '🚀 Yes, I want to become Pro'}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="upgrade-cta">
-            <button onClick={handleUpgradeToPro} className="upgrade-btn" disabled={loadingPro}>
-              {loadingPro ? 'Redirecting...' : '🚀 Upgrade to Pro'}
-            </button>
-            <a href="/account-setting?section=pricing" className="learn-more-btn">Learn More</a>
           </div>
         </div>
-      </section>
+      )}
     </div>
   );
 } 
